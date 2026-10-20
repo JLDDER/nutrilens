@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NutriLens AI - 多角度餐食視覺營養分析與追蹤系統</title>
+
+  <!-- Apply the saved theme before first paint to avoid a light flash. The key must match STORAGE_KEYS.theme. -->
+  <script>
+    try {
+      var th = localStorage.getItem('nutrilens_theme_v1') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.classList.toggle('dark', th === 'dark');
+    } catch (e) {}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+  <style>*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.card{border-radius:1rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:1.25rem;--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow);transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.card:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(22 22 24/var(--tw-bg-opacity,1))}.panel{border-radius:.75rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.panel:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.field{border-radius:.5rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:.375rem .625rem;font-size:.875rem;line-height:1.25rem;--tw-text-opacity:1;color:rgb(30 41 59/var(--tw-text-opacity,1))}.field:focus{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1));outline:2px solid transparent;outline-offset:2px}.field:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}.btn{display:inline-flex;align-items:center;justify-content:center;gap:.375rem;border-radius:.5rem;padding:.5rem .75rem;font-size:.875rem;line-height:1.25rem;font-weight:500;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.btn:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.btn:disabled{pointer-events:none;opacity:.6}.btn-primary{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.btn-primary:hover{--tw-bg-opacity:1;background-color:rgb(4 120 87/var(--tw-bg-opacity,1))}.btn-outline{border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.btn-outline:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.btn-outline:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.btn-outline:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.btn-soft{border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.btn-soft:hover{--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1))}.btn-soft:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.btn-soft:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.btn-danger{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.btn-danger:hover{--tw-bg-opacity:1;background-color:rgb(190 18 60/var(--tw-bg-opacity,1))}.icon-btn{display:inline-flex;height:2.25rem;width:2.25rem;align-items:center;justify-content:center;border-radius:.5rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.icon-btn:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.icon-btn:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.icon-btn:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.icon-btn:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;overflow-y:auto;background-color:rgba(2,6,23,.7);padding:.75rem;--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}@media (min-width:640px){.modal{padding:1rem}}.modal.open{display:flex}.modal-panel{margin-top:auto;margin-bottom:auto;max-height:94vh;width:100%}.modal-panel>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.modal-panel{overflow-y:auto;border-radius:1rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:1.25rem;--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1));--tw-shadow:0 25px 50px -12px rgba(0,0,0,.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.modal-panel:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(22 22 24/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}@media (min-width:640px){.modal-panel{padding:1.5rem}}.tab-btn{border-radius:.75rem;padding:.5rem 1rem;font-size:.875rem;line-height:1.25rem;font-weight:500;--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1));transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.tab-btn:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.tab-btn:is(.dark *){--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.tab-btn:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.tab-btn[aria-selected=true]{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1));font-weight:700;--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.tab-btn[aria-selected=true]:hover{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.tab-btn[aria-selected=true]:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.range-btn{border-radius:.375rem;padding:.125rem .5rem;font-size:.75rem;line-height:1rem;font-weight:500;--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1));transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.range-btn:hover{background-color:rgba(226,232,240,.6)}.range-btn:is(.dark *){--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.range-btn:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.range-btn[aria-pressed=true]{--tw-bg-opacity:1;background-color:rgb(209 250 229/var(--tw-bg-opacity,1));font-weight:600;--tw-text-opacity:1;color:rgb(6 95 70/var(--tw-text-opacity,1))}.range-btn[aria-pressed=true]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(2 44 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(110 231 183/var(--tw-text-opacity,1))}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}.pointer-events-none{pointer-events:none}.pointer-events-auto{pointer-events:auto}.visible{visibility:visible}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0}.bottom-5{bottom:1.25rem}.right-2{right:.5rem}.right-2\.5{right:.625rem}.right-5{right:1.25rem}.top-0{top:0}.top-2{top:.5rem}.z-30{z-index:30}.z-50{z-index:50}.z-\[60\]{z-index:60}.col-span-2{grid-column:span 2/span 2}.mx-auto{margin-left:auto;margin-right:auto}.my-auto{margin-top:auto;margin-bottom:auto}.mb-1\.5{margin-bottom:.375rem}.mb-2{margin-bottom:.5rem}.mb-4{margin-bottom:1rem}.ml-1{margin-left:.25rem}.ml-2{margin-left:.5rem}.mr-0\.5{margin-right:.125rem}.mr-auto{margin-right:auto}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.block{display:block}.inline{display:inline}.flex{display:flex}.inline-flex{display:inline-flex}.table{display:table}.grid{display:grid}.contents{display:contents}.hidden{display:none}.h-10{height:2.5rem}.h-12{height:3rem}.h-2{height:.5rem}.h-2\.5{height:.625rem}.h-3{height:.75rem}.h-32{height:8rem}.h-44{height:11rem}.h-48{height:12rem}.h-6{height:1.5rem}.h-7{height:1.75rem}.h-9{height:2.25rem}.h-\[200px\]{height:200px}.h-full{height:100%}.max-h-40{max-height:10rem}.max-h-\[94vh\]{max-height:94vh}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-12{width:3rem}.w-16{width:4rem}.w-2{width:.5rem}.w-2\.5{width:.625rem}.w-20{width:5rem}.w-28{width:7rem}.w-3{width:.75rem}.w-32{width:8rem}.w-6{width:1.5rem}.w-7{width:1.75rem}.w-9{width:2.25rem}.w-full{width:100%}.min-w-0{min-width:0}.max-w-5xl{max-width:64rem}.max-w-\[680px\]{max-width:680px}.max-w-lg{max-width:32rem}.max-w-md{max-width:28rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite}@keyframes spin{to{transform:rotate(1turn)}}.animate-spin{animation:spin 1s linear infinite}.cursor-pointer{cursor:pointer}.select-none{-webkit-user-select:none;-moz-user-select:none;user-select:none}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-2\.5{gap:.625rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-5{gap:1.25rem}.gap-6{gap:1.5rem}.gap-x-6{-moz-column-gap:1.5rem;column-gap:1.5rem}.gap-y-3{row-gap:.75rem}.space-y-1>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.25rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.25rem*var(--tw-space-y-reverse))}.space-y-1\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.375rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.375rem*var(--tw-space-y-reverse))}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.space-y-2\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.625rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.625rem*var(--tw-space-y-reverse))}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.75rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.75rem*var(--tw-space-y-reverse))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.space-y-6>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.5rem*var(--tw-space-y-reverse))}.divide-y>:not([hidden])~:not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px*(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px*var(--tw-divide-y-reverse))}.divide-slate-100>:not([hidden])~:not([hidden]){--tw-divide-opacity:1;border-color:rgb(241 245 249/var(--tw-divide-opacity,1))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rounded{border-radius:.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-md{border-radius:.375rem}.rounded-xl{border-radius:.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-dashed{border-style:dashed}.\!border-emerald-400{--tw-border-opacity:1!important;border-color:rgb(52 211 153/var(--tw-border-opacity,1))!important}.border-emerald-100{--tw-border-opacity:1;border-color:rgb(209 250 229/var(--tw-border-opacity,1))}.border-emerald-200{--tw-border-opacity:1;border-color:rgb(167 243 208/var(--tw-border-opacity,1))}.border-emerald-200\/60{border-color:rgba(167,243,208,.6)}.border-emerald-200\/80{border-color:rgba(167,243,208,.8)}.border-rose-200\/60{border-color:rgba(254,205,211,.6)}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1))}.border-slate-200\/70{border-color:rgba(226,232,240,.7)}.border-slate-200\/80{border-color:rgba(226,232,240,.8)}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1))}.border-transparent{border-color:transparent}.bg-amber-100{--tw-bg-opacity:1;background-color:rgb(254 243 199/var(--tw-bg-opacity,1))}.bg-amber-50{--tw-bg-opacity:1;background-color:rgb(255 251 235/var(--tw-bg-opacity,1))}.bg-amber-500{--tw-bg-opacity:1;background-color:rgb(245 158 11/var(--tw-bg-opacity,1))}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235/var(--tw-bg-opacity,1))}.bg-emerald-100{--tw-bg-opacity:1;background-color:rgb(209 250 229/var(--tw-bg-opacity,1))}.bg-emerald-200\/70{background-color:rgba(167,243,208,.7)}.bg-emerald-50{--tw-bg-opacity:1;background-color:rgb(236 253 245/var(--tw-bg-opacity,1))}.bg-emerald-50\/50{background-color:rgba(236,253,245,.5)}.bg-emerald-500{--tw-bg-opacity:1;background-color:rgb(16 185 129/var(--tw-bg-opacity,1))}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.bg-indigo-100{--tw-bg-opacity:1;background-color:rgb(224 231 255/var(--tw-bg-opacity,1))}.bg-purple-100{--tw-bg-opacity:1;background-color:rgb(243 232 255/var(--tw-bg-opacity,1))}.bg-rose-100{--tw-bg-opacity:1;background-color:rgb(255 228 230/var(--tw-bg-opacity,1))}.bg-rose-50{--tw-bg-opacity:1;background-color:rgb(255 241 242/var(--tw-bg-opacity,1))}.bg-rose-500{--tw-bg-opacity:1;background-color:rgb(244 63 94/var(--tw-bg-opacity,1))}.bg-rose-600{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1))}.bg-sky-100{--tw-bg-opacity:1;background-color:rgb(224 242 254/var(--tw-bg-opacity,1))}.bg-sky-50{--tw-bg-opacity:1;background-color:rgb(240 249 255/var(--tw-bg-opacity,1))}.bg-sky-500{--tw-bg-opacity:1;background-color:rgb(14 165 233/var(--tw-bg-opacity,1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.bg-slate-100\/90{background-color:rgba(241,245,249,.9)}.bg-slate-200{--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1))}.bg-slate-300{--tw-bg-opacity:1;background-color:rgb(203 213 225/var(--tw-bg-opacity,1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.bg-slate-50\/60{background-color:rgba(248,250,252,.6)}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42/var(--tw-bg-opacity,1))}.bg-slate-900\/70{background-color:rgba(15,23,42,.7)}.bg-slate-950\/70{background-color:rgba(2,6,23,.7)}.bg-transparent{background-color:transparent}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1))}.bg-white\/90{background-color:hsla(0,0%,100%,.9)}.bg-gradient-to-tr{background-image:linear-gradient(to top right,var(--tw-gradient-stops))}.from-emerald-600{--tw-gradient-from:#059669 var(--tw-gradient-from-position);--tw-gradient-to:rgba(5,150,105,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.to-teal-500{--tw-gradient-to:#14b8a6 var(--tw-gradient-to-position)}.object-cover{-o-object-fit:cover;object-fit:cover}.p-0\.5{padding:.125rem}.p-1{padding:.25rem}.p-2{padding:.5rem}.p-2\.5{padding:.625rem}.p-3{padding:.75rem}.p-3\.5{padding:.875rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-2\.5{padding-left:.625rem;padding-right:.625rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-3\.5{padding-left:.875rem;padding-right:.875rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-12{padding-top:3rem;padding-bottom:3rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-2\.5{padding-top:.625rem;padding-bottom:.625rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.pb-16{padding-bottom:4rem}.pb-3{padding-bottom:.75rem}.pl-1{padding-left:.25rem}.pr-1{padding-right:.25rem}.pr-8{padding-right:2rem}.pt-1{padding-top:.25rem}.pt-2{padding-top:.5rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.font-sans{font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji}.\!text-lg{font-size:1.125rem!important;line-height:1.75rem!important}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-light{font-weight:300}.font-medium{font-weight:500}.font-normal{font-weight:400}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.italic{font-style:italic}.leading-relaxed{line-height:1.625}.leading-tight{line-height:1.25}.tracking-tight{letter-spacing:-.025em}.tracking-wider{letter-spacing:.05em}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36/var(--tw-text-opacity,1))}.text-amber-500{--tw-text-opacity:1;color:rgb(245 158 11/var(--tw-text-opacity,1))}.text-amber-600{--tw-text-opacity:1;color:rgb(217 119 6/var(--tw-text-opacity,1))}.text-amber-700{--tw-text-opacity:1;color:rgb(180 83 9/var(--tw-text-opacity,1))}.text-amber-800{--tw-text-opacity:1;color:rgb(146 64 14/var(--tw-text-opacity,1))}.text-blue-600{--tw-text-opacity:1;color:rgb(37 99 235/var(--tw-text-opacity,1))}.text-emerald-500{--tw-text-opacity:1;color:rgb(16 185 129/var(--tw-text-opacity,1))}.text-emerald-600{--tw-text-opacity:1;color:rgb(5 150 105/var(--tw-text-opacity,1))}.text-emerald-700{--tw-text-opacity:1;color:rgb(4 120 87/var(--tw-text-opacity,1))}.text-emerald-800{--tw-text-opacity:1;color:rgb(6 95 70/var(--tw-text-opacity,1))}.text-indigo-800{--tw-text-opacity:1;color:rgb(55 48 163/var(--tw-text-opacity,1))}.text-purple-800{--tw-text-opacity:1;color:rgb(107 33 168/var(--tw-text-opacity,1))}.text-rose-500{--tw-text-opacity:1;color:rgb(244 63 94/var(--tw-text-opacity,1))}.text-rose-600{--tw-text-opacity:1;color:rgb(225 29 72/var(--tw-text-opacity,1))}.text-rose-700{--tw-text-opacity:1;color:rgb(190 18 60/var(--tw-text-opacity,1))}.text-rose-800{--tw-text-opacity:1;color:rgb(159 18 57/var(--tw-text-opacity,1))}.text-sky-500{--tw-text-opacity:1;color:rgb(14 165 233/var(--tw-text-opacity,1))}.text-sky-600{--tw-text-opacity:1;color:rgb(2 132 199/var(--tw-text-opacity,1))}.text-sky-700{--tw-text-opacity:1;color:rgb(3 105 161/var(--tw-text-opacity,1))}.text-sky-800{--tw-text-opacity:1;color:rgb(7 89 133/var(--tw-text-opacity,1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59/var(--tw-text-opacity,1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.accent-emerald-600{accent-color:#059669}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgba(0,0,0,.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color)}.shadow-2xl,.shadow-lg{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color),0 4px 6px -4px var(--tw-shadow-color)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.ring{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color)}.ring,.ring-2{box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)}.ring-2{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color)}.ring-emerald-200{--tw-ring-opacity:1;--tw-ring-color:rgb(167 243 208/var(--tw-ring-opacity,1))}.ring-rose-300{--tw-ring-opacity:1;--tw-ring-color:rgb(253 164 175/var(--tw-ring-opacity,1))}.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.transition-opacity{transition-property:opacity;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.duration-300{transition-duration:.3s}.duration-500{transition-duration:.5s}.focus-within\:border-emerald-500:focus-within{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.hover\:border-emerald-400:hover{--tw-border-opacity:1;border-color:rgb(52 211 153/var(--tw-border-opacity,1))}.hover\:border-emerald-500:hover{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.hover\:border-slate-300:hover{--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1))}.hover\:bg-emerald-600:hover{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.hover\:bg-emerald-700:hover{--tw-bg-opacity:1;background-color:rgb(4 120 87/var(--tw-bg-opacity,1))}.hover\:bg-rose-600:hover{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1))}.hover\:bg-rose-700:hover{--tw-bg-opacity:1;background-color:rgb(190 18 60/var(--tw-bg-opacity,1))}.hover\:bg-slate-100:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.hover\:bg-slate-200:hover{--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1))}.hover\:bg-slate-200\/60:hover{background-color:rgba(226,232,240,.6)}.hover\:bg-slate-50\/80:hover{background-color:rgba(248,250,252,.8)}.hover\:bg-slate-800:hover{--tw-bg-opacity:1;background-color:rgb(30 41 59/var(--tw-bg-opacity,1))}.hover\:\!text-rose-600:hover{--tw-text-opacity:1!important;color:rgb(225 29 72/var(--tw-text-opacity,1))!important}.hover\:text-amber-500:hover{--tw-text-opacity:1;color:rgb(245 158 11/var(--tw-text-opacity,1))}.hover\:text-rose-500:hover{--tw-text-opacity:1;color:rgb(244 63 94/var(--tw-text-opacity,1))}.hover\:text-slate-900:hover{--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.hover\:underline:hover{text-decoration-line:underline}.focus\:border-emerald-500:focus{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.disabled\:opacity-60:disabled{opacity:.6}.dark\:divide-\[\#2d2f38\]:is(.dark *)>:not([hidden])~:not([hidden]){--tw-divide-opacity:1;border-color:rgb(45 47 56/var(--tw-divide-opacity,1))}.dark\:border-\[\#26272e\]:is(.dark *){--tw-border-opacity:1;border-color:rgb(38 39 46/var(--tw-border-opacity,1))}.dark\:border-\[\#2d2f38\]:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1))}.dark\:border-emerald-800\/40:is(.dark *){border-color:rgba(6,95,70,.4)}.dark\:border-emerald-800\/50:is(.dark *){border-color:rgba(6,95,70,.5)}.dark\:border-emerald-800\/60:is(.dark *){border-color:rgba(6,95,70,.6)}.dark\:border-rose-800\/50:is(.dark *){border-color:rgba(159,18,57,.5)}.dark\:bg-\[\#0f0f0f\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(15 15 15/var(--tw-bg-opacity,1))}.dark\:bg-\[\#161618\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(22 22 24/var(--tw-bg-opacity,1))}.dark\:bg-\[\#161618\]\/90:is(.dark *){background-color:rgba(22,22,24,.9)}.dark\:bg-\[\#192967\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(25 41 103/var(--tw-bg-opacity,1))}.dark\:bg-\[\#1c1c20\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(28 28 32/var(--tw-bg-opacity,1))}.dark\:bg-\[\#1e1e22\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.dark\:bg-\[\#1e1e22\]\/50:is(.dark *){background-color:rgba(30,30,34,.5)}.dark\:bg-\[\#26272e\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(38 39 46/var(--tw-bg-opacity,1))}.dark\:bg-amber-950\/60:is(.dark *){background-color:rgba(69,26,3,.6)}.dark\:bg-amber-950\/80:is(.dark *){background-color:rgba(69,26,3,.8)}.dark\:bg-emerald-600:is(.dark *){--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.dark\:bg-emerald-900\/60:is(.dark *){background-color:rgba(6,78,59,.6)}.dark\:bg-emerald-950:is(.dark *){--tw-bg-opacity:1;background-color:rgb(2 44 34/var(--tw-bg-opacity,1))}.dark\:bg-emerald-950\/20:is(.dark *){background-color:rgba(2,44,34,.2)}.dark\:bg-emerald-950\/60:is(.dark *){background-color:rgba(2,44,34,.6)}.dark\:bg-emerald-950\/70:is(.dark *){background-color:rgba(2,44,34,.7)}.dark\:bg-emerald-950\/80:is(.dark *){background-color:rgba(2,44,34,.8)}.dark\:bg-indigo-950\/80:is(.dark *){background-color:rgba(30,27,75,.8)}.dark\:bg-purple-950\/80:is(.dark *){background-color:rgba(59,7,100,.8)}.dark\:bg-rose-950\/60:is(.dark *){background-color:rgba(76,5,25,.6)}.dark\:bg-rose-950\/70:is(.dark *){background-color:rgba(76,5,25,.7)}.dark\:bg-sky-950\/60:is(.dark *){background-color:rgba(8,47,73,.6)}.dark\:bg-sky-950\/70:is(.dark *){background-color:rgba(8,47,73,.7)}.dark\:bg-sky-950\/80:is(.dark *){background-color:rgba(8,47,73,.8)}.dark\:bg-slate-600:is(.dark *){--tw-bg-opacity:1;background-color:rgb(71 85 105/var(--tw-bg-opacity,1))}.dark\:bg-slate-800:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 41 59/var(--tw-bg-opacity,1))}.dark\:text-\[\#2d2f38\]:is(.dark *){--tw-text-opacity:1;color:rgb(45 47 56/var(--tw-text-opacity,1))}.dark\:text-\[\#9dd2ff\]:is(.dark *){--tw-text-opacity:1;color:rgb(157 210 255/var(--tw-text-opacity,1))}.dark\:text-amber-300:is(.dark *){--tw-text-opacity:1;color:rgb(252 211 77/var(--tw-text-opacity,1))}.dark\:text-amber-400:is(.dark *){--tw-text-opacity:1;color:rgb(251 191 36/var(--tw-text-opacity,1))}.dark\:text-emerald-300:is(.dark *){--tw-text-opacity:1;color:rgb(110 231 183/var(--tw-text-opacity,1))}.dark\:text-emerald-400:is(.dark *){--tw-text-opacity:1;color:rgb(52 211 153/var(--tw-text-opacity,1))}.dark\:text-indigo-300:is(.dark *){--tw-text-opacity:1;color:rgb(165 180 252/var(--tw-text-opacity,1))}.dark\:text-purple-300:is(.dark *){--tw-text-opacity:1;color:rgb(216 180 254/var(--tw-text-opacity,1))}.dark\:text-rose-300:is(.dark *){--tw-text-opacity:1;color:rgb(253 164 175/var(--tw-text-opacity,1))}.dark\:text-rose-400:is(.dark *){--tw-text-opacity:1;color:rgb(251 113 133/var(--tw-text-opacity,1))}.dark\:text-sky-300:is(.dark *){--tw-text-opacity:1;color:rgb(125 211 252/var(--tw-text-opacity,1))}.dark\:text-sky-400:is(.dark *){--tw-text-opacity:1;color:rgb(56 189 248/var(--tw-text-opacity,1))}.dark\:text-slate-100:is(.dark *){--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}.dark\:text-slate-200:is(.dark *){--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.dark\:text-slate-300:is(.dark *){--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.dark\:text-slate-400:is(.dark *){--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.dark\:text-white:is(.dark *){--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.dark\:hover\:bg-\[\#1e1e22\]:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.dark\:hover\:bg-\[\#26272e\]:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(38 39 46/var(--tw-bg-opacity,1))}.dark\:hover\:bg-\[\#2d2f38\]:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.dark\:hover\:bg-emerald-500:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(16 185 129/var(--tw-bg-opacity,1))}.dark\:hover\:text-white:hover:is(.dark *){--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}@media (min-width:640px){.sm\:col-span-2{grid-column:span 2/span 2}.sm\:col-span-5{grid-column:span 5/span 5}.sm\:col-span-7{grid-column:span 7/span 7}.sm\:inline{display:inline}.sm\:w-80{width:20rem}.sm\:flex-initial{flex:0 1 auto}.sm\:grid-cols-12{grid-template-columns:repeat(12,minmax(0,1fr))}.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.sm\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.sm\:grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}.sm\:flex-row{flex-direction:row}.sm\:border-x{border-left-width:1px;border-right-width:1px}.sm\:p-4{padding:1rem}.sm\:p-6{padding:1.5rem}.sm\:text-2xl{font-size:1.5rem;line-height:2rem}.sm\:text-sm{font-size:.875rem;line-height:1.25rem}}@media (min-width:768px){.md\:col-span-5{grid-column:span 5/span 5}.md\:col-span-7{grid-column:span 7/span 7}.md\:inline{display:inline}.md\:grid-cols-12{grid-template-columns:repeat(12,minmax(0,1fr))}}@media (min-width:1024px){.lg\:col-span-4{grid-column:span 4/span 4}.lg\:col-span-8{grid-column:span 8/span 8}.lg\:grid-cols-12{grid-template-columns:repeat(12,minmax(0,1fr))}.lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>
+
+  <style>
+    :root { --slider-active:#0f172a; --slider-track:#cbd5e1; --chart-p:#2575fc; --chart-f:#5b6e9e; --chart-c:#10b981; }
+    html.dark { --slider-active:#f1f5f9; --slider-track:#2d2f38; --chart-p:#9dd2ff; --chart-f:#96a7d6; --chart-c:#50e389; }
+    body { font-family:'Noto Sans TC',system-ui,-apple-system,'Segoe UI',sans-serif; transition:background-color .25s,color .25s; }
+    .mono { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    .ring { transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1); transform:rotate(-90deg); transform-origin:50% 50%; }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-thumb { background:rgba(148,163,184,.4); border-radius:9999px; }
+
+    /* Range sliders, styled for both WebKit and Firefox */
+    .slider { -webkit-appearance:none; appearance:none; width:100%; height:30px; background:transparent; cursor:pointer; }
+    .slider:focus-visible { outline:2px solid #10b981; outline-offset:2px; border-radius:6px; }
+    .slider::-webkit-slider-runnable-track { height:4px; border-radius:999px;
+      background:linear-gradient(to right,var(--slider-active) var(--progress,50%),var(--slider-track) var(--progress,50%)); }
+    .slider::-moz-range-track { height:4px; border-radius:999px; background:var(--slider-track); }
+    .slider::-moz-range-progress { height:4px; border-radius:999px; background:var(--slider-active); }
+    .slider::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:24px; margin-top:-10px; border-radius:6px;
+      background:var(--slider-active); border:2px solid var(--slider-track); }
+    .slider::-moz-range-thumb { width:12px; height:22px; border-radius:6px; background:var(--slider-active); border:2px solid var(--slider-track); }
+
+    .select-themed { appearance:none; -webkit-appearance:none; border-radius:999px; padding:8px 36px 8px 16px; font-size:13px; width:100%; cursor:pointer;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 14px center; background-size:14px; }
+    .icon { width:1em; height:1em; display:inline-block; vertical-align:-0.125em; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+    details > summary { list-style:none; cursor:pointer; }
+    details > summary::-webkit-details-marker { display:none; }
+    details[open] .chev { transform:rotate(180deg); }
+    @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important; } }
+  </style>
+</head>
+
+<body class="bg-slate-50 dark:bg-[#0f0f0f] text-slate-800 dark:text-slate-100 min-h-screen pb-16 antialiased">
+  <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M16 7l3 3M14 9l2 2"/></symbol><symbol id="i-loader" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></symbol><symbol id="i-brain" viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 5 1V5a3 3 0 0 0-2-1z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-5 1V5a3 3 0 0 1 2-1z"/></symbol><symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 10a4 4 0 0 1 8 0"/><path d="m12 10 2-2"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol><symbol id="i-utensils" viewBox="0 0 24 24"><path d="M3 2v7a3 3 0 0 0 3 3v10M9 2v7a3 3 0 0 1-3 3M6 2v6"/><path d="M19 2c-2.5 1.5-4 4-4 7 0 2 1 3 3 3v10"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/><circle cx="9" cy="8" r="2"/><circle cx="15" cy="16" r="2"/></symbol><symbol id="i-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol><symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></symbol><symbol id="i-file-up" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 14l3-3 3 3"/></symbol><symbol id="i-file-csv" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol><symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></symbol><symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol><symbol id="i-circle-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol><symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol><symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-chart-pie" viewBox="0 0 24 24"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></symbol><symbol id="i-chart-line" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 5-6"/></symbol><symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></symbol><symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-15-6.7L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 15 6.7L21 16"/><path d="M16 16h5v5"/></symbol><symbol id="i-focus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></symbol><symbol id="i-ruler" viewBox="0 0 24 24"><path d="m3 17 14-14 4 4L7 21z"/><path d="m7 13 2 2M10 10l2 2M13 7l2 2"/></symbol></svg>
+
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-[60] flex flex-col gap-2 pointer-events-none" role="status" aria-live="polite"></div>
+
+  <header class="bg-white/90 dark:bg-[#161618]/90 backdrop-blur-md border-b border-slate-200 dark:border-[#2d2f38] sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white text-lg shrink-0" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight" data-i18n="appTitle"></h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="appSubtitle"></p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center bg-slate-100 dark:bg-[#1e1e22] rounded-lg px-2 py-1.5 border border-slate-200/70 dark:border-[#2d2f38] gap-1">
+          <button data-action="date-prev" class="w-6 h-6 rounded hover:bg-slate-200 dark:hover:bg-[#2d2f38]" data-i18n-title="prevDay" aria-label="Previous day"><svg class="icon text-xs" aria-hidden="true"><use href="#i-chevron-left"/></svg></button>
+          <input type="date" id="selectedDate" aria-label="Date" class="bg-transparent font-medium text-sm focus:outline-none cursor-pointer" />
+          <button data-action="date-next" class="w-6 h-6 rounded hover:bg-slate-200 dark:hover:bg-[#2d2f38]" data-i18n-title="nextDay" aria-label="Next day"><svg class="icon text-xs" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+        </div>
+        <button data-action="open-modal" data-modal="goalModal" class="btn btn-primary"><svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg><span class="hidden sm:inline" data-i18n="btnGoal"></span></button>
+        <button data-action="toggle-lang" class="btn btn-outline text-xs font-bold" data-i18n-title="langSwitch"><svg class="icon text-emerald-600" aria-hidden="true"><use href="#i-globe"/></svg><span id="langBtnText"></span></button>
+        <button data-action="toggle-theme" class="icon-btn" data-i18n-title="themeSwitch" aria-label="Toggle theme"><svg class="icon" id="themeIcon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+        <button data-action="open-modal" data-modal="dataModal" class="btn btn-outline hover:!text-rose-600"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span class="hidden md:inline text-xs" data-i18n="btnDataManage"></span></button>
+        <button data-action="open-modal" data-modal="apiModal" class="btn btn-outline" aria-label="API Key"><svg class="icon text-amber-500" aria-hidden="true"><use href="#i-key"/></svg><span id="apiStatusDot" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 mt-6 space-y-6">
+
+    <!-- Daily overview -->
+    <section class="card" aria-labelledby="dashboardTitle">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-base flex items-center gap-2"><svg class="icon text-emerald-600" aria-hidden="true"><use href="#i-chart-pie"/></svg><span id="dashboardTitle"></span></h2>
+        <span id="calorieStatusBadge" class="text-xs font-semibold px-2.5 py-1 rounded-full border"></span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+        <div class="md:col-span-5 panel flex items-center justify-center gap-5 p-4">
+          <div class="relative w-32 h-32 flex items-center justify-center shrink-0">
+            <svg class="w-32 h-32" viewBox="0 0 128 128" aria-hidden="true">
+              <circle class="text-slate-200 dark:text-[#2d2f38]" stroke-width="10" stroke="currentColor" fill="transparent" r="52" cx="64" cy="64"/>
+              <circle id="calRing" class="text-emerald-500 ring" stroke-width="10" stroke-dasharray="326.7" stroke-dashoffset="326.7" stroke-linecap="round" stroke="currentColor" fill="transparent" r="52" cx="64" cy="64"/>
+            </svg>
+            <div class="absolute text-center">
+              <div class="text-2xl font-extrabold mono" id="totalCalDisplay">0</div>
+              <div class="text-xs text-slate-500 mono">/ <span id="goalCalDisplay">0</span> kcal</div>
+            </div>
+          </div>
+          <div class="space-y-1.5 text-sm">
+            <div class="text-slate-500 text-xs font-medium" data-i18n="remainCalLabel"></div>
+            <div class="text-2xl font-extrabold tracking-tight" id="remainCalDisplay"></div>
+            <div class="text-xs text-slate-400" id="mealCountDisplay"></div>
+          </div>
+        </div>
+        <div class="md:col-span-7 space-y-4" id="macroBars"></div>
+      </div>
+    </section>
+
+    <!-- Weight log & trend -->
+    <section class="card" aria-labelledby="weightTitle">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 id="weightTitle" class="font-bold text-base flex items-center gap-2"><svg class="icon text-emerald-600" aria-hidden="true"><use href="#i-scale"/></svg><span data-i18n="weightSecTitle"></span></h2>
+          <p class="text-xs text-slate-500 mt-0.5" data-i18n="weightSecDesc"></p>
+        </div>
+        <form id="weightForm" class="panel flex flex-wrap items-center gap-2 p-2">
+          <label for="dailyWeightInput" class="text-xs pl-1"><span id="weightDateLabel" class="mono font-semibold"></span> <span data-i18n="weightInputLabel"></span></label>
+          <div class="relative flex items-center">
+            <input type="number" id="dailyWeightInput" step="0.1" min="25" max="250" placeholder="75.0" class="field w-28 pr-8 font-bold mono" />
+            <span class="absolute right-2.5 text-xs text-slate-400 mono">kg</span>
+          </div>
+          <button type="submit" class="btn btn-primary text-xs"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="btnLogWeight"></span></button>
+        </form>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+        <div class="lg:col-span-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3" id="weightStats"></div>
+        <div class="lg:col-span-8 panel p-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <span class="text-xs font-semibold flex items-center gap-1.5"><svg class="icon text-emerald-600" aria-hidden="true"><use href="#i-chart-line"/></svg><span data-i18n="weightChartTitle"></span></span>
+            <div class="flex items-center gap-1" role="group">
+              <button class="range-btn" data-action="weight-range" data-range="7"  data-i18n="range7"></button>
+              <button class="range-btn" data-action="weight-range" data-range="14" data-i18n="range14"></button>
+              <button class="range-btn" data-action="weight-range" data-range="0"  data-i18n="rangeAll"></button>
+            </div>
+          </div>
+          <div class="relative h-48 w-full"><canvas id="weightHistoryChart" role="img" aria-label="Weight chart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Add a meal: photos → AI analysis → editable result -->
+    <section class="card" aria-labelledby="uploadTitle">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div>
+          <h2 id="uploadTitle" class="font-bold text-base flex items-center gap-2"><svg class="icon text-emerald-600" aria-hidden="true"><use href="#i-sparkles"/></svg><span data-i18n="uploadSecTitle"></span></h2>
+          <p class="text-xs text-slate-500 mt-0.5" data-i18n="uploadSecDesc"></p>
+        </div>
+        <label class="flex items-center gap-2 text-xs"><span class="text-slate-500" data-i18n="mealTimeLabel"></span><input type="time" id="mealTimeInput" class="field py-1" /></label>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4" id="uploadSlots"></div>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input type="text" id="mealNoteInput" data-i18n-placeholder="notePlaceholder" class="field flex-1 rounded-xl px-4 py-2.5" />
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="analyzeBtn" data-action="analyze" class="btn btn-primary flex-1 sm:flex-initial px-6 py-2.5 rounded-xl font-semibold"><svg class="icon" aria-hidden="true"><use href="#i-brain"/></svg><span data-i18n="btnAnalyze"></span></button>
+        </div>
+      </div>
+
+      <!-- Analysis queue: one card per job (running / done / failed) -->
+      <div id="jobsPanel" class="mt-4 space-y-2" aria-live="polite"></div>
+
+      <div id="analysisResultBox" class="hidden mt-6 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/50 rounded-2xl p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-200/60 dark:border-emerald-800/40 pb-3">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-200/70 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full" id="resBadge"></span>
+            <input type="text" id="resMealName" aria-label="Meal name" class="block w-full sm:w-80 mt-1 font-bold text-xl bg-transparent border-b border-transparent hover:border-emerald-400 focus:border-emerald-500 focus:outline-none" />
+          </div>
+          <label class="panel flex items-center gap-3 px-3.5 py-1.5 text-xs font-semibold">
+            <span><span data-i18n="portionLabel"></span> <strong id="portionPctText" class="text-emerald-600 mono text-sm">100%</strong></span>
+            <input type="range" id="portionSlider" min="10" max="150" step="5" value="100" class="w-28 accent-emerald-600" />
+          </label>
+        </div>
+
+        <div class="text-xs bg-white dark:bg-[#1e1e22] p-3.5 rounded-xl border border-slate-200/80 dark:border-[#2d2f38] leading-relaxed space-y-1">
+          <div class="font-semibold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5"><svg class="icon" aria-hidden="true"><use href="#i-box"/></svg><span data-i18n="reasoningTitle"></span></div>
+          <p id="resReasoning" class="text-slate-600 dark:text-slate-300"></p>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-[#2d2f38]">
+          <table class="w-full text-left text-xs bg-white dark:bg-[#1e1e22]">
+            <thead class="bg-slate-100/90 dark:bg-[#26272e] font-semibold">
+              <tr>
+                <th scope="col" class="py-2.5 px-3" data-i18n="thFoodItem"></th>
+                <th scope="col" class="py-2.5 px-3" data-i18n="thWeight"></th>
+                <th scope="col" class="py-2.5 px-3" data-i18n="thCalories"></th>
+                <th scope="col" class="py-2.5 px-3" data-i18n="thProtein"></th>
+                <th scope="col" class="py-2.5 px-3" data-i18n="thCarbs"></th>
+                <th scope="col" class="py-2.5 px-3" data-i18n="thFat"></th>
+                <th scope="col" class="py-2.5 px-3 text-right"><span class="sr-only" data-i18n="thAction"></span></th>
+              </tr>
+            </thead>
+            <tbody id="resTableBody" class="divide-y divide-slate-100 dark:divide-[#2d2f38] mono"></tbody>
+          </table>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div class="text-sm">
+            <span data-i18n="mealTotalLabel"></span>
+            <span class="text-emerald-700 dark:text-emerald-400 font-bold text-lg mono" id="resTotalCal">0</span> <span class="text-xs font-bold text-slate-500">kcal</span>
+            <span class="text-xs text-slate-500 ml-2 mono">(P: <b id="resTotalP" class="text-rose-500">0</b>g / C: <b id="resTotalC" class="text-amber-500">0</b>g / F: <b id="resTotalF" class="text-sky-500">0</b>g)</span>
+          </div>
+          <button data-action="save-meal" class="btn bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="btnSaveMeal"></span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Meal timeline / history -->
+    <section class="card">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4 border-b border-slate-100 dark:border-[#2d2f38] pb-3">
+        <div class="flex gap-2" role="tablist">
+          <button class="tab-btn" role="tab" data-action="switch-tab" data-tab="today" aria-selected="true" data-i18n="tabTimeline"></button>
+          <button class="tab-btn" role="tab" data-action="switch-tab" data-tab="history" aria-selected="false" data-i18n="tabHistory"></button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button data-action="export-csv" class="btn btn-outline text-xs"><svg class="icon text-emerald-600" aria-hidden="true"><use href="#i-file-csv"/></svg><span data-i18n="btnExportCSV"></span></button>
+          <button data-action="export-json" class="btn btn-outline text-xs"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span data-i18n="btnBackupJSON"></span></button>
+        </div>
+      </div>
+
+      <div id="favoritesBar" class="mb-4">
+        <div class="text-xs text-slate-500 mb-1.5 flex items-center gap-1.5"><svg class="icon text-amber-500" aria-hidden="true"><use href="#i-star"/></svg><span data-i18n="favTitle"></span></div>
+        <div id="favoritesList" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <div id="timeline" class="space-y-3" role="tabpanel"></div>
+
+      <div id="historyWrap" class="hidden overflow-x-auto" role="tabpanel">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 dark:bg-[#1e1e22] text-slate-600 dark:text-slate-300 text-xs uppercase font-semibold">
+            <tr>
+              <th scope="col" class="py-2.5 px-3" data-i18n="thDate"></th>
+              <th scope="col" class="py-2.5 px-3" data-i18n="thDayWeight"></th>
+              <th scope="col" class="py-2.5 px-3" data-i18n="thMeals"></th>
+              <th scope="col" class="py-2.5 px-3" data-i18n="thCalIntake"></th>
+              <th scope="col" class="py-2.5 px-3" data-i18n="thMacroRatio"></th>
+              <th scope="col" class="py-2.5 px-3" data-i18n="thStatus"></th>
+              <th scope="col" class="py-2.5 px-3"><span class="sr-only" data-i18n="thAction"></span></th>
+            </tr>
+          </thead>
+          <tbody id="historyBody" class="divide-y divide-slate-100 dark:divide-[#2d2f38]"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Goal calculator modal -->
+  <div id="goalModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="goalModalTitle">
+    <div class="modal-panel max-w-[680px]">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 id="goalModalTitle" class="text-xl sm:text-2xl font-semibold tracking-tight" data-i18n="calcTitle"></h3>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1" data-i18n="calcSub"></p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button data-action="calc-reset" class="btn btn-soft text-xs rounded-full"><svg class="icon" aria-hidden="true"><use href="#i-rotate-ccw"/></svg><span data-i18n="btnResetCalc"></span></button>
+          <button data-action="close-modal" class="icon-btn rounded-full" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+        </div>
+      </div>
+
+      <div class="panel p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+        <div><div class="text-xs text-slate-500" data-i18n="calcBmrLabel"></div><div><span class="text-2xl font-light" id="calc-bmr">0</span> <span class="text-xs text-slate-500 mono">kcal</span></div></div>
+        <div class="sm:border-x border-slate-200 dark:border-[#26272e]"><div class="text-xs text-slate-500" data-i18n="calcTdeeLabel"></div><div><span class="text-2xl font-light" id="calc-tdee">0</span> <span class="text-xs text-slate-500 mono">kcal</span></div></div>
+        <div><div class="text-xs text-blue-600 dark:text-[#9dd2ff] font-medium" data-i18n="calcTargetLabel"></div><div><span class="text-3xl font-semibold" id="calc-target">0</span> <span class="text-xs text-slate-500 mono">kcal/day</span></div></div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
+        <div class="sm:col-span-5 relative h-[200px] flex items-center justify-center">
+          <canvas id="macroChart" role="img" aria-label="Macro chart"></canvas>
+          <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <div class="text-xl font-semibold" id="calc-center">0</div><div class="text-[11px] text-slate-500">kcal/day</div>
+          </div>
+        </div>
+        <div class="sm:col-span-7 flex flex-col gap-2.5" id="macroCards"></div>
+      </div>
+
+      <div class="panel p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="text-sm font-semibold" data-i18n="calcBodyMetrics"></div>
+          <div class="inline-flex bg-white dark:bg-[#1e1e22] p-0.5 rounded-full border border-slate-200 dark:border-[#2d2f38] text-xs" role="group">
+            <button class="px-3 py-1 rounded-full font-medium transition" data-action="calc-gender" data-gender="male"   data-i18n="genderMale"></button>
+            <button class="px-3 py-1 rounded-full font-medium transition" data-action="calc-gender" data-gender="female" data-i18n="genderFemale"></button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3" id="calcBody"></div>
+        <div class="text-sm font-semibold pt-1" data-i18n="calcStrategyTitle"></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3" id="calcStrategy"></div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-end gap-3 pt-1">
+        <label class="inline-flex items-center gap-1.5 text-xs cursor-pointer select-none mr-auto">
+          <input type="checkbox" id="syncWeightOnSaveGoal" checked class="accent-emerald-600" /><span data-i18n="syncWeightCheck"></span>
+        </label>
+        <button data-action="close-modal" class="btn btn-soft rounded-full text-xs" data-i18n="btnCancel"></button>
+        <button data-action="save-goals" class="btn btn-primary rounded-full text-xs font-bold px-5" data-i18n="btnApplyGoal"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data management modal -->
+  <div id="dataModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="dataModalTitle">
+    <div class="modal-panel max-w-lg">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-[#2d2f38] pb-3">
+        <h3 id="dataModalTitle" class="font-bold text-lg flex items-center gap-2"><svg class="icon text-rose-500" aria-hidden="true"><use href="#i-database"/></svg><span data-i18n="dataModalTitle"></span></h3>
+        <button data-action="close-modal" class="icon-btn" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </div>
+      <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed" data-i18n="dataModalDesc"></p>
+
+      <div class="panel p-3.5 space-y-2">
+        <div class="flex items-center justify-between text-xs font-semibold">
+          <span class="flex items-center gap-1.5"><svg class="icon text-amber-500" aria-hidden="true"><use href="#i-star"/></svg><span data-i18n="favManageTitle"></span></span>
+          <button data-action="toggle-fav-form" class="btn btn-primary text-[11px] px-2.5 py-1"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="btnAddFav"></span></button>
+        </div>
+        <form id="favForm" class="hidden grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-xs bg-white dark:bg-[#161618] p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-800/60">
+          <input type="text" id="newFavName" required maxlength="60" data-i18n-placeholder="favNamePh" class="field col-span-2 py-1 text-xs" />
+          <input type="number" id="newFavCal" min="1" max="5000" value="500" aria-label="kcal" class="field py-1 text-xs mono" />
+          <input type="number" id="newFavP" min="0" max="500" value="30" aria-label="protein g" class="field py-1 text-xs mono" />
+          <button type="submit" class="btn btn-primary text-xs py-1" data-i18n="btnSave"></button>
+        </form>
+        <div id="favManageList" class="space-y-1.5 max-h-40 overflow-y-auto pr-1"></div>
+      </div>
+
+      <div class="space-y-2.5">
+        <button data-action="clear-all" class="btn btn-danger w-full text-xs font-bold py-2.5 rounded-xl"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span data-i18n="btnClearAllData"></span></button>
+        <label class="btn btn-soft w-full text-xs font-semibold py-2.5 rounded-xl cursor-pointer"><svg class="icon text-sky-500" aria-hidden="true"><use href="#i-file-up"/></svg><span data-i18n="btnImportJSON"></span>
+          <input type="file" id="importFile" accept=".json,application/json" class="hidden" /></label>
+        <div class="grid grid-cols-2 gap-2">
+          <button data-action="copy-log" class="btn btn-soft text-xs font-semibold py-2.5 rounded-xl"><svg class="icon text-sky-500" aria-hidden="true"><use href="#i-file-csv"/></svg><span data-i18n="btnCopyLog"></span></button>
+          <button data-action="clear-log" class="btn btn-soft text-xs font-semibold py-2.5 rounded-xl"><svg class="icon text-rose-500" aria-hidden="true"><use href="#i-trash"/></svg><span data-i18n="btnClearLog"></span></button>
+        </div>
+        <button data-action="restore-demo" class="btn btn-soft w-full text-xs font-semibold py-2.5 rounded-xl"><svg class="icon text-emerald-500" aria-hidden="true"><use href="#i-sparkles"/></svg><span data-i18n="btnRestoreDemo"></span></button>
+      </div>
+      <div class="flex justify-end"><button data-action="close-modal" class="btn text-xs text-slate-500" data-i18n="btnClose"></button></div>
+    </div>
+  </div>
+
+  <!-- API settings modal -->
+  <div id="apiModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="apiModalTitle">
+    <div class="modal-panel max-w-md">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-[#2d2f38] pb-3">
+        <h3 id="apiModalTitle" class="font-bold text-lg flex items-center gap-2"><svg class="icon text-amber-500" aria-hidden="true"><use href="#i-key"/></svg><span data-i18n="apiModalTitle"></span></h3>
+        <button data-action="close-modal" class="icon-btn" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </div>
+      <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed" data-i18n="apiModalDesc"></p>
+
+      <div class="space-y-2">
+        <label for="apiKeyInput" class="block text-xs font-semibold" data-i18n="apiKeyLabel"></label>
+        <div class="flex gap-2">
+          <input type="password" id="apiKeyInput" autocomplete="off" spellcheck="false" placeholder="AIzaSy..." class="field flex-1 rounded-xl mono" />
+          <button data-action="verify-key" class="btn btn-soft text-xs font-bold shrink-0"><svg class="icon" id="verifyIcon" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="btnVerifyKey"></span></button>
+        </div>
+        <div id="apiVerifyStatus" class="text-[11px] hidden items-center gap-1.5 font-medium"></div>
+        <div class="text-[11px] text-slate-400 flex items-center justify-between">
+          <span data-i18n="apiStorageNote"></span>
+          <button data-action="clear-key" class="text-rose-500 hover:underline" data-i18n="btnClearKey"></button>
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-[#2d2f38]">
+        <div class="flex items-center justify-between">
+          <label for="apiModelSelect" class="block text-xs font-semibold" data-i18n="apiModelLabel"></label>
+          <span id="currentModelTag" class="text-[10px] mono px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/50"></span>
+        </div>
+        <select id="apiModelSelect" class="select-themed bg-slate-50 dark:bg-[#1e1e22] border border-slate-300 dark:border-[#2d2f38] mono text-xs"></select>
+        <div id="customModelWrap" class="hidden pt-1">
+          <input type="text" id="customModelInput" placeholder="gemini-..." class="field w-full rounded-xl text-xs mono !border-emerald-400" />
+          <p class="text-[11px] text-slate-400 mt-1" data-i18n="customModelHint"></p>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button data-action="close-modal" class="btn text-slate-600 dark:text-slate-300" data-i18n="btnClose"></button>
+        <button data-action="save-api" class="btn btn-primary font-bold px-5" data-i18n="btnSaveKey"></button>
+      </div>
+    </div>
+  </div>
+
+<script id="app">
+'use strict';
+/* =====================================================================
+ * NutriLens AI — application script
+ * ---------------------------------------------------------------------
+ * A single-file, dependency-light app: open the HTML and it runs. The
+ * optional build (build.mjs) only replaces the Tailwind Play CDN with
+ * compiled CSS.
+ *
+ * Sections (top to bottom):
+ *    1. Config & constants        7. App state
+ *    2. Utilities                 8. UI primitives (toast, modal, confirm)
+ *    3. Persistence & migrations  9. Views (render*)
+ *    4. I18N                     10. Features (images, jobs, meals, data…)
+ *    5. Domain logic (pure)      11. Event wiring
+ *    6. Gemini service           12. Boot
+ *
+ * Conventions
+ *  - Clickable elements declare data-action="name"; handlers live in ACTIONS.
+ *  - Translatable text nodes declare data-i18n="key" (also -placeholder / -title).
+ *  - Section 5 is pure (no DOM, no storage) so it can be unit-tested in Node.
+ *  - Tailwind class names must appear as complete literal strings, otherwise
+ *    the production build cannot detect them.
+ * ===================================================================== */
+
+/* ── 1. Config & constants ──────────────────────────────────────────── */
+
+/** localStorage keys. Changing a key requires a migration (see MIGRATIONS). */
+const STORAGE_KEYS = {
+  meals: 'nutrilens_meals_v1',
+  weights: 'nutrilens_weights_v1',
+  goals: 'nutrilens_goals_v1',
+  calc: 'nutrilens_calc_profile_v1',
+  favs: 'nutrilens_favorites_v1',
+  jobs: 'nutrilens_jobs_v1',
+  perfLog: 'nutrilens_perf_log_v1',
+  apiKey: 'nutrilens_apikey_v1',
+  model: 'nutrilens_apimodel_v1',
+  theme: 'nutrilens_theme_v1',             // also read by the inline theme script in <head>
+  lang: 'nutrilens_lang_v1',
+  cleared: 'nutrilens_cleared_flag_v1',    // set after "clear all" so demo data is not re-seeded
+  schemaVersion: 'nutrilens_schema_version',
+  legacyModelMigrated: 'nutrilens_model_migrated_v2'
+};
+
+const CONFIG = {
+  gemini: {
+    apiBase: 'https://generativelanguage.googleapis.com/v1beta',
+    /** Flash-Lite has the largest free-tier daily quota. If the API answers 404,
+     *  use "Verify & load models" to pick a model that exists for the key. */
+    defaultModel: 'gemini-3.5-flash-lite',
+    /** Shown in the model picker even before the key has been verified. */
+    modelOptions: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-3.8-flash',
+      'gemini-3-flash-preview', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'],
+    /** Tried in order ONLY after the selected model fails (429 / 5xx / network).
+     *  A successful analysis therefore always costs exactly one request. */
+    backupModels: ['gemini-3.1-flash-lite', 'gemini-3.6-flash'],
+    temperature: 0.2,
+    timeoutMs: 120_000,
+    /** A fetch that fails after this long is a dropped connection rather than a
+     *  CORS/CSP block, so retrying with ?key= would only waste more time. */
+    stallMs: 5_000
+  },
+  image: { maxDim: 768, jpegQuality: 0.8 },
+  jobs: { maxStored: 6 },
+  perfLog: { maxRecords: 50 },
+  weight: { min: 25, max: 250 },
+  ui: {
+    onTargetToleranceKcal: 120,
+    toastMs: 2600,
+    confirmWindowMs: 4000,
+    ringCircumference: 2 * Math.PI * 52     // must match r="52" of #calRing
+  }
+};
+
+const DEFAULT_CALC = { gender: 'male', weight: 70, height: 170, age: 30, activity: 1.55, deficit: 20, protein_g_kg: 1.8, fat_pct: 22 };
+const DEMO_CALC = { gender: 'male', weight: 72, height: 172, age: 28, activity: 1.55, deficit: 20, protein_g_kg: 1.8, fat_pct: 22 };
+const DEMO_GOALS = { cal: 2150, p: 130, c: 240, f: 55 };
+const DEFAULT_FAVORITES = [
+  { name: '無糖豆漿＋茶葉蛋2顆', cal: 310, p: 26, c: 12, f: 17, reasoning: '400ml 無糖高纖豆漿搭配兩顆超商茶葉蛋' },
+  { name: '舒肥雞胸肉健康便當', cal: 550, p: 42, c: 65, f: 12, reasoning: '標準舒肥雞胸 120g、紫米飯 150g、水煮時蔬 150g' },
+  { name: '乳清蛋白飲＋一根香蕉', cal: 245, p: 27, c: 30, f: 2, reasoning: '一份分離乳清蛋白粉泡水＋中型香蕉一根 (110g)' }
+];
+/** Fixed output of the offline demo engine (used when no API key is set). */
+const DEMO_ANALYSIS_ITEMS = {
+  zh: [
+    { name: '酥炸大排骨', weight: 135, cal: 365, p: 26, c: 14, f: 22 }, { name: '白飯', weight: 180, cal: 290, p: 5.5, c: 63, f: 0.6 },
+    { name: '滷蛋', weight: 55, cal: 80, p: 7, c: 1, f: 5.5 }, { name: '清炒時蔬', weight: 125, cal: 75, p: 2.5, c: 7, f: 4.2 },
+    { name: '玉米粒', weight: 55, cal: 60, p: 1.8, c: 12, f: 0.8 }
+  ],
+  en: [
+    { name: 'Deep-Fried Pork Chop', weight: 135, cal: 365, p: 26, c: 14, f: 22 }, { name: 'Steamed White Rice', weight: 180, cal: 290, p: 5.5, c: 63, f: 0.6 },
+    { name: 'Braised Egg', weight: 55, cal: 80, p: 7, c: 1, f: 5.5 }, { name: 'Stir-Fried Greens', weight: 125, cal: 75, p: 2.5, c: 7, f: 4.2 },
+    { name: 'Sweet Corn', weight: 55, cal: 60, p: 1.8, c: 12, f: 0.8 }
+  ]
+};
+
+/* UI tables: adding a row here adds it to the page; no template changes needed. */
+const CALC_SLIDERS = {
+  body: [
+    { key: 'weight', min: 35, max: 180, step: 0.5, unit: 'kg', label: 'calcWeight' },
+    { key: 'height', min: 130, max: 220, step: 1, unit: 'cm', label: 'calcHeight' },
+    { key: 'age', min: 14, max: 90, step: 1, unit: 'unitYrs', label: 'calcAge' }
+  ],
+  strategy: [
+    { key: 'deficit', min: -15, max: 35, step: 1, unit: '%', label: 'calcDeficit' },
+    { key: 'protein_g_kg', min: 1.2, max: 2.8, step: 0.1, unit: 'g/kg', label: 'calcProteinRatio' },
+    { key: 'fat_pct', min: 15, max: 40, step: 1, unit: '%', label: 'calcFatRatio', wide: true }
+  ]
+};
+const ALL_CALC_SLIDERS = [...CALC_SLIDERS.body, ...CALC_SLIDERS.strategy];
+const ACTIVITY_LEVELS = [
+  { factor: 1.2, label: 'act1' }, { factor: 1.375, label: 'act2' }, { factor: 1.55, label: 'act3' },
+  { factor: 1.725, label: 'act4' }, { factor: 1.9, label: 'act5' }
+];
+/** Dashboard macro bars. `id` is used in element ids (#totalP, #barP, …). */
+const MACROS = [
+  { id: 'P', field: 'p', dot: 'bg-rose-500', bar: 'bg-rose-500', label: 'macroProtein' },
+  { id: 'C', field: 'c', dot: 'bg-amber-500', bar: 'bg-amber-500', label: 'macroCarbs' },
+  { id: 'F', field: 'f', dot: 'bg-sky-500', bar: 'bg-sky-500', label: 'macroFat' }
+];
+/** Calculator macro cards; `color` is a CSS custom property shared with the doughnut chart. */
+const MACRO_CARDS = [
+  { key: 'p', color: '--chart-p', label: 'calcProteinCard' },
+  { key: 'f', color: '--chart-f', label: 'calcFatCard' },
+  { key: 'c', color: '--chart-c', label: 'calcCarbsCard' }
+];
+const UPLOAD_SLOTS = [
+  { icon: 'focus', tone: 'emerald', title: 'angle1Title', desc: 'angle1Desc' },
+  { icon: 'box', tone: 'sky', title: 'angle2Title', desc: 'angle2Desc' },
+  { icon: 'ruler', tone: 'amber', title: 'angle3Title', desc: 'angle3Desc' }
+];
+/** Meal periods by hour, [from, to). Anything else is "late night". */
+const MEAL_PERIODS = [
+  { from: 5, to: 11, icon: '🌅', label: 'periodBreakfast', tone: 'amber' },
+  { from: 11, to: 14, icon: '☀️', label: 'periodLunch', tone: 'emerald' },
+  { from: 14, to: 17, icon: '☕', label: 'periodSnack', tone: 'purple' },
+  { from: 17, to: 21, icon: '🌙', label: 'periodDinner', tone: 'indigo' }
+];
+const LATE_PERIOD = { icon: '🦉', label: 'periodLate', tone: 'slate' };
+
+const TONE_CLASSES = {
+  emerald: 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400',
+  sky: 'bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400',
+  amber: 'bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400'
+};
+const PERIOD_CLASSES = {
+  amber: 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300',
+  emerald: 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300',
+  purple: 'bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300',
+  indigo: 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300',
+  slate: 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+};
+/** History-table status pills, keyed by the result of dayStatus(). */
+const DAY_STATUS_CLASSES = {
+  weightOnly: 'bg-slate-100 dark:bg-[#26272e] text-slate-500 px-2 py-0.5 rounded text-xs',
+  onTarget: 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded text-xs font-semibold',
+  over: 'bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 px-2 py-0.5 rounded text-xs font-semibold',
+  under: 'bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 px-2 py-0.5 rounded text-xs font-semibold'
+};
+
+/**
+ * @typedef {{ name: string, weight: number, cal: number, p: number, c: number, f: number }} FoodItem
+ * @typedef {{ id: string, date: string, time: string, name: string, angleCount: number, reasoning: string,
+ *             cal: number, p: number, c: number, f: number, items: FoodItem[] }} Meal
+ * @typedef {{ name: string, cal: number, p: number, c: number, f: number, reasoning?: string, items?: FoodItem[] }} Favorite
+ * @typedef {'running'|'done'|'error'|'cancelled'|'interrupted'} JobStatus
+ * @typedef {{ id: string, date: string, time: string, note: string, images: string[], imageInfo: object[],
+ *             lang: string, status: JobStatus, startedAt: number, model?: string, error?: string|null,
+ *             result?: object }} AnalysisJob
+ */
+
+/* ── 2. Utilities ───────────────────────────────────────────────────── */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = (v, fallback = 0) => { const n = parseFloat(v); return Number.isFinite(n) ? n : fallback; };
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const round1 = n => Math.round(n * 10) / 10;
+const fmtNum = n => Number(n).toLocaleString('en-US');
+const pad2 = n => String(n).padStart(2, '0');
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
+const fmtDate = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+/** Parses YYYY-MM-DD in the local time zone (new Date('YYYY-MM-DD') would be UTC). */
+const parseDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const shiftDate = (s, days) => { const d = parseDate(s); d.setDate(d.getDate() + days); return fmtDate(d); };
+const todayStr = () => fmtDate(new Date());
+const nowTime = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
+const icon = (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+function download(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ── 3. Persistence & migrations ────────────────────────────────────── */
+
+/** Thin localStorage wrapper. Every access is guarded because storage can be
+ *  disabled (private mode, blocked site data) or full. */
+const store = {
+  get(key, fallback) { try { const raw = localStorage.getItem(key); return raw === null ? fallback : JSON.parse(raw); } catch { return fallback; } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { toast(t('storageFail'), 'error'); return false; } },
+  str(key, fallback = '') { try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; } },
+  setStr(key, value) { try { localStorage.setItem(key, value); } catch { /* storage unavailable: ignore */ } },
+  has(key) { try { return localStorage.getItem(key) !== null; } catch { return false; } },
+  del(key) { try { localStorage.removeItem(key); } catch { /* storage unavailable: ignore */ } }
+};
+
+/* Sanitizers: everything read from storage or an imported file passes through these. */
+const sanitizeItem = it => ({
+  name: String(it?.name ?? '').slice(0, 80), weight: Math.max(0, num(it?.weight)),
+  cal: Math.max(0, num(it?.cal)), p: Math.max(0, num(it?.p)), c: Math.max(0, num(it?.c)), f: Math.max(0, num(it?.f))
+});
+const sanitizeMeal = m => ({
+  id: String(m?.id ?? uid()),
+  date: DATE_RE.test(m?.date) ? m.date : todayStr(),
+  time: TIME_RE.test(m?.time) ? m.time : '12:00',
+  name: String(m?.name ?? '').slice(0, 120),
+  angleCount: clamp(Math.round(num(m?.angleCount, 1)), 1, 3),
+  reasoning: String(m?.reasoning ?? '').slice(0, 1000),
+  cal: Math.round(num(m?.cal)), p: Math.round(num(m?.p)), c: Math.round(num(m?.c)), f: Math.round(num(m?.f)),
+  items: Array.isArray(m?.items) ? m.items.map(sanitizeItem) : []
+});
+const sanitizeFavorite = f => ({
+  name: String(f?.name || '').slice(0, 60), cal: num(f?.cal), p: num(f?.p), c: num(f?.c), f: num(f?.f),
+  reasoning: String(f?.reasoning || '').slice(0, 200), items: Array.isArray(f?.items) ? f.items.map(sanitizeItem) : undefined
+});
+const isValidWeightEntry = w => DATE_RE.test(w?.date) && Number.isFinite(num(w?.weight, NaN));
+
+/** Repository: the only place that knows how each collection is stored. */
+const db = {
+  meals: () => store.get(STORAGE_KEYS.meals, []).map(sanitizeMeal),
+  saveMeals: list => store.set(STORAGE_KEYS.meals, list),
+  addMeal(meal) { const all = db.meals(); all.push(meal); return db.saveMeals(all); },
+  deleteMeal: id => db.saveMeals(db.meals().filter(m => m.id !== id)),
+
+  weights: () => store.get(STORAGE_KEYS.weights, []).filter(isValidWeightEntry)
+    .map(w => ({ date: w.date, weight: num(w.weight) })).sort((a, b) => a.date.localeCompare(b.date)),
+  saveWeights: list => store.set(STORAGE_KEYS.weights, list),
+  upsertWeight(date, weight) {
+    const list = db.weights(), entry = list.find(w => w.date === date);
+    if (entry) entry.weight = weight; else list.push({ date, weight });
+    return db.saveWeights(list);
+  },
+
+  goals: () => ({ ...DEMO_GOALS, ...store.get(STORAGE_KEYS.goals, {}) }),
+  saveGoals: goals => store.set(STORAGE_KEYS.goals, goals),
+  calcProfile: () => ({ ...DEFAULT_CALC, ...store.get(STORAGE_KEYS.calc, {}) }),
+  saveCalcProfile: profile => store.set(STORAGE_KEYS.calc, profile),
+
+  favs: () => { const v = store.get(STORAGE_KEYS.favs, null); return Array.isArray(v) ? v : [...DEFAULT_FAVORITES]; },
+  saveFavs: list => store.set(STORAGE_KEYS.favs, list),
+
+  jobs: () => { const v = store.get(STORAGE_KEYS.jobs, []); return Array.isArray(v) ? v : []; },
+  saveJobs: list => store.set(STORAGE_KEYS.jobs, list),
+
+  apiKey: () => store.str(STORAGE_KEYS.apiKey).trim(),
+  model: () => normalizeModel(store.str(STORAGE_KEYS.model, CONFIG.gemini.defaultModel))
+};
+
+/** Local-only diagnostics, one record per analysis. Never contains the API key, photos or note text. */
+const perfLog = {
+  all: () => store.get(STORAGE_KEYS.perfLog, []),
+  push(record) { store.set(STORAGE_KEYS.perfLog, [...perfLog.all(), record].slice(-CONFIG.perfLog.maxRecords)); },
+  clear: () => store.del(STORAGE_KEYS.perfLog)
+};
+
+/**
+ * Ordered data migrations, applied once per browser. Append new entries at the
+ * end and never edit shipped ones; the stored schema version is the number of
+ * migrations already applied. A migration may return a notice { key, vars }.
+ */
+const MIGRATIONS = [
+  // 1: the former default model (gemini-3.8-flash) only has 20 free requests per day.
+  () => {
+    if (store.str(STORAGE_KEYS.legacyModelMigrated) === '1') return null;   // done by an earlier build
+    if (store.str(STORAGE_KEYS.model) !== 'gemini-3.8-flash') return null;
+    store.setStr(STORAGE_KEYS.model, CONFIG.gemini.defaultModel);
+    return { key: 'modelMigrated', vars: { m: CONFIG.gemini.defaultModel } };
+  }
+];
+function runMigrations() {
+  const applied = Math.max(0, Math.floor(num(store.str(STORAGE_KEYS.schemaVersion, '0'))));
+  const notices = MIGRATIONS.slice(applied).map(migrate => migrate()).filter(Boolean);
+  store.setStr(STORAGE_KEYS.schemaVersion, String(MIGRATIONS.length));
+  return notices;
+}
+
+/* ── 4. I18N ────────────────────────────────────────────────────────── */
+/** UI strings. zh is the reference language: every key must exist there (t() falls back to it). */
+const I18N = {
+  zh: {
+    appTitle: 'NutriLens AI 營養師', appSubtitle: '多角度立體估算・智慧微調・體重趨勢追蹤',
+    prevDay: '前一天', nextDay: '後一天', langSwitch: '切換語言 / Switch Language', themeSwitch: '切換亮色/暗色模式',
+    btnGoal: '目標設定', btnDataManage: '資料管理', remainCalLabel: '剩餘可攝取熱量',
+    mealsLogged: '當日已記錄 {n} 餐', macroProtein: '蛋白質 (Protein)', macroCarbs: '碳水化合物 (Carbs)', macroFat: '脂肪 (Fat)',
+    weightSecTitle: '每日體重紀錄與歷史變化趨勢', weightSecDesc: '追蹤每日晨起體重，圖表自動疊加 7 日移動平均線，降低水分波動干擾',
+    weightInputLabel: '體重：', btnLogWeight: '記錄體重', statLatestW: '最新記錄體重', statChangeW: '區間累計變化',
+    statChangeSub: '與首筆紀錄相比', statMinW: '期間最低體重', statMaxW: '期間最高體重', weightChartTitle: '歷史體重趨勢曲線 (含 7 日均線)',
+    range7: '近7筆', range14: '近14筆', rangeAll: '全部', today: '今日', noData: '尚無資料',
+    uploadSecTitle: '新增餐食：多角度照片 AI 體積與營養解析', uploadSecDesc: '結合「90° 俯視圖」與「45° 側視圖」，分析後支援直接修改各項食材重量與名稱',
+    mealTimeLabel: '用餐時間：', angle1Title: '1. 俯視圖 (90° 必備)', angle1Desc: '計算盤面食材比例與平鋪面積',
+    angle2Title: '2. 側視圖 (45° 推薦)', angle2Desc: '推估食物隆起高度、堆疊深度', angle3Title: '3. 比例尺 / 營養標示 (選填)', angle3Desc: '手部餐具對比、包裝食品營養表',
+    notePlaceholder: '補充備註（例：雞腿去皮、五穀飯只吃半碗、無糖豆漿...）', btnAnalyze: '開始多視角營養分析', portionLabel: '實吃比例：', reasoningTitle: '立體視覺推論依據與烹調估算',
+    thFoodItem: '食材名稱 (可修改)', thWeight: '估算淨重 (g，可修改)', thCalories: '熱量 (kcal)', thProtein: '蛋白質 (g)', thCarbs: '碳水 (g)', thFat: '脂肪 (g)', thAction: '操作',
+    mealTotalLabel: '本餐總計：', btnSaveMeal: '儲存至當日飲食紀錄', favTitle: '常用便當 / 我的最愛（點擊即可快速加入）：',
+    tabTimeline: '當日餐食時間軸', tabHistory: '歷史趨勢紀錄', btnExportCSV: '匯出 CSV', btnBackupJSON: '備份 JSON',
+    thDate: '日期', thDayWeight: '當日體重', thMeals: '餐數', thCalIntake: '總攝取 / 目標熱量', thMacroRatio: '三大營養素 (P / C / F)', thStatus: '熱量達標狀態',
+    calcTitle: '減脂與三大營養素目標計算機', calcSub: '個人化基礎代謝 (BMR)、總熱量消耗 (TDEE) 與最佳三大營養素配比',
+    calcBmrLabel: '基礎代謝率 (BMR)', calcTdeeLabel: '每日總消耗 (TDEE)', calcTargetLabel: '每日減脂目標熱量',
+    calcProteinCard: '蛋白質 Protein', calcFatCard: '脂肪 Fat', calcCarbsCard: '碳水化合物 Carbohydrates', energyPct: '{n}% 熱量佔比',
+    calcBodyMetrics: '身體指標與日常活動量', genderMale: '生理男 (Male)', genderFemale: '生理女 (Female)',
+    calcWeight: '體重 (Weight)', calcHeight: '身高 (Height)', calcAge: '年齡 (Age)', unitYrs: '歲', calcActivity: '日常活動量 (Activity Level)',
+    act1: '久坐辦公 (幾乎不運動)', act2: '輕度活動 (每週運動 1-3 天)', act3: '中度活動 (每週運動 3-5 天)', act4: '高度活動 (每週高強度 6-7 天)', act5: '極高強度 / 體力勞動者',
+    calcStrategyTitle: '熱量赤字與三大營養素配比策略', calcDeficit: '熱量赤字比例 (Calorie Deficit)', calcProteinRatio: '每公斤體重蛋白質 (Protein Ratio)',
+    calcFatRatio: '脂肪熱量佔比 (Fat Ratio % Target Cals)', syncWeightCheck: '同步記錄為當日體重', btnResetCalc: '重設預設', btnCancel: '取消', btnApplyGoal: '套用為每日營養目標',
+    dataModalTitle: '資料管理與清除', dataModalDesc: '可一鍵清除所有餐食、體重、目標與常用餐點；也可匯入先前備份的 JSON 或載入展示範例資料。',
+    favManageTitle: '常用便當 / 我的最愛管理', btnAddFav: '新增自訂常用', favNamePh: '餐點名稱', btnSave: '儲存',
+    btnClearAllData: '清空所有資料與目標設定（徹底歸零）', btnImportJSON: '匯入還原 JSON 備份檔', btnRestoreDemo: '重新載入展示範例資料 (Demo Data)', btnClose: '關閉', btnCopyLog: '複製 AI 診斷紀錄', btnClearLog: '清除診斷紀錄', logCopied: '已複製 {n} 筆診斷紀錄（不含金鑰與照片）', logDownloaded: '無法使用剪貼簿，已改為下載診斷紀錄檔', logEmpty: '目前沒有診斷紀錄，請先實際分析一次', logCleared: '已清除診斷紀錄',
+    apiModalTitle: 'Gemini API 與模型設定', apiModalDesc: '填入 Google AI Studio API Key，可驗證金鑰並載入帳號可用的模型。若留空，將使用內建的「示範模擬引擎」（結果僅供展示，非真實辨識）。',
+    apiKeyLabel: '1. Google AI Studio API Key', btnVerifyKey: '驗證並載入模型', apiModelLabel: '2. 選擇視覺分析模型 (Vision Model)',
+    customModelHint: '可貼上任何官方模型名稱（會自動去除 models/ 前綴）', apiStorageNote: '金鑰僅儲存於本機瀏覽器 LocalStorage', btnClearKey: '清除金鑰', btnSaveKey: '確認儲存',
+    customModel: '✍️ 手動輸入自訂模型名稱...', recommended: '最新推薦',
+    // strings built at runtime
+    dashToday: '今日營養攝取總覽', dashDate: '{d} 營養攝取總覽', remainBadge: '尚餘 {n} kcal 額度', overBadge: '已超出目標 {n} kcal', overText: '超標 {n} kcal',
+    noMeals: '此日期尚無任何餐食紀錄', noMealsHint: '請從上方上傳多視角餐點照片或點擊常用最愛開始！', noHistory: '尚無歷史統計資料', noFav: '目前尚無常用餐點',
+    angles: '{n} 視角', ingredients: '食材細項 ({n})', weightOnly: '僅記錄體重', onTarget: '完美達標', view: '查看明細', delete: '刪除',
+    periodBreakfast: '早餐', periodLunch: '午餐', periodSnack: '下午點心', periodDinner: '晚餐', periodLate: '宵夜',
+    badge: '已結合 {n} 視角進行立體份量估算', badgeDemo: '⚠ 示範資料（未使用 AI 辨識）', demoName: '台式炸排骨便當（附滷蛋與三樣配菜）',
+    demoReasoning: '【示範資料】未設定 API Key，以下為固定範例，並非根據您的照片辨識。',
+    toastDark: '已切換至暗色模式', toastLight: '已切換至亮色模式', storageFail: '瀏覽器儲存空間不足或被禁用，資料可能無法保存',
+    weightInvalid: '請輸入有效的體重數值 (25 ~ 250 kg)', weightLogged: '已記錄 {d} 體重：{w} kg', mealSaved: '已成功將餐點加入當日紀錄！', mealDeleted: '已刪除該筆餐食紀錄',
+    quickLogged: '已快速記錄：{name}', favDeleted: '已刪除常用餐點：{name}', favAdded: '已成功新增常用餐點！', favSaved: '已加入常用便當：{name}', favRemoved: '已從常用便當移除：{name}', favToggle: '加入 / 移除常用便當', favEmptyHint: '尚無常用便當：點下方餐點右側的 ★ 即可加入', cleared: '已清空所有資料，系統已歸零！', demoReloaded: '已重新載入展示範例資料！', importOk: '已成功還原 JSON 備份資料！', importBad: 'JSON 檔案格式不正確',
+    calcResetOk: '計算機參數已重設為預設值', goalApplied: '已套用新目標：{cal} kcal (P:{p}g / C:{c}g / F:{f}g)', needKey: '請先輸入 API Key 再進行驗證',
+    needPhoto: '已設定 API Key，請至少上傳一張餐點照片再分析', analysisDone: '分析完成！（耗時 {s} 秒）', analysisTimeout: 'AI 分析逾時（超過 {n} 秒），請重試或檢查網路', analysisCancelled: '已取消 AI 營養分析',
+    jobQueued: '已加入分析佇列，可以繼續記錄其他餐點（請保持此分頁開啟）', jobRunning: 'AI 分析中…', jobKeepOpen: '可繼續使用其他功能；請保持此分頁開啟', jobOpen: '檢視 / 編輯', jobRetry: '重試', jobCancel: '取消', jobDismiss: '移除',
+    jobInterrupted: '分頁被重新整理或關閉，分析已中斷。照片已保留，可一鍵重試', quotaExceeded: '今日免費額度已用完或請求太頻繁（已嘗試備援模型）。額度於太平洋時間午夜重置（台灣約 15:00–16:00），或改用額度較高的模型。', overloaded: 'Google 伺服器目前繁忙（已嘗試備援模型），請稍後重試', titleDone: '分析完成', modelMigrated: '已將預設模型改為 {m}（免費額度較高）',
+    emptyResult: 'AI 沒有回傳有效結果，請重試', verifying: '正在連線驗證金鑰並取得可用模型...', verifyOk: '金鑰有效！已載入 {n} 個可用模型', verifyFail: '金鑰驗證失敗：{m}',
+    keySaved: '已儲存設定（使用模型：{m}）', keyCleared: 'API Key 與模型設定已重設', modelListUpdated: 'API Key 驗證成功，已更新模型選單！',
+    netStall: '連線中斷或逾時，未收到 Google 的回應（Failed to fetch）。多半是網路瞬斷或伺服器忙碌，請重試。',
+    netBlocked: '無法連線到 Google API（Failed to fetch）。可能原因：① 預覽/沙箱環境擋住外部連線，請下載 HTML 後用瀏覽器直接開啟；② 網路、VPN 或廣告攔截器阻擋；③ 金鑰有網站（HTTP referrer）限制，file:// 開啟時會被拒絕。',
+    confirmClearBtn: '再按一次確認清空（無法復原）',
+    badgeMeta: '{s}s · 思考 {th} tok · 輸入 {in} tok', badgeRetries: '重試 {n} 次', chartDaily: '每日晨起體重', chartMA: '7 日移動平均線 (MA)'
+  },
+  en: {
+    appTitle: 'NutriLens AI Nutritionist', appSubtitle: 'Multi-Angle 3D Estimation, Smart Edits & Weight Trend',
+    prevDay: 'Previous day', nextDay: 'Next day', langSwitch: 'Switch Language', themeSwitch: 'Toggle light/dark mode',
+    btnGoal: 'Macro Goals', btnDataManage: 'Manage Data', remainCalLabel: 'Remaining Calories',
+    mealsLogged: 'Logged {n} meals today', macroProtein: 'Protein', macroCarbs: 'Carbohydrates', macroFat: 'Fat',
+    weightSecTitle: 'Daily Weight Log & Historical Trend', weightSecDesc: 'Tracks morning weight with a 7-day moving average to smooth out daily water fluctuations.',
+    weightInputLabel: 'Weight:', btnLogWeight: 'Log Weight', statLatestW: 'Latest Weight', statChangeW: 'Total Change', statChangeSub: 'Since first record',
+    statMinW: 'Min Weight', statMaxW: 'Max Weight', weightChartTitle: 'Weight Trend Curve (w/ 7d MA)', range7: 'Last 7', range14: 'Last 14', rangeAll: 'All', today: 'Today', noData: 'No data',
+    uploadSecTitle: 'Add Meal: Multi-Angle AI Volume & Nutrition Analysis', uploadSecDesc: 'Combine top & side views. Food names and gram weights stay editable after analysis.',
+    mealTimeLabel: 'Meal Time:', angle1Title: '1. Top View (90° Required)', angle1Desc: 'Identifies ingredients & area ratio',
+    angle2Title: '2. Side View (45° Recommended)', angle2Desc: 'Estimates food height & depth', angle3Title: '3. Scale / Nutrition Label', angle3Desc: 'Cutlery reference or package label',
+    notePlaceholder: 'Notes (e.g., skinless chicken, half bowl of rice, soy milk...)', btnAnalyze: 'Analyze Multi-Angle Meal', portionLabel: 'Portion Eaten:', reasoningTitle: '3D Volumetric Reasoning & Cooking Estimation',
+    thFoodItem: 'Food Item (Editable)', thWeight: 'Net Weight (g, Editable)', thCalories: 'Calories (kcal)', thProtein: 'Protein (g)', thCarbs: 'Carbs (g)', thFat: 'Fat (g)', thAction: 'Action',
+    mealTotalLabel: 'Meal Total:', btnSaveMeal: 'Save to Daily Log', favTitle: 'Favorite Meals (click to quick log):',
+    tabTimeline: 'Daily Meal Timeline', tabHistory: 'Historical Summary', btnExportCSV: 'Export CSV', btnBackupJSON: 'Backup JSON',
+    thDate: 'Date', thDayWeight: 'Weight', thMeals: 'Meals', thCalIntake: 'Intake / Target Cals', thMacroRatio: 'Macros (P / C / F)', thStatus: 'Goal Status',
+    calcTitle: 'Fat Loss & Macro Calculator', calcSub: 'Personalized BMR, TDEE, and macronutrient targets.',
+    calcBmrLabel: 'Basal Metabolic (BMR)', calcTdeeLabel: 'Maintenance (TDEE)', calcTargetLabel: 'Target Fat Loss Goal',
+    calcProteinCard: 'Protein', calcFatCard: 'Fat', calcCarbsCard: 'Carbohydrates', energyPct: '{n}% of energy',
+    calcBodyMetrics: 'Body & Activity Metrics', genderMale: 'Male', genderFemale: 'Female',
+    calcWeight: 'Weight', calcHeight: 'Height', calcAge: 'Age', unitYrs: 'yrs', calcActivity: 'Activity Level',
+    act1: 'Sedentary (desk job, low exercise)', act2: 'Lightly Active (1-3 days/wk)', act3: 'Moderately Active (3-5 days/wk)', act4: 'Very Active (6-7 days heavy workout)', act5: 'Athlete / Physical Labor Job',
+    calcStrategyTitle: 'Deficit & Macro Strategy', calcDeficit: 'Calorie Deficit', calcProteinRatio: 'Protein Ratio', calcFatRatio: 'Fat Ratio (% Target Cals)',
+    syncWeightCheck: 'Sync as selected date weight', btnResetCalc: 'Reset', btnCancel: 'Cancel', btnApplyGoal: 'Apply as Daily Goal',
+    dataModalTitle: 'Data Management & Reset', dataModalDesc: 'Clear all meals, weights, goals and favorites, or import a JSON backup / load sample data.',
+    favManageTitle: 'Favorite Meals Management', btnAddFav: 'Add Favorite', favNamePh: 'Meal name', btnSave: 'Save',
+    btnClearAllData: 'Clear All Data & Goals (Full Reset)', btnImportJSON: 'Import JSON Backup File', btnRestoreDemo: 'Reload Sample Demo Data', btnClose: 'Close', btnCopyLog: 'Copy AI diagnostics', btnClearLog: 'Clear diagnostics', logCopied: 'Copied {n} diagnostic records (no key or photos)', logDownloaded: 'Clipboard unavailable; downloaded the diagnostics file instead', logEmpty: 'No diagnostics yet — run an analysis first', logCleared: 'Diagnostics cleared',
+    apiModalTitle: 'Gemini API & Model Settings', apiModalDesc: 'Enter your Google AI Studio API Key and verify it to load the models available to your account. Leave blank to use the built-in demo engine (fixed sample output, not real recognition).',
+    apiKeyLabel: '1. Google AI Studio API Key', btnVerifyKey: 'Verify & Load Models', apiModelLabel: '2. Select Vision Model',
+    customModelHint: 'Paste any official model ID (models/ prefix is stripped).', apiStorageNote: 'Key is stored locally in your browser only.', btnClearKey: 'Clear Key', btnSaveKey: 'Save Settings',
+    customModel: '✍️ Custom model ID...', recommended: 'recommended',
+    dashToday: "Today's Nutrition Overview", dashDate: '{d} Nutrition Overview', remainBadge: '{n} kcal remaining', overBadge: 'Exceeded by {n} kcal', overText: 'Over by {n} kcal',
+    noMeals: 'No meals logged for this date', noMealsHint: 'Upload multi-angle photos or click a quick favorite above!', noHistory: 'No historical records yet', noFav: 'No favorite meals',
+    angles: '{n} Angles', ingredients: 'Ingredients ({n})', weightOnly: 'Weight Only', onTarget: 'On Target', view: 'View', delete: 'Delete',
+    periodBreakfast: 'Breakfast', periodLunch: 'Lunch', periodSnack: 'Snack', periodDinner: 'Dinner', periodLate: 'Late Night',
+    badge: '{n}-Angle 3D Volumetric Estimation', badgeDemo: '⚠ Demo data (no AI recognition)', demoName: 'Crispy Pork Chop Bento with Egg & Veggies',
+    demoReasoning: '[DEMO] No API key set. This is fixed sample output, NOT based on your photos.',
+    toastDark: 'Switched to Dark Mode', toastLight: 'Switched to Light Mode', storageFail: 'Browser storage is full or disabled; data may not be saved',
+    weightInvalid: 'Please enter a valid weight (25 ~ 250 kg)', weightLogged: 'Logged weight for {d}: {w} kg', mealSaved: 'Meal saved to daily log!', mealDeleted: 'Meal deleted',
+    quickLogged: 'Quick logged: {name}', favDeleted: 'Favorite deleted: {name}', favAdded: 'Favorite added!', favSaved: 'Added to favorites: {name}', favRemoved: 'Removed from favorites: {name}', favToggle: 'Add / remove favorite', favEmptyHint: 'No favorites yet: click the ★ on a meal below to add one', cleared: 'All data cleared!', demoReloaded: 'Sample demo data reloaded!', importOk: 'JSON backup restored!', importBad: 'Invalid JSON file',
+    calcResetOk: 'Calculator reset to default', goalApplied: 'Applied new goal: {cal} kcal (P:{p}g / C:{c}g / F:{f}g)', needKey: 'Please enter an API Key first',
+    needPhoto: 'API key is set — please upload at least one meal photo', analysisDone: 'Analysis complete! ({s}s)', analysisTimeout: 'Analysis timed out (over {n}s). Please retry.', analysisCancelled: 'AI analysis cancelled',
+    jobQueued: 'Added to the analysis queue — keep logging other meals (keep this tab open)', jobRunning: 'Analyzing…', jobKeepOpen: 'You can keep using the app; keep this tab open', jobOpen: 'Review / edit', jobRetry: 'Retry', jobCancel: 'Cancel', jobDismiss: 'Dismiss',
+    jobInterrupted: 'The tab was reloaded or closed, so the analysis was interrupted. Photos are kept; retry with one click', quotaExceeded: 'Free quota used up or too many requests (backup models tried). The daily quota resets at midnight Pacific time, or switch to a model with a higher limit.', overloaded: 'Google servers are busy (backup models tried). Please retry shortly.', titleDone: 'Analysis done', modelMigrated: 'Default model switched to {m} (higher free quota)',
+    emptyResult: 'AI returned no usable result. Please retry.', verifying: 'Verifying key & fetching models...', verifyOk: 'Key valid! Loaded {n} models', verifyFail: 'Verification failed: {m}',
+    keySaved: 'Settings saved (Model: {m})', keyCleared: 'API Key & model reset', modelListUpdated: 'API Key verified & model list updated!',
+    netStall: 'Connection dropped or timed out with no response from Google (Failed to fetch). Usually a network blip or server load; please retry.',
+    netBlocked: 'Cannot reach the Google API (Failed to fetch). Possible causes: (1) a preview/sandbox blocks external requests — download the HTML and open it directly in a browser; (2) network, VPN or ad-blocker; (3) the key has an HTTP-referrer restriction that rejects file:// pages.',
+    confirmClearBtn: 'Click again to confirm (cannot be undone)',
+    badgeMeta: '{s}s · thinking {th} tok · input {in} tok', badgeRetries: 'retried {n}×', chartDaily: 'Daily Weight', chartMA: '7-Day MA'
+  }
+};
+let lang = store.str(STORAGE_KEYS.lang, 'zh') === 'en' ? 'en' : 'zh';
+/** Translates `key`, replacing {name} placeholders from `vars`. Falls back to zh, then the key itself. */
+function t(key, vars) {
+  let s = I18N[lang][key] ?? I18N.zh[key] ?? key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, v);
+  return s;
+}
+
+/* ── 5. Domain logic (pure) ─────────────────────────────────────────── */
+
+/** Mifflin-St Jeor BMR → TDEE → deficit target, then protein by body weight,
+ *  fat by share of target calories and carbs as the remainder. */
+function computeMacros(s) {
+  const bmr = 10 * s.weight + 6.25 * s.height - 5 * s.age + (s.gender === 'female' ? -161 : 5);
+  const tdee = bmr * s.activity;
+  const target = tdee * (1 - s.deficit / 100);
+  const pKcal = s.weight * s.protein_g_kg * 4;
+  const fKcal = target * (s.fat_pct / 100);
+  const cKcal = Math.max(0, target - pKcal - fKcal);
+  const pShare = Math.round((pKcal / target) * 100), fShare = Math.round((fKcal / target) * 100);
+  return {
+    bmr: Math.round(bmr), tdee: Math.round(tdee), target: Math.round(target),
+    p: { g: Math.round(pKcal / 4), kcal: Math.round(pKcal), share: pShare },
+    f: { g: Math.round(fKcal / 9), kcal: Math.round(fKcal), share: fShare },
+    c: { g: Math.round(cKcal / 4), kcal: Math.round(cKcal), share: Math.max(0, 100 - pShare - fShare) }
+  };
+}
+const goalsFromMacros = r => ({ cal: r.target, p: r.p.g, c: r.c.g, f: r.f.g });
+
+/** Sums cal/p/c/f over any list of meals or items. */
+const sumNutrients = list => list.reduce((a, x) => ({ cal: a.cal + x.cal, p: a.p + x.p, c: a.c + x.c, f: a.f + x.f }), { cal: 0, p: 0, c: 0, f: 0 });
+
+/** Moving average over a calendar-day window (not "last N entries"), so missed days don't distort it. */
+function movingAverage(list, days = 7) {
+  return list.map((cur, i) => {
+    const from = shiftDate(cur.date, -(days - 1));
+    const win = list.slice(0, i + 1).filter(w => w.date >= from);
+    return round1(win.reduce((a, w) => a + w.weight, 0) / win.length);
+  });
+}
+
+/** 'weightOnly' | 'onTarget' | 'over' | 'under' for one day in the history table. */
+function dayStatus(dayCal, goalCal, mealCount) {
+  if (mealCount === 0) return 'weightOnly';
+  const diff = dayCal - goalCal;
+  if (Math.abs(diff) <= CONFIG.ui.onTargetToleranceKcal) return 'onTarget';
+  return diff > 0 ? 'over' : 'under';
+}
+
+const mealPeriod = time => {
+  const h = parseInt(time, 10);
+  return MEAL_PERIODS.find(p => h >= p.from && h < p.to) || LATE_PERIOD;
+};
+
+/* Editable analysis items store per-gram density `d`. Weight and portion edits
+ * recompute nutrients from the density, so repeated edits never accumulate error. */
+function toEditableItem(raw) {
+  const weight = Math.max(1, num(raw.weight, 100));
+  return { name: String(raw.name || '').slice(0, 80), weight,
+    d: { cal: num(raw.cal) / weight, p: num(raw.p) / weight, c: num(raw.c) / weight, f: num(raw.f) / weight } };
+}
+const effectiveWeight = (item, portion) => item.weight * portion;
+function itemNutrients(item, portion) {
+  const w = effectiveWeight(item, portion);
+  return { cal: Math.round(item.d.cal * w), p: round1(item.d.p * w), c: round1(item.d.c * w), f: round1(item.d.f * w) };
+}
+
+/** Converts the model's per-100 g values into absolute amounts for the estimated weight. */
+function per100gToAbsolute(apiItem) {
+  const weight = Math.max(1, num(apiItem.weight, 100)), k = weight / 100;
+  return { name: apiItem.name, weight, cal: num(apiItem.kcalPer100g) * k, p: num(apiItem.proteinPer100g) * k,
+    c: num(apiItem.carbsPer100g) * k, f: num(apiItem.fatPer100g) * k };
+}
+
+/** Builds the Meal to store from the analysis being edited (portion already applied). */
+function mealFromAnalysis(analysis, { portion, name, date, time, reasoning }) {
+  const items = analysis.items.map(it => ({ name: it.name, weight: Math.round(effectiveWeight(it, portion)), ...itemNutrients(it, portion) }));
+  const total = sumNutrients(items);
+  return { id: uid(), date, time, name, angleCount: analysis.angleCount, reasoning,
+    cal: Math.round(total.cal), p: Math.round(total.p), c: Math.round(total.c), f: Math.round(total.f), items };
+}
+
+const favoriteFromMeal = m => ({ name: m.name, cal: m.cal, p: m.p, c: m.c, f: m.f, reasoning: m.reasoning || '', items: m.items });
+function mealFromFavorite(fav, date, time) {
+  const items = Array.isArray(fav.items) && fav.items.length ? fav.items.map(sanitizeItem)
+    : [{ name: fav.name, weight: 350, cal: fav.cal, p: fav.p, c: fav.c, f: fav.f }];   // legacy favorites have no item list
+  return { id: uid(), date, time, name: fav.name, angleCount: 1, reasoning: fav.reasoning || '', cal: fav.cal, p: fav.p, c: fav.c, f: fav.f, items };
+}
+/** A hand-entered favorite only has kcal and protein; carbs default to 50 % of energy
+ *  (capped by what protein leaves over) and fat takes the remainder. */
+function favoriteFromForm(name, calInput, proteinInput) {
+  const cal = Math.max(1, Math.round(num(calInput, 500)));
+  const p = Math.max(0, Math.round(num(proteinInput, (cal * 0.25) / 4)));
+  const c = Math.max(0, Math.min(Math.round((cal * 0.5) / 4), Math.floor((cal - p * 4) / 4)));
+  const f = Math.max(0, Math.round((cal - p * 4 - c * 4) / 9));
+  return { name, cal, p, c, f, reasoning: '' };
+}
+
+/* ── 6. Gemini service ──────────────────────────────────────────────── */
+
+const normalizeModel = raw => String(raw || '').trim().replace(/^models\//i, '') || CONFIG.gemini.defaultModel;
+
+/** Structured-output schema. Totals are deliberately not requested: the app computes them. */
+const NUTRITION_SCHEMA = {
+  type: 'OBJECT', required: ['name', 'reasoning', 'items'],
+  properties: {
+    name: { type: 'STRING' }, reasoning: { type: 'STRING' },
+    items: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT', required: ['name', 'weight', 'kcalPer100g', 'proteinPer100g', 'carbsPer100g', 'fatPer100g'],
+        properties: {
+          name: { type: 'STRING' }, weight: { type: 'NUMBER' }, kcalPer100g: { type: 'NUMBER' },
+          proteinPer100g: { type: 'NUMBER' }, carbsPer100g: { type: 'NUMBER' }, fatPer100g: { type: 'NUMBER' }
+        }
+      }
+    }
+  }
+};
+
+function buildNutritionPrompt({ lang: replyLang, imageCount, note }) {
+  return `You are a food nutrition estimator for photos of meals (often Taiwanese-style). Reply in ${replyLang === 'zh' ? 'Traditional Chinese (繁體中文)' : 'English'}.
+The user uploaded ${imageCount} photo(s) (1st: top view, 2nd: ~45° side view, 3rd: scale reference or nutrition label). Extra notes: "${note || 'None'}".
+Follow this method strictly and be consistent from run to run:
+1. List every distinct food item, including visible cooking oil, sauces and drinks. Put the cooking method in the item name (e.g. sous-vide chicken breast vs pan-fried chicken breast).
+2. Estimate each item's edible net weight in grams from the plate/bowl size, the food height in the side view, and any reference object (hand, cutlery, packaging). Round to the nearest 5 g.
+3. For each item give per-100 g values of the food AS COOKED/SERVED, using standard reference values (USDA or Taiwan FDA food composition database). Keep kcal consistent with 4*protein + 4*carbs + 9*fat. If a nutrition label is visible, use the label values instead.
+Do not output totals; they are computed by the app. Keep reasoning under 70 words and state the key weight assumptions.`;
+}
+
+const dataUrlToPart = url => {
+  const [meta, data] = url.split(',');
+  return { inline_data: { mime_type: meta.match(/:(.*?);/)?.[1] || 'image/jpeg', data } };
+};
+
+/**
+ * Thinking settings to try, in order. Default "dynamic thinking" adds tens of
+ * seconds and this task gains nothing from it, so request the minimum:
+ *  - 2.5 family uses thinkingBudget (2.5 Pro cannot go below 128);
+ *  - 3.x uses thinkingLevel ('minimal' is not accepted by 3.8 / Pro, so 'low').
+ * If a setting is rejected with 400, the next entry is tried; `null` = omit thinkingConfig.
+ */
+function thinkingAttemptsFor(model) {
+  let primary = null;
+  if (/gemini-2\.5-pro/.test(model)) primary = { thinkingBudget: 128 };
+  else if (/gemini-2\.5/.test(model)) primary = { thinkingBudget: 0 };
+  else if (/gemini-3\.8|gemini-4|gemini-3(\.1)?-pro/.test(model)) primary = { thinkingLevel: 'low' };
+  else if (/gemini-3/.test(model)) primary = { thinkingLevel: 'minimal' };
+  if (!primary) return [null];
+  return primary.thinkingLevel === 'minimal' ? [primary, { thinkingLevel: 'low' }, null] : [primary, null];
+}
+
+/** Key problems are not fixed by switching models, so they are not retried. */
+const isRetryableError = err => !(err.status === 401 || err.status === 403);
+
+async function apiError(res) {
+  const body = await res.json().catch(() => ({}));
+  const err = new Error(body.error?.message || `API Error (${res.status})`);
+  err.status = res.status; err.details = body.error?.details;
+  return err;
+}
+
+/** Parses a generateContent response into { name, reasoning, items: FoodItem[] }. Pure; throws on unusable output. */
+function parseNutritionResponse(data) {
+  const text = data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+  if (!text) throw new Error(data.promptFeedback?.blockReason ? `Blocked: ${data.promptFeedback.blockReason}` : t('emptyResult'));
+  const parsed = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ''));
+  if (!Array.isArray(parsed.items) || parsed.items.length === 0) throw new Error(t('emptyResult'));
+  return { name: parsed.name, reasoning: parsed.reasoning, rawItems: parsed.items, items: parsed.items.map(per100gToAbsolute), responseChars: text.length };
+}
+
+const gemini = {
+  /**
+   * Sends the key in the x-goog-api-key header so it stays out of URLs. If the
+   * browser itself fails the request quickly (preflight blocked, CSP, offline),
+   * retries once with ?key=. Returns { res, transport } for diagnostics.
+   */
+  async request(url, key, init = {}) {
+    const startedAt = Date.now();
+    try {
+      const res = await fetch(url, { ...init, headers: { ...(init.headers || {}), 'x-goog-api-key': key } });
+      return { res, transport: 'header' };
+    } catch (headerErr) {
+      if (headerErr.name === 'AbortError') throw headerErr;
+      if (Date.now() - startedAt > CONFIG.gemini.stallMs) throw new Error(t('netStall'));
+      try {
+        const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}key=${encodeURIComponent(key)}`, init);
+        return { res, transport: 'query(fallback)' };
+      } catch (queryErr) {
+        if (queryErr.name === 'AbortError') throw queryErr;
+        throw new Error(t('netBlocked'));
+      }
+    }
+  },
+
+  async listModels(key) {
+    const { res } = await this.request(`${CONFIG.gemini.apiBase}/models?pageSize=200`, key);
+    if (!res.ok) throw await apiError(res);
+    const data = await res.json();
+    return (data.models || [])
+      .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+      .map(m => ({ id: normalizeModel(m.name), displayName: m.displayName }))
+      .filter(m => m.id.startsWith('gemini') && !/embedding|aqa/.test(m.id));
+  },
+
+  /** One model, one logical request. Only a 400 caused by thinkingConfig triggers a re-send. */
+  async generate({ key, model, parts, signal, run }) {
+    const startedAt = Date.now();
+    const generationConfig = { responseMimeType: 'application/json', temperature: CONFIG.gemini.temperature, responseSchema: NUTRITION_SCHEMA };
+    const url = `${CONFIG.gemini.apiBase}/models/${encodeURIComponent(model)}:generateContent`;
+    const attempts = thinkingAttemptsFor(model);
+    let res, thinking = null;
+    for (const [i, cfg] of attempts.entries()) {
+      thinking = cfg;
+      const body = { contents: [{ parts }], generationConfig: cfg ? { ...generationConfig, thinkingConfig: cfg } : generationConfig };
+      const attemptStart = Date.now();
+      try {
+        const out = await this.request(url, key, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal, body: JSON.stringify(body) });
+        res = out.res;
+        run?.attempts.push({ thinking: cfg, status: res.status, headersMs: Date.now() - attemptStart, transport: out.transport, tier: res.headers.get('x-gemini-service-tier') });
+      } catch (e) {
+        run?.attempts.push({ thinking: cfg, error: `${e.name}: ${String(e.message).slice(0, 80)}`, ms: Date.now() - attemptStart });
+        throw e;
+      }
+      const isLast = i === attempts.length - 1;
+      if (!(res.status === 400 && !isLast)) break;
+    }
+    if (!res.ok) throw await apiError(res);
+
+    const bodyStart = Date.now();
+    const data = await res.json();
+    if (run) Object.assign(run, { bodyMs: Date.now() - bodyStart, finishReason: data.candidates?.[0]?.finishReason, usage: data.usageMetadata });
+    const result = parseNutritionResponse(data);
+    if (run) Object.assign(run, {
+      responseChars: result.responseChars,
+      items: result.rawItems.map(i => ({ n: i.name, w: i.weight, kcal100: i.kcalPer100g })),
+      totalKcal: Math.round(sumNutrients(result.items).cal)
+    });
+    const usage = data.usageMetadata || {};
+    result.meta = { ms: Date.now() - startedAt, attempts: run?.attempts.length ?? 1, thinking,
+      thoughts: usage.thoughtsTokenCount ?? 0, prompt: usage.promptTokenCount ?? 0, out: usage.candidatesTokenCount ?? 0 };
+    console.info('[NutriLens] Gemini', model, result.meta);
+    return result;
+  },
+
+  /**
+   * Tries the selected model, then CONFIG.gemini.backupModels one at a time —
+   * never in parallel — so free-tier quota is only spent again after a failure.
+   * Rejects with the first error if every model fails.
+   */
+  async generateWithFallback({ key, model, parts, signal, rec }) {
+    const chain = [model, ...CONFIG.gemini.backupModels.filter(m => m !== model)];
+    const startedAt = Date.now();
+    let firstError = null;
+    for (const m of chain) {
+      const run = { model: m, startMs: Date.now() - startedAt, attempts: [] };
+      rec?.runs.push(run);
+      try {
+        const result = await this.generate({ key, model: m, parts, signal, run });
+        Object.assign(run, { endMs: Date.now() - startedAt, result: 'ok' });
+        if (rec) rec.winner = m;
+        return { ...result, modelUsed: m };
+      } catch (err) {
+        Object.assign(run, { endMs: Date.now() - startedAt, result: signal.aborted ? 'aborted' : 'error',
+          error: String(err.message || err).slice(0, 400), status: err.status });
+        if (err.details) run.details = JSON.stringify(err.details).slice(0, 700);
+        if (signal.aborted || !isRetryableError(err)) throw err;
+        firstError ??= err;
+      }
+    }
+    throw firstError;
+  }
+};
+
+/** Offline stand-in used when no API key is configured. */
+function demoAnalysis(note, angleCount) {
+  return { name: note ? note.slice(0, 30) : t('demoName'), reasoning: t('demoReasoning'), angleCount, isDemo: true,
+    items: DEMO_ANALYSIS_ITEMS[lang].map(i => ({ ...i })) };
+}
+
+/* ── 7. App state ───────────────────────────────────────────────────── */
+const state = {
+  images: [null, null, null],        // compressed data URLs, one per upload slot
+  imageInfo: [null, null, null],     // size info for diagnostics
+  /** The analysis result currently open in the editor, or null. */
+  analysis: null,
+  portion: 1,                        // "portion eaten" slider, 0.1 – 1.5
+  /** @type {AnalysisJob[]} persisted analysis queue */
+  jobs: [],
+  calc: { ...DEFAULT_CALC },
+  weightRange: 14,                   // number of entries in the weight chart; 0 = all
+  tab: 'today',
+  theme: 'light',
+  charts: { weight: null, macro: null }
+};
+/** jobId → AbortController for in-flight requests. In memory only: a reload ends them. */
+const liveJobs = new Map();
+
+/* ── 8. UI primitives ───────────────────────────────────────────────── */
+function toast(message, type = 'success') {
+  const box = $('#toastContainer'); if (!box) return;
+  const el = document.createElement('div');
+  el.className = `${type === 'error' ? 'bg-rose-600' : 'bg-slate-900 dark:bg-emerald-600'} text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 pointer-events-auto transition-opacity duration-300`;
+  el.innerHTML = icon(type === 'error' ? 'circle-alert' : 'circle-check');
+  const text = document.createElement('span');
+  text.textContent = message;                                  // textContent: messages may contain API text
+  el.append(text); box.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, CONFIG.ui.toastMs);
+}
+
+const modal = {
+  lastFocus: null,
+  open(id) {
+    modal.lastFocus = document.activeElement;
+    const el = $('#' + id); el.classList.add('open');
+    el.querySelector('button,input,select')?.focus();
+  },
+  close() {
+    confirmTwice.reset();
+    $$('.modal.open').forEach(m => m.classList.remove('open'));
+    modal.lastFocus?.focus?.();
+  },
+  isOpen: id => $('#' + id).classList.contains('open')
+};
+
+/**
+ * Two-click confirmation for destructive buttons (window.confirm() is silently
+ * blocked inside sandboxed previews). The button's [data-i18n] label is swapped
+ * for `armedKey` until a second click or the timeout.
+ */
+function confirmTwice(el, armedKey, onConfirm) {
+  if (confirmTwice.armed === el) { confirmTwice.reset(); onConfirm(); return; }
+  confirmTwice.reset();
+  confirmTwice.armed = el;
+  $('[data-i18n]', el).textContent = t(armedKey);
+  el.classList.add('ring-2', 'ring-rose-300', 'animate-pulse');
+  confirmTwice.timer = setTimeout(confirmTwice.reset, CONFIG.ui.confirmWindowMs);
+}
+confirmTwice.armed = null;
+confirmTwice.timer = null;
+confirmTwice.reset = () => {
+  const el = confirmTwice.armed;
+  clearTimeout(confirmTwice.timer); confirmTwice.armed = null;
+  if (!el) return;
+  el.classList.remove('ring-2', 'ring-rose-300', 'animate-pulse');
+  const label = $('[data-i18n]', el); label.textContent = t(label.dataset.i18n);
+};
+
+const setStatus = (el, cls, html) => { el.className = `text-[11px] flex items-center gap-1.5 font-medium ${cls}`; el.innerHTML = html; };
+
+/** Shows "✅ done" in the tab title while the page is in the background. */
+const tabTitle = {
+  base: document.title,
+  notify(text) { if (document.hidden) document.title = `✅ ${text} - NutriLens AI`; },
+  reset() { document.title = tabTitle.base; }
+};
+
+/* ── 9. Views ───────────────────────────────────────────────────────── */
+const selectedDate = () => $('#selectedDate').value || todayStr();
+
+function applyI18n() {
+  document.documentElement.lang = lang === 'zh' ? 'zh-TW' : 'en';
+  $('#langBtnText').textContent = lang === 'zh' ? 'EN' : '繁中';
+  $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  $$('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
+}
+
+/* Static templates: generated once at boot from the UI tables in section 1. */
+const macroBarTemplate = m => `
+  <div>
+    <div class="flex justify-between text-xs sm:text-sm mb-1.5">
+      <span class="font-medium flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full ${m.dot}"></span><span data-i18n="${m.label}"></span></span>
+      <span class="text-slate-600 dark:text-slate-400 mono"><strong id="total${m.id}" class="text-slate-900 dark:text-white">0</strong> / <span id="goal${m.id}">0</span> g (<span id="pct${m.id}">0%</span>)</span>
+    </div>
+    <div class="w-full bg-slate-100 dark:bg-[#26272e] h-2.5 rounded-full overflow-hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="prog${m.id}">
+      <div id="bar${m.id}" class="${m.bar} h-full rounded-full transition-all duration-500" style="width:0%"></div>
+    </div>
+  </div>`;
+
+const uploadSlotTemplate = (s, i) => `
+  <div class="relative">
+    <label class="border-2 border-dashed border-slate-300 dark:border-[#2d2f38] hover:border-emerald-500 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition bg-slate-50/60 dark:bg-[#1e1e22]/50 h-44 overflow-hidden relative focus-within:border-emerald-500">
+      <input type="file" accept="image/*" class="sr-only" data-upload="${i}" />
+      <img id="preview${i}" class="absolute inset-0 w-full h-full object-cover hidden" alt="" />
+      <div id="placeholder${i}" class="text-center p-2">
+        <div class="w-10 h-10 mx-auto rounded-full ${TONE_CLASSES[s.tone]} flex items-center justify-center mb-2">${icon(s.icon, 'text-lg')}</div>
+        <div class="text-sm font-semibold" data-i18n="${s.title}"></div>
+        <div class="text-xs text-slate-400 mt-0.5" data-i18n="${s.desc}"></div>
+      </div>
+    </label>
+    <button type="button" id="clearBtn${i}" data-action="clear-image" data-idx="${i}" aria-label="Remove" class="hidden absolute top-2 right-2 w-7 h-7 bg-slate-900/70 hover:bg-rose-600 text-white rounded-full text-xs items-center justify-center">${icon('x')}</button>
+  </div>`;
+
+const macroCardTemplate = m => `
+  <div class="bg-slate-50 dark:bg-[#1c1c20] border border-slate-200 dark:border-[#2d2f38] rounded-2xl px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2.5"><span class="w-3 h-3 rounded-full shrink-0" style="background:var(${m.color})"></span>
+      <div><div class="text-sm font-medium" data-i18n="${m.label}"></div><div class="text-xs text-slate-500 mono italic" id="calc-${m.key}-pct"></div></div></div>
+    <div class="text-right"><div class="text-base font-semibold" id="calc-${m.key}-g"></div><div class="text-xs text-slate-500 mono" id="calc-${m.key}-kcal"></div></div>
+  </div>`;
+
+const calcSliderTemplate = s => `
+  <div class="flex flex-col gap-1 ${s.wide ? 'sm:col-span-2' : ''}">
+    <div class="flex justify-between items-center text-xs">
+      <label for="calc-range-${s.key}" class="font-medium" data-i18n="${s.label}"></label>
+      <div class="flex items-center gap-1">
+        <input type="number" id="calc-num-${s.key}" data-calc="${s.key}" min="${s.min}" max="${s.max}" step="${s.step}" class="w-16 field px-1.5 py-0.5 text-right mono font-semibold text-xs" aria-label="${s.key}" />
+        ${s.unit === 'unitYrs' ? '<span class="mono text-slate-500" data-i18n="unitYrs"></span>' : `<span class="mono text-slate-500">${s.unit}</span>`}
+      </div>
+    </div>
+    <input type="range" id="calc-range-${s.key}" data-calc="${s.key}" class="slider" min="${s.min}" max="${s.max}" step="${s.step}" />
+  </div>`;
+
+const activitySelectTemplate = () => `
+  <div class="flex flex-col gap-1.5 justify-center">
+    <label for="calc-activity" class="text-xs font-medium" data-i18n="calcActivity"></label>
+    <select id="calc-activity" data-calc="activity" class="select-themed bg-white dark:bg-[#1e1e22] border border-slate-300 dark:border-[#2d2f38]">
+      ${ACTIVITY_LEVELS.map(a => `<option value="${a.factor}" data-i18n="${a.label}"></option>`).join('')}
+    </select>
+  </div>`;
+
+function renderStaticTemplates() {
+  $('#macroBars').innerHTML = MACROS.map(macroBarTemplate).join('');
+  $('#uploadSlots').innerHTML = UPLOAD_SLOTS.map(uploadSlotTemplate).join('');
+  $('#macroCards').innerHTML = MACRO_CARDS.map(macroCardTemplate).join('');
+  $('#calcBody').innerHTML = CALC_SLIDERS.body.map(calcSliderTemplate).join('') + activitySelectTemplate();
+  $('#calcStrategy').innerHTML = CALC_SLIDERS.strategy.map(calcSliderTemplate).join('');
+}
+
+function renderAll() {
+  const meals = db.meals(), goals = db.goals(), date = selectedDate();
+  const dayMeals = meals.filter(m => m.date === date);
+  renderDashboard(dayMeals, goals, date);
+  renderTimeline(dayMeals);
+  renderHistory(meals, goals);
+  renderWeight();
+  renderFavorites();
+}
+
+function renderDashboard(dayMeals, goals, date) {
+  const total = sumNutrients(dayMeals);
+  $('#dashboardTitle').textContent = date === todayStr() ? t('dashToday') : t('dashDate', { d: date });
+  $('#totalCalDisplay').textContent = total.cal;
+  $('#goalCalDisplay').textContent = goals.cal;
+  $('#mealCountDisplay').textContent = t('mealsLogged', { n: dayMeals.length });
+
+  const remain = goals.cal - total.cal, over = remain < 0;
+  const remainEl = $('#remainCalDisplay'), badge = $('#calorieStatusBadge');
+  remainEl.textContent = over ? t('overText', { n: -remain }) : `${remain} kcal`;
+  remainEl.className = `text-2xl font-extrabold tracking-tight ${over ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'}`;
+  badge.textContent = over ? t('overBadge', { n: -remain }) : t('remainBadge', { n: remain });
+  badge.className = `text-xs font-semibold px-2.5 py-1 rounded-full border ${over
+    ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200/60 dark:border-rose-800/50'
+    : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/50'}`;
+
+  const ratio = goals.cal > 0 ? Math.min(1, total.cal / goals.cal) : 0;
+  $('#calRing').style.strokeDashoffset = CONFIG.ui.ringCircumference * (1 - ratio);
+
+  MACROS.forEach(m => {
+    const val = total[m.field], goal = goals[m.field];
+    const pct = goal > 0 ? Math.min(100, Math.round((val / goal) * 100)) : 0;
+    $('#total' + m.id).textContent = val; $('#goal' + m.id).textContent = goal; $('#pct' + m.id).textContent = pct + '%';
+    $('#bar' + m.id).style.width = pct + '%'; $('#prog' + m.id).setAttribute('aria-valuenow', pct);
+  });
+}
+
+const periodBadge = time => {
+  const p = mealPeriod(time);
+  return `<span class="${PERIOD_CLASSES[p.tone]} px-2 py-0.5 rounded text-xs font-semibold">${p.icon} ${t(p.label)}</span>`;
+};
+
+function mealCardTemplate(m, isFavorite) {
+  return `
+  <article class="panel p-4">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="mono text-sm font-bold">${esc(m.time)}</span>${periodBadge(m.time)}
+        <h4 class="font-bold">${esc(m.name)}</h4>
+        <span class="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium bg-emerald-50 dark:bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-100 dark:border-emerald-800/50">${icon('camera', 'mr-0.5')}${t('angles', { n: m.angleCount })}</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="mono font-bold text-emerald-600 dark:text-emerald-400 text-base">${m.cal} <span class="text-xs">kcal</span></span>
+        <button data-action="fav-meal" data-id="${esc(m.id)}" class="p-1 ${isFavorite ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}" aria-pressed="${isFavorite}" title="${t('favToggle')}" aria-label="${t('favToggle')}"><svg class="icon text-sm" ${isFavorite ? 'style="fill:currentColor"' : ''} aria-hidden="true"><use href="#i-star"/></svg></button>
+        <button data-action="delete-meal" data-id="${esc(m.id)}" class="text-slate-400 hover:text-rose-500 p-1" aria-label="${t('delete')}">${icon('trash', 'text-xs')}</button>
+      </div>
+    </div>
+    ${m.reasoning ? `<p class="text-xs text-slate-500 dark:text-slate-400 mb-2 leading-relaxed">${esc(m.reasoning)}</p>` : ''}
+    <details class="pt-1 border-t border-slate-100 dark:border-[#2d2f38]">
+      <summary class="flex flex-wrap items-center justify-between gap-2">
+        <span class="flex gap-2 text-xs mono">
+          <span class="bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded font-semibold">P: ${m.p}g</span>
+          <span class="bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-semibold">C: ${m.c}g</span>
+          <span class="bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded font-semibold">F: ${m.f}g</span>
+        </span>
+        ${m.items.length ? `<span class="text-[11px] text-slate-500 flex items-center gap-1 font-medium">${t('ingredients', { n: m.items.length })}${icon('chevron-down', 'text-[10px] chev transition')}</span>` : ''}
+      </summary>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mt-3 pt-2 border-t border-dashed border-slate-200 dark:border-[#2d2f38]">
+        ${m.items.map(it => `<div class="flex items-center justify-between bg-white dark:bg-[#161618] px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-[#2d2f38]">
+          <span class="font-medium">${esc(it.name)} <span class="text-slate-400 mono">(${Math.round(it.weight)}g)</span></span>
+          <span class="mono text-emerald-600 dark:text-emerald-400 font-semibold">${Math.round(it.cal)} kcal</span></div>`).join('')}
+      </div>
+    </details>
+  </article>`;
+}
+
+function renderTimeline(dayMeals) {
+  const el = $('#timeline');
+  if (!dayMeals.length) {
+    el.innerHTML = `<div class="text-center py-12 text-slate-400 panel border-dashed">${icon('utensils', 'text-2xl mb-2')}
+      <div class="text-sm font-medium">${t('noMeals')}</div><p class="text-xs mt-1">${t('noMealsHint')}</p></div>`;
+    return;
+  }
+  const favNames = new Set(db.favs().map(f => f.name));          // favorites are matched by meal name
+  el.innerHTML = [...dayMeals].sort((a, b) => a.time.localeCompare(b.time)).map(m => mealCardTemplate(m, favNames.has(m.name))).join('');
+}
+
+function renderHistory(meals, goals) {
+  const days = {}, weightByDate = {};
+  const blank = () => ({ n: 0, cal: 0, p: 0, c: 0, f: 0 });
+  db.weights().forEach(w => { weightByDate[w.date] = w.weight; days[w.date] ??= blank(); });
+  meals.forEach(m => { const d = (days[m.date] ??= blank()); d.n++; d.cal += m.cal; d.p += m.p; d.c += m.c; d.f += m.f; });
+
+  const dates = Object.keys(days).sort().reverse(), body = $('#historyBody');
+  if (!dates.length) { body.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400 text-xs">${t('noHistory')}</td></tr>`; return; }
+  body.innerHTML = dates.map(date => {
+    const d = days[date], diff = d.cal - goals.cal, status = dayStatus(d.cal, goals.cal, d.n);
+    const label = { weightOnly: t('weightOnly'), onTarget: t('onTarget'), over: `+${diff} kcal`, under: `${diff} kcal` }[status];
+    const w = weightByDate[date];
+    return `<tr class="hover:bg-slate-50/80 dark:hover:bg-[#1e1e22] transition">
+      <td class="py-3 px-3 mono font-medium">${date}</td>
+      <td class="py-3 px-3">${w ? `<span class="mono font-bold">${w.toFixed(1)} kg</span>` : '<span class="text-slate-300 text-xs">--</span>'}</td>
+      <td class="py-3 px-3">${d.n}</td>
+      <td class="py-3 px-3 mono font-bold">${d.cal} <span class="text-xs text-slate-400 font-normal">/ ${goals.cal}</span></td>
+      <td class="py-3 px-3 mono text-xs text-slate-600 dark:text-slate-400">P: ${d.p}g / C: ${d.c}g / F: ${d.f}g</td>
+      <td class="py-3 px-3"><span class="${DAY_STATUS_CLASSES[status]}">${label}</span></td>
+      <td class="py-3 px-3 text-right"><button data-action="jump-date" data-date="${date}" class="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold text-xs">${t('view')}</button></td></tr>`;
+  }).join('');
+}
+
+function renderFavorites() {
+  const favs = db.favs();
+  $('#favoritesList').innerHTML = favs.length === 0 ? `<span class="text-xs text-slate-400">${t('favEmptyHint')}</span>` : favs.map((f, i) => `
+    <button data-action="quick-log" data-idx="${i}" class="btn btn-soft text-xs rounded-xl px-3 py-1.5">${icon('bolt', 'text-amber-500')}
+      <span>${esc(f.name)}</span><span class="mono text-emerald-600 dark:text-emerald-400 font-bold ml-1">${Math.round(f.cal)} kcal</span></button>`).join('');
+}
+
+function renderFavManage() {
+  const favs = db.favs();
+  $('#favManageList').innerHTML = favs.length ? favs.map((f, i) => `
+    <div class="flex items-center justify-between bg-white dark:bg-[#161618] px-3 py-2 rounded-lg border border-slate-200 dark:border-[#2d2f38] text-xs">
+      <div><div class="font-bold">${esc(f.name)}</div><div class="text-[11px] text-slate-400 mono">${Math.round(f.cal)} kcal (P:${f.p}g / C:${f.c}g / F:${f.f}g)</div></div>
+      <button data-action="remove-fav" data-idx="${i}" class="w-7 h-7 text-slate-400 hover:text-rose-500 rounded-lg" aria-label="${t('delete')}">${icon('trash', 'text-xs')}</button>
+    </div>`).join('') : `<div class="text-xs text-slate-400 text-center py-2">${t('noFav')}</div>`;
+}
+
+const statTile = (label, val, sub, cls = '') => `<div class="panel p-3.5"><div class="text-[11px] text-slate-400 font-medium">${label}</div>
+  <div class="text-xl font-extrabold mono mt-1 ${cls}">${val}</div>${sub ? `<div class="text-[11px] text-slate-400 mt-0.5 mono">${sub}</div>` : ''}</div>`;
+const kgHtml = v => `${v} <span class="text-xs font-normal text-slate-500">kg</span>`;
+
+function renderWeight() {
+  const date = selectedDate(), list = db.weights();
+  $('#weightDateLabel').textContent = date === todayStr() ? t('today') : date.slice(5);
+  const input = $('#dailyWeightInput');
+  if (document.activeElement !== input) {                    // never overwrite what the user is typing
+    const entry = list.find(w => w.date === date);
+    input.value = entry ? entry.weight : (list.at(-1)?.weight ?? '');
+  }
+  if (list.length) {
+    const ws = list.map(w => w.weight), latest = list.at(-1), diff = round1(latest.weight - list[0].weight);
+    $('#weightStats').innerHTML =
+      statTile(t('statLatestW'), kgHtml(latest.weight.toFixed(1)), latest.date) +
+      statTile(t('statChangeW'), kgHtml((diff > 0 ? '+' : '') + diff.toFixed(1)), t('statChangeSub'), diff < 0 ? 'text-emerald-600 dark:text-emerald-400' : diff > 0 ? 'text-rose-500' : '') +
+      statTile(t('statMinW'), kgHtml(Math.min(...ws).toFixed(1)), '', 'text-emerald-600 dark:text-emerald-400 !text-lg') +
+      statTile(t('statMaxW'), kgHtml(Math.max(...ws).toFixed(1)), '', '!text-lg');
+  } else {
+    $('#weightStats').innerHTML = statTile(t('statLatestW'), '--', t('noData')) + statTile(t('statChangeW'), '--', t('statChangeSub')) + statTile(t('statMinW'), '--') + statTile(t('statMaxW'), '--');
+  }
+  $$('[data-action="weight-range"]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.range) === state.weightRange)));
+  renderWeightChart(list);
+}
+
+const chartColors = () => state.theme === 'dark'
+  ? { grid: '#26272e', tick: '#94a3b8', point: '#0f0f0f' }
+  : { grid: '#e2e8f0', tick: '#64748b', point: '#ffffff' };
+const chartsAvailable = () => typeof Chart !== 'undefined';  // Chart.js comes from a CDN and may fail to load
+
+function renderWeightChart(list) {
+  const canvas = $('#weightHistoryChart');
+  if (!canvas || !chartsAvailable()) return;
+  const ma = movingAverage(list, 7);                         // compute on the full list, then slice
+  const n = state.weightRange || list.length;
+  const view = list.slice(-n), maView = ma.slice(-n);
+  const labels = view.map(w => w.date.slice(5)), raw = view.map(w => w.weight);
+  const chart = state.charts.weight;
+  if (chart) {
+    chart.data.labels = labels; chart.data.datasets[0].data = raw; chart.data.datasets[1].data = maView; chart.update();
+    return;
+  }
+  const c = chartColors(), ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 180);
+  gradient.addColorStop(0, 'rgba(16,185,129,.28)'); gradient.addColorStop(1, 'rgba(16,185,129,0)');
+  state.charts.weight = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: t('chartDaily'), data: raw, borderColor: '#10b981', backgroundColor: gradient, borderWidth: 2, pointBackgroundColor: c.point, pointBorderColor: '#10b981', pointBorderWidth: 2, pointRadius: 4, fill: true, tension: .25 },
+      { label: t('chartMA'), data: maView, borderColor: '#3b82f6', borderWidth: 2.5, borderDash: [4, 4], pointRadius: 0, fill: false, tension: .35 }
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 }, color: c.tick } }, tooltip: { callbacks: { label: x => ` ${x.dataset.label}: ${x.parsed.y} kg` } } },
+      scales: { x: { grid: { display: false }, ticks: { font: { size: 11 }, color: c.tick } }, y: { grid: { color: c.grid }, ticks: { font: { size: 11 }, color: c.tick, callback: v => v + ' kg' } } }
+    }
+  });
+}
+
+function initMacroChart() {
+  const canvas = $('#macroChart'); if (!canvas || !chartsAvailable()) return;
+  state.charts.macro?.destroy();
+  const r = computeMacros(state.calc), css = getComputedStyle(document.documentElement);
+  state.charts.macro = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: ['Protein', 'Fat', 'Carbohydrates'], datasets: [{ data: [r.p.kcal, r.f.kcal, r.c.kcal], backgroundColor: MACRO_CARDS.map(m => css.getPropertyValue(m.color).trim()), borderRadius: 999, spacing: 6, borderWidth: 0, hoverOffset: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '82%', animation: { duration: 250 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.label}: ${fmtNum(c.raw || 0)} kcal` } } } }
+  });
+}
+
+/** Colors and labels are fixed at construction, so theme/language changes rebuild the charts. */
+function rebuildCharts() {
+  state.charts.weight?.destroy(); state.charts.weight = null;
+  state.charts.macro?.destroy(); state.charts.macro = null;
+  renderWeight();
+  if (modal.isOpen('goalModal')) { initMacroChart(); renderCalc(); }
+}
+
+function analysisRowTemplate(it, i) {
+  const n = itemNutrients(it, state.portion);
+  return `<tr data-idx="${i}" class="hover:bg-slate-50/80 dark:hover:bg-[#26272e] transition">
+    <td class="py-2.5 px-3"><input type="text" data-item="name" maxlength="80" aria-label="name" value="${esc(it.name)}" class="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none w-full font-sans font-medium" /></td>
+    <td class="py-2.5 px-3"><div class="flex items-center gap-1"><input type="number" data-item="weight" min="1" max="2000" aria-label="weight" value="${Math.round(effectiveWeight(it, state.portion))}" class="field w-20 py-1 text-xs mono" /><span class="text-slate-400">g</span></div></td>
+    <td class="py-2.5 px-3 font-bold text-emerald-600 dark:text-emerald-400 c-cal">${n.cal}</td>
+    <td class="py-2.5 px-3 text-rose-500 font-semibold c-p">${n.p}</td>
+    <td class="py-2.5 px-3 text-amber-500 font-semibold c-c">${n.c}</td>
+    <td class="py-2.5 px-3 text-sky-500 font-semibold c-f">${n.f}</td>
+    <td class="py-2.5 px-3 text-right"><button data-action="remove-item" data-idx="${i}" class="text-slate-400 hover:text-rose-500 p-1" aria-label="${t('delete')}">${icon('trash', 'text-xs')}</button></td></tr>`;
+}
+
+function analysisBadgeText(a) {
+  if (a.isDemo) return t('badgeDemo');
+  const parts = [t('badge', { n: a.angleCount })];
+  if (a.modelUsed) parts.push(a.modelUsed);
+  if (a.meta) {
+    parts.push(t('badgeMeta', { s: (a.meta.ms / 1000).toFixed(1), th: a.meta.thoughts, in: a.meta.prompt }));
+    if (a.meta.attempts > 1) parts.push(t('badgeRetries', { n: a.meta.attempts - 1 }));
+  }
+  return parts.join(' · ');
+}
+
+function renderAnalysis() {
+  const a = state.analysis;
+  $('#analysisResultBox').classList.toggle('hidden', !a);
+  if (!a) return;
+  $('#resMealName').value = a.name;
+  $('#resBadge').textContent = analysisBadgeText(a);
+  $('#resReasoning').textContent = a.reasoning;
+  $('#resTableBody').innerHTML = a.items.map(analysisRowTemplate).join('');
+  renderAnalysisTotals();
+}
+
+/** Updates numbers only (no table rebuild) so the focused input keeps focus while typing. */
+function renderAnalysisTotals() {
+  const a = state.analysis; if (!a) return;
+  const rows = a.items.map(it => itemNutrients(it, state.portion));
+  rows.forEach((n, i) => {
+    const tr = $(`#resTableBody tr[data-idx="${i}"]`); if (!tr) return;
+    $('.c-cal', tr).textContent = n.cal; $('.c-p', tr).textContent = n.p; $('.c-c', tr).textContent = n.c; $('.c-f', tr).textContent = n.f;
+  });
+  const total = sumNutrients(rows);
+  $('#resTotalCal').textContent = Math.round(total.cal); $('#resTotalP').textContent = Math.round(total.p);
+  $('#resTotalC').textContent = Math.round(total.c); $('#resTotalF').textContent = Math.round(total.f);
+}
+
+function renderCalc() {
+  const r = computeMacros(state.calc), cs = state.calc;
+  ALL_CALC_SLIDERS.forEach(s => {
+    const range = $('#calc-range-' + s.key), numEl = $('#calc-num-' + s.key);
+    if (range.value !== String(cs[s.key])) range.value = cs[s.key];
+    if (document.activeElement !== numEl) numEl.value = cs[s.key];
+    range.style.setProperty('--progress', ((cs[s.key] - s.min) / (s.max - s.min)) * 100 + '%');
+  });
+  $('#calc-activity').value = String(cs.activity);
+  $$('[data-action="calc-gender"]').forEach(b => {
+    const on = b.dataset.gender === cs.gender;
+    b.className = `px-3 py-1 rounded-full transition ${on ? 'font-semibold bg-blue-600 dark:bg-[#192967] text-white dark:text-[#9dd2ff]' : 'font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white'}`;
+    b.setAttribute('aria-pressed', String(on));
+  });
+  $('#calc-bmr').textContent = fmtNum(r.bmr); $('#calc-tdee').textContent = fmtNum(r.tdee);
+  $('#calc-target').textContent = fmtNum(r.target); $('#calc-center').textContent = fmtNum(r.target);
+  MACRO_CARDS.forEach(({ key }) => {
+    $(`#calc-${key}-g`).textContent = r[key].g + 'g';
+    $(`#calc-${key}-kcal`).textContent = fmtNum(r[key].kcal) + ' kcal';
+    $(`#calc-${key}-pct`).textContent = t('energyPct', { n: r[key].share });
+  });
+  if (state.charts.macro) { state.charts.macro.data.datasets[0].data = [r.p.kcal, r.f.kcal, r.c.kcal]; state.charts.macro.update(); }
+}
+
+/* Job cards: one renderer per status keeps adding a new status a local change. */
+const jobButton = (action, id, label, cls = 'btn-soft') => `<button data-action="${action}" data-id="${esc(id)}" class="btn ${cls} text-xs px-2.5 py-1.5">${label}</button>`;
+const elapsedSeconds = job => Math.round((Date.now() - job.startedAt) / 1000);
+const jobFailedView = j => ({
+  body: `<div class="text-sm font-medium text-rose-600 dark:text-rose-400">${esc(j.error || '')}</div><div class="text-[11px] text-slate-500 mono">${esc(j.date)} ${esc(j.time)}</div>`,
+  actions: jobButton('job-retry', j.id, t('jobRetry'), 'btn-primary') + jobButton('job-dismiss', j.id, t('jobDismiss'))
+});
+const JOB_VIEWS = {
+  running: j => ({
+    body: `<div class="flex items-center gap-1.5 text-sm font-medium">${icon('loader', 'animate-spin text-emerald-600')}<span>${t('jobRunning')}</span><span class="mono text-slate-500" data-elapsed="${esc(j.id)}">${elapsedSeconds(j)}s</span></div><div class="text-[11px] text-slate-500 mt-0.5">${t('jobKeepOpen')}</div>`,
+    actions: jobButton('job-cancel', j.id, t('jobCancel'))
+  }),
+  done: j => ({
+    body: `<div class="text-sm font-semibold truncate">✓ ${esc(j.result.name)}</div><div class="text-[11px] text-slate-500 mono">${Math.round(sumNutrients(j.result.items).cal)} kcal · ${esc(j.date)} ${esc(j.time)}${j.result.isDemo ? ' · DEMO' : ''}</div>`,
+    actions: jobButton('job-open', j.id, t('jobOpen'), 'btn-primary') + jobButton('job-dismiss', j.id, t('jobDismiss'))
+  }),
+  error: jobFailedView,
+  cancelled: jobFailedView,
+  interrupted: jobFailedView
+};
+
+function renderJobs() {
+  $('#jobsPanel').innerHTML = state.jobs.map(j => {
+    const { body, actions } = (JOB_VIEWS[j.status] || jobFailedView)(j);
+    const thumb = j.images?.[0]
+      ? `<img src="${esc(j.images[0])}" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0" />`
+      : '<div class="w-12 h-12 rounded-lg bg-slate-200 dark:bg-[#26272e] shrink-0"></div>';
+    return `<div class="panel p-3 flex items-center gap-3">${thumb}<div class="min-w-0 flex-1">${body}</div><div class="flex gap-2 shrink-0">${actions}</div></div>`;
+  }).join('');
+}
+/** Cheap per-second refresh of the "elapsed" counters; avoids re-rendering the cards. */
+function tickJobTimers() {
+  $$('[data-elapsed]').forEach(el => {
+    const job = state.jobs.find(j => j.id === el.dataset.elapsed);
+    if (job) el.textContent = elapsedSeconds(job) + 's';
+  });
+}
+
+const updateApiDot = () => {
+  $('#apiStatusDot').className = `w-2 h-2 rounded-full ${db.apiKey().length > 5 ? 'bg-emerald-500 ring-2 ring-emerald-200' : 'bg-slate-300 dark:bg-slate-600'}`;
+};
+function renderThemeIcon() {
+  const el = $('#themeIcon'), dark = state.theme === 'dark';
+  $('use', el).setAttribute('href', dark ? '#i-sun' : '#i-moon');
+  el.setAttribute('class', 'icon ' + (dark ? 'text-amber-400' : 'text-slate-600'));
+}
+
+/* ── 10. Features ───────────────────────────────────────────────────── */
+
+/* 10.1 Theme & language */
+function applyTheme(theme, notify = false) {
+  state.theme = theme === 'dark' ? 'dark' : 'light';
+  store.setStr(STORAGE_KEYS.theme, state.theme);
+  document.documentElement.classList.toggle('dark', state.theme === 'dark');
+  document.documentElement.classList.toggle('light', state.theme !== 'dark');
+  renderThemeIcon();
+  rebuildCharts();
+  if (notify) toast(t(state.theme === 'dark' ? 'toastDark' : 'toastLight'));
+}
+function applyLanguage(next) {
+  lang = next === 'en' ? 'en' : 'zh';
+  store.setStr(STORAGE_KEYS.lang, lang);
+  applyI18n(); rebuildCharts(); renderAll(); renderAnalysis(); renderCalc(); renderFavManage(); renderJobs();
+}
+
+/* 10.2 Photos: downscale and re-encode on the device to keep requests small */
+function handleImage(file, idx) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => {
+    const scale = Math.min(1, CONFIG.image.maxDim / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    const data = canvas.toDataURL('image/jpeg', CONFIG.image.jpegQuality);
+    state.images[idx] = data;
+    state.imageInfo[idx] = { w: canvas.width, h: canvas.height, origW: img.width, origH: img.height,
+      fileKB: Math.round(file.size / 1024), sentKB: Math.round(data.length * 0.75 / 1024) };
+    const preview = $('#preview' + idx);
+    preview.src = data; preview.alt = t(UPLOAD_SLOTS[idx].title);
+    preview.classList.remove('hidden'); $('#placeholder' + idx).classList.add('hidden');
+    $('#clearBtn' + idx).classList.replace('hidden', 'flex');
+  };
+  img.onerror = () => URL.revokeObjectURL(url);
+  img.src = url;
+}
+function clearImage(idx) {
+  state.images[idx] = null; state.imageInfo[idx] = null;
+  const preview = $('#preview' + idx);
+  preview.removeAttribute('src'); preview.classList.add('hidden');
+  $('#placeholder' + idx).classList.remove('hidden');
+  $('#clearBtn' + idx).classList.replace('flex', 'hidden');
+  const input = $(`[data-upload="${idx}"]`); if (input) input.value = '';
+}
+const clearAllImages = () => UPLOAD_SLOTS.forEach((_, i) => clearImage(i));
+
+/* 10.3 Analysis jobs
+ * Submitting captures the inputs into a job and clears the form at once, so the
+ * user can keep logging while the request runs. Jobs are persisted; a reload
+ * cannot resume a request, so running jobs come back as "interrupted". */
+function persistJobs() {
+  for (const j of state.jobs) if (j.status === 'done' && j.images.length > 1) j.images = j.images.slice(0, 1);   // keep one thumbnail only
+  while (state.jobs.length > CONFIG.jobs.maxStored) {                     // drop the oldest finished job, never a running one
+    const i = state.jobs.findIndex(j => j.status !== 'running');
+    if (i < 0) break;
+    state.jobs.splice(i, 1);
+  }
+  db.saveJobs(state.jobs);
+}
+function restoreJobs() {
+  state.jobs = db.jobs().map(j => ({ ...j, images: Array.isArray(j.images) ? j.images : [] }))
+    .map(j => j.status === 'running' ? { ...j, status: 'interrupted', error: t('jobInterrupted') } : j);
+}
+const findJob = id => state.jobs.find(j => j.id === id);
+const friendlyError = err => err.status === 429 ? t('quotaExceeded') : err.status >= 500 ? t('overloaded') : String(err.message || err);
+
+function submitAnalysis() {
+  const images = state.images.filter(Boolean), note = $('#mealNoteInput').value.trim();
+  if (db.apiKey() && images.length === 0) return toast(t('needPhoto'), 'error');
+  /** @type {AnalysisJob} */
+  const job = { id: uid().slice(0, 8), at: Date.now(), date: selectedDate(), time: $('#mealTimeInput').value || nowTime(),
+    note, images, imageInfo: state.imageInfo.filter(Boolean), lang, status: 'running', startedAt: Date.now() };
+  state.jobs.push(job);
+  $('#mealNoteInput').value = ''; clearAllImages();
+  persistJobs(); renderJobs(); toast(t('jobQueued'));
+  runJob(job);
+}
+
+/** One diagnostics record per analysis; see perfLog. */
+function createDiagnosticRecord(job, model, mode) {
+  const conn = navigator.connection || {};
+  return {
+    id: job.id, at: new Date().toISOString(), mode, model, lang: job.lang,
+    images: job.imageInfo, payloadKB: (job.imageInfo || []).reduce((a, i) => a + (i.sentKB || 0), 0), noteChars: job.note.length,
+    net: { type: conn.effectiveType, rttMs: conn.rtt, downlinkMbps: conn.downlink, saveData: conn.saveData, online: navigator.onLine },
+    visibleAtStart: document.visibilityState, visibility: [], runs: [], outcome: 'unknown', ua: navigator.userAgent
+  };
+}
+
+/** Resolves after `ms`, or rejects with AbortError when `signal` aborts first. */
+const abortableDelay = (ms, signal) => new Promise((resolve, reject) => {
+  const id = setTimeout(resolve, ms);
+  signal.addEventListener('abort', () => { clearTimeout(id); reject(new DOMException('Aborted', 'AbortError')); }, { once: true });
+});
+
+async function analyzeJob(job, { apiKey, model, signal, rec }) {
+  if (!apiKey) {
+    await abortableDelay(650, signal);
+    return demoAnalysis(job.note, Math.max(1, job.images.length));
+  }
+  const parts = [{ text: buildNutritionPrompt({ lang: job.lang, imageCount: job.images.length, note: job.note }) }, ...job.images.map(dataUrlToPart)];
+  return gemini.generateWithFallback({ key: apiKey, model, parts, signal, rec });
+}
+
+async function runJob(job) {
+  const apiKey = db.apiKey(), model = db.model();
+  Object.assign(job, { status: 'running', startedAt: Date.now(), error: null, model });
+  persistJobs(); renderJobs();
+
+  const startedAt = Date.now();
+  const rec = createDiagnosticRecord(job, model, apiKey ? 'api' : 'demo');
+  const onVisibility = () => rec.visibility.push({ atMs: Date.now() - startedAt, state: document.visibilityState });
+  document.addEventListener('visibilitychange', onVisibility);
+  const ctrl = new AbortController(); liveJobs.set(job.id, ctrl);
+  const timeout = setTimeout(() => ctrl.abort('TIMEOUT'), CONFIG.gemini.timeoutMs);
+
+  try {
+    const result = await analyzeJob(job, { apiKey, model, signal: ctrl.signal, rec });
+    job.result = {
+      name: String(result.name || '').slice(0, 120), reasoning: String(result.reasoning || ''), angleCount: job.images.length || 1,
+      modelUsed: result.modelUsed, meta: result.meta, isDemo: !!result.isDemo,
+      items: result.items.map(({ name, weight, cal, p, c, f }) => ({ name, weight, cal, p, c, f }))
+    };
+    Object.assign(job, { status: 'done', finishedAt: Date.now() });
+    rec.outcome = 'ok';
+    toast(t('analysisDone', { s: ((Date.now() - startedAt) / 1000).toFixed(1) }));
+    tabTitle.notify(t('titleDone'));
+  } catch (err) {
+    const aborted = err.name === 'AbortError' || ctrl.signal.aborted;
+    const timedOut = aborted && ctrl.signal.reason === 'TIMEOUT';
+    job.status = aborted && !timedOut ? 'cancelled' : 'error';
+    job.error = timedOut ? t('analysisTimeout', { n: CONFIG.gemini.timeoutMs / 1000 })
+      : aborted ? t('analysisCancelled') : friendlyError(err);
+    rec.outcome = timedOut ? 'timeout' : aborted ? 'cancelled' : 'error';
+    rec.error = String(err.message || err).slice(0, 300);
+    if (job.status === 'error') toast(job.error, 'error');
+  } finally {
+    clearTimeout(timeout); liveJobs.delete(job.id);
+    document.removeEventListener('visibilitychange', onVisibility);
+    rec.totalMs = Date.now() - startedAt;
+    if (rec.mode === 'api') { perfLog.push(rec); console.info('[NutriLens][perf]', rec); }
+    persistJobs(); renderJobs();
+  }
+}
+const cancelJob = id => liveJobs.get(id)?.abort('USER');
+const retryJob = id => { const job = findJob(id); if (job) runJob(job); };
+function dismissJob(id) { state.jobs = state.jobs.filter(j => j.id !== id); persistJobs(); renderJobs(); }
+
+/** Loads a finished job into the editor; saving uses the job's own date and time. */
+function openJobResult(id) {
+  const job = findJob(id); if (!job?.result) return;
+  const r = job.result;
+  state.analysis = { name: r.name, reasoning: r.reasoning, angleCount: r.angleCount, modelUsed: r.modelUsed, meta: r.meta, isDemo: r.isDemo,
+    jobId: job.id, date: job.date, time: job.time, items: r.items.map(toEditableItem) };
+  setPortion(100);
+  renderAnalysis();
+  $('#analysisResultBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/* 10.4 Analysis editor */
+function setPortion(percent) {
+  state.portion = percent / 100;
+  $('#portionSlider').value = percent; $('#portionPctText').textContent = percent + '%';
+}
+function onPortionInput(el) {
+  setPortion(Number(el.value));
+  $$('#resTableBody tr').forEach(tr => {
+    const it = state.analysis?.items[Number(tr.dataset.idx)];
+    if (it) $('[data-item="weight"]', tr).value = Math.round(effectiveWeight(it, state.portion));
+  });
+  renderAnalysisTotals();
+}
+function onItemInput(el) {
+  const it = state.analysis?.items[Number(el.closest('tr').dataset.idx)]; if (!it) return;
+  if (el.dataset.item === 'name') { it.name = el.value; return; }
+  const grams = num(el.value, NaN);
+  if (Number.isFinite(grams) && grams > 0) { it.weight = grams / state.portion; renderAnalysisTotals(); }   // the input shows the eaten weight
+}
+function removeAnalysisItem(idx) { state.analysis?.items.splice(idx, 1); renderAnalysis(); }
+
+function saveAnalysisAsMeal() {
+  const a = state.analysis; if (!a || !a.items.length) return;
+  const meal = mealFromAnalysis(a, {
+    portion: state.portion,
+    name: $('#resMealName').value.trim() || a.name,
+    date: a.date || selectedDate(),
+    time: a.time || $('#mealTimeInput').value || nowTime(),
+    reasoning: a.isDemo ? t('demoReasoning') : a.reasoning
+  });
+  if (!db.addMeal(meal)) return;
+  if (a.jobId) dismissJob(a.jobId);
+  state.analysis = null; renderAnalysis();
+  toast(t('mealSaved')); renderAll();
+}
+
+/* 10.5 Meals & favorites (favorites are matched to meals by name) */
+function deleteMeal(id) { db.deleteMeal(id); toast(t('mealDeleted')); renderAll(); }
+function toggleFavoriteForMeal(mealId) {
+  const meal = db.meals().find(m => m.id === mealId); if (!meal) return;
+  const favs = db.favs(), i = favs.findIndex(f => f.name === meal.name);
+  if (i >= 0) { favs.splice(i, 1); toast(t('favRemoved', { name: meal.name })); }
+  else { favs.push(favoriteFromMeal(meal)); toast(t('favSaved', { name: meal.name })); }
+  db.saveFavs(favs); renderAll();
+}
+function quickLogFavorite(idx) {
+  const fav = db.favs()[idx]; if (!fav) return;
+  db.addMeal(mealFromFavorite(fav, selectedDate(), nowTime()));
+  toast(t('quickLogged', { name: fav.name })); renderAll();
+}
+function removeFavorite(idx) {
+  const favs = db.favs(), [removed] = favs.splice(idx, 1);
+  db.saveFavs(favs); renderFavManage(); renderFavorites();
+  toast(t('favDeleted', { name: removed?.name || '' }));
+}
+function addFavoriteFromForm() {
+  const name = $('#newFavName').value.trim(); if (!name) return;
+  db.saveFavs([...db.favs(), favoriteFromForm(name, $('#newFavCal').value, $('#newFavP').value)]);
+  $('#newFavName').value = ''; $('#favForm').classList.add('hidden');
+  renderFavManage(); renderFavorites(); toast(t('favAdded'));
+}
+
+/* 10.6 Weight & goals */
+/** Validates and stores a weight; returns the rounded kg, or false when invalid. */
+function saveWeight(rawValue, date = selectedDate()) {
+  const v = parseFloat(rawValue);
+  if (!Number.isFinite(v) || v < CONFIG.weight.min || v > CONFIG.weight.max) { toast(t('weightInvalid'), 'error'); return false; }
+  const kg = round1(v);
+  db.upsertWeight(date, kg);
+  return kg;
+}
+function logWeightFromForm() {
+  const kg = saveWeight($('#dailyWeightInput').value); if (!kg) return;
+  state.calc.weight = kg; db.saveCalcProfile(state.calc);
+  toast(t('weightLogged', { d: selectedDate(), w: kg })); renderAll();
+}
+function openGoalModal() {
+  const latest = db.weights().at(-1); if (latest) state.calc.weight = latest.weight;
+  modal.open('goalModal'); renderCalc();
+  setTimeout(() => { initMacroChart(); renderCalc(); }, 30);    // the canvas needs layout before Chart.js can size it
+}
+function onCalcInput(el) {
+  const key = el.dataset.calc;
+  if (key === 'activity') state.calc.activity = num(el.value, DEFAULT_CALC.activity);
+  else {
+    const cfg = ALL_CALC_SLIDERS.find(s => s.key === key), v = num(el.value, NaN);
+    if (!cfg || !Number.isFinite(v)) return;
+    state.calc[key] = clamp(v, cfg.min, cfg.max);
+  }
+  renderCalc();
+}
+function applyGoals() {
+  const goals = goalsFromMacros(computeMacros(state.calc));
+  db.saveGoals(goals); db.saveCalcProfile(state.calc);
+  if ($('#syncWeightOnSaveGoal').checked) saveWeight(state.calc.weight);
+  modal.close(); toast(t('goalApplied', goals)); renderAll();
+}
+function resetCalc() { state.calc = { ...DEFAULT_CALC }; renderCalc(); toast(t('calcResetOk')); }
+
+/* 10.7 Data management */
+function seedDemo() {
+  const today = todayStr();
+  db.saveWeights([[10, 73.5], [8, 73.1], [6, 72.8], [4, 72.5], [2, 72.2], [0, 72.0]].map(([daysAgo, weight]) => ({ date: shiftDate(today, -daysAgo), weight })));
+  db.saveMeals([
+    { id: uid(), date: today, time: '08:20', name: '全麥酪梨水波蛋吐司＋拿鐵', angleCount: 2, reasoning: '全麥吐司 65g、水波蛋 50g、酪梨 45g、拿鐵 240ml。', cal: 465, p: 21, c: 42, f: 23,
+      items: [{ name: '厚切全麥吐司', weight: 65, cal: 170, p: 6, c: 31, f: 2 }, { name: '水波蛋與酪梨切片', weight: 95, cal: 175, p: 7, c: 4, f: 15 }, { name: '無糖鮮奶拿鐵', weight: 240, cal: 120, p: 8, c: 7, f: 6 }] },
+    { id: uid(), date: shiftDate(today, -1), time: '12:30', name: '舒肥迷迭香雞胸餐盒（佐紫米飯）', angleCount: 2, reasoning: '紫米飯 160g、舒肥雞胸肉 130g、綠花椰與時蔬 150g。', cal: 585, p: 43, c: 68, f: 15,
+      items: [{ name: '舒肥迷迭香雞胸肉', weight: 130, cal: 215, p: 36, c: 0, f: 7 }, { name: '紫米五穀飯', weight: 160, cal: 260, p: 5, c: 56, f: 2 }, { name: '時令溫野菜', weight: 150, cal: 110, p: 2, c: 12, f: 6 }] }
+  ]);
+  db.saveFavs([...DEFAULT_FAVORITES]);
+  db.saveCalcProfile(DEMO_CALC); db.saveGoals(DEMO_GOALS); state.calc = { ...DEMO_CALC };
+}
+/** First visit gets demo data; later visits only backfill missing goals. */
+function initData() {
+  restoreJobs();
+  runMigrations().forEach(n => setTimeout(() => toast(t(n.key, n.vars)), 900));
+  state.calc = db.calcProfile();
+  const firstVisit = !store.has(STORAGE_KEYS.weights) && !store.has(STORAGE_KEYS.meals);
+  if (firstVisit && store.str(STORAGE_KEYS.cleared) !== 'true') seedDemo();
+  else if (!store.has(STORAGE_KEYS.goals)) db.saveGoals(goalsFromMacros(computeMacros(state.calc)));
+}
+function clearAll() {
+  store.setStr(STORAGE_KEYS.cleared, 'true');
+  db.saveMeals([]); db.saveWeights([]); db.saveFavs([]);
+  state.calc = { ...DEFAULT_CALC }; db.saveCalcProfile(state.calc);
+  db.saveGoals(goalsFromMacros(computeMacros(state.calc)));
+  liveJobs.forEach(ctrl => ctrl.abort('USER'));
+  state.jobs = []; persistJobs(); renderJobs();
+  state.analysis = null; renderAnalysis();
+  $('#dailyWeightInput').value = '';
+  modal.close(); toast(t('cleared')); renderAll();
+}
+function restoreDemo() { store.del(STORAGE_KEYS.cleared); seedDemo(); modal.close(); toast(t('demoReloaded')); renderAll(); }
+
+function exportCSV() {
+  // Prefix cells starting with = + - @ so spreadsheet apps don't evaluate them as formulas.
+  const cell = v => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
+  const rows = [['Date', 'Time', 'Meal', 'Angles', 'Calories(kcal)', 'Protein(g)', 'Carbs(g)', 'Fat(g)', 'Items'],
+    ...db.meals().map(m => [m.date, m.time, m.name, m.angleCount, m.cal, m.p, m.c, m.f, m.items.map(i => `${i.name}(${Math.round(i.weight)}g)`).join('; ')])];
+  download(new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' }), `NutriLens_${todayStr()}.csv`);
+}
+function exportJSON() {
+  const data = { goals: db.goals(), calcProfile: state.calc, weights: db.weights(), meals: db.meals(), favorites: db.favs(), exportedAt: new Date().toISOString() };
+  download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `NutriLens_Backup_${todayStr()}.json`);
+}
+/** Restores a backup made by exportJSON. Each section is optional and sanitized. */
+function importJSON(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (typeof d !== 'object' || d === null) throw new Error('not an object');
+      if (d.goals && typeof d.goals === 'object') db.saveGoals({ cal: num(d.goals.cal, DEMO_GOALS.cal), p: num(d.goals.p), c: num(d.goals.c), f: num(d.goals.f) });
+      if (d.calcProfile && typeof d.calcProfile === 'object') { state.calc = { ...DEFAULT_CALC, ...d.calcProfile }; db.saveCalcProfile(state.calc); }
+      if (Array.isArray(d.weights)) db.saveWeights(d.weights.map(w => ({ date: w.date, weight: num(w.weight) }))
+        .filter(w => DATE_RE.test(w.date) && w.weight >= CONFIG.weight.min && w.weight <= CONFIG.weight.max));
+      if (Array.isArray(d.meals)) db.saveMeals(d.meals.map(sanitizeMeal));
+      if (Array.isArray(d.favorites)) db.saveFavs(d.favorites.map(sanitizeFavorite).filter(f => f.name));
+      modal.close(); toast(t('importOk')); renderAll();
+    } catch { toast(t('importBad'), 'error'); }
+  };
+  reader.readAsText(file);
+}
+async function copyDiagnostics() {
+  const records = perfLog.all(); if (!records.length) return toast(t('logEmpty'), 'error');
+  const text = JSON.stringify(records, null, 2);
+  try { await navigator.clipboard.writeText(text); toast(t('logCopied', { n: records.length })); }
+  catch { download(new Blob([text], { type: 'application/json' }), `NutriLens_diag_${todayStr()}.json`); toast(t('logDownloaded')); }
+}
+
+/* 10.8 API settings */
+const CUSTOM_MODEL = '__custom__';
+function modalModel() {
+  const sel = $('#apiModelSelect');
+  return normalizeModel(sel.value === CUSTOM_MODEL ? $('#customModelInput').value : sel.value);
+}
+function fillModelSelect(models, current) {
+  const sel = $('#apiModelSelect');
+  const options = new Map(CONFIG.gemini.modelOptions.map(id => [id, id]));
+  models.forEach(m => options.set(m.id, m.displayName && m.displayName !== m.id ? `${m.id} — ${m.displayName}` : m.id));
+  sel.innerHTML = [...options].map(([id, label]) => `<option value="${esc(id)}">${esc(label)}${id === CONFIG.gemini.defaultModel ? ` ⭐ ${t('recommended')}` : ''}</option>`).join('')
+    + `<option value="${CUSTOM_MODEL}">${t('customModel')}</option>`;
+  const known = options.has(current);
+  sel.value = known ? current : CUSTOM_MODEL;
+  $('#customModelWrap').classList.toggle('hidden', known);
+  if (!known) $('#customModelInput').value = current;
+  $('#currentModelTag').textContent = modalModel();
+}
+function onModelSelectInput(el) {
+  const custom = el.value === CUSTOM_MODEL;
+  $('#customModelWrap').classList.toggle('hidden', !custom);
+  if (custom && !$('#customModelInput').value) $('#customModelInput').value = CONFIG.gemini.defaultModel;
+  $('#currentModelTag').textContent = modalModel();
+}
+function openApiModal() {
+  const key = store.str(STORAGE_KEYS.apiKey);
+  $('#apiKeyInput').value = key; $('#apiVerifyStatus').classList.add('hidden');
+  fillModelSelect([], db.model());
+  modal.open('apiModal');
+  if (key.trim().length > 10) verifyKey(true);
+}
+async function verifyKey(silent = false) {
+  const key = $('#apiKeyInput').value.trim(), status = $('#apiVerifyStatus'), spinner = $('#verifyIcon');
+  if (!key) { if (!silent) toast(t('needKey'), 'error'); return; }
+  spinner.classList.add('animate-spin'); status.classList.remove('hidden');
+  setStatus(status, 'text-slate-500', `${icon('loader', 'animate-spin')}<span>${t('verifying')}</span>`);
+  try {
+    const models = await gemini.listModels(key);
+    fillModelSelect(models, modalModel());
+    setStatus(status, 'text-emerald-600 dark:text-emerald-400', `${icon('circle-check')}<span>${esc(t('verifyOk', { n: models.length }))}</span>`);
+    if (!silent) toast(t('modelListUpdated'));
+  } catch (err) {
+    setStatus(status, 'text-rose-500', `${icon('circle-alert')}<span>${esc(t('verifyFail', { m: err.message }))}</span>`);
+    if (!silent) toast(err.message, 'error');
+  } finally { spinner.classList.remove('animate-spin'); }
+}
+function saveApiSettings() {
+  const model = modalModel();
+  store.setStr(STORAGE_KEYS.apiKey, $('#apiKeyInput').value.trim()); store.setStr(STORAGE_KEYS.model, model);
+  updateApiDot(); modal.close(); toast(t('keySaved', { m: model }));
+}
+function clearApiKey() {
+  store.del(STORAGE_KEYS.apiKey); store.del(STORAGE_KEYS.model);
+  $('#apiKeyInput').value = ''; $('#apiVerifyStatus').classList.add('hidden');
+  updateApiDot(); modal.close(); toast(t('keyCleared'));
+}
+
+/* 10.9 Navigation */
+function shiftSelectedDate(days) { $('#selectedDate').value = shiftDate(selectedDate(), days); renderAll(); }
+function switchTab(tab) {
+  state.tab = tab;
+  $$('[data-action="switch-tab"]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+  $('#timeline').classList.toggle('hidden', tab !== 'today');
+  $('#historyWrap').classList.toggle('hidden', tab !== 'history');
+}
+function jumpToDate(date) { $('#selectedDate').value = date; switchTab('today'); renderAll(); }
+
+/* ── 11. Event wiring ───────────────────────────────────────────────── */
+
+/** Modal id → opener. Modals not listed simply open. */
+const MODAL_OPENERS = {
+  goalModal: openGoalModal,
+  dataModal: () => { renderFavManage(); modal.open('dataModal'); },
+  apiModal: openApiModal
+};
+
+/** data-action → handler(element, event). To add a button: give it data-action and add a line here. */
+const ACTIONS = {
+  // navigation & chrome
+  'date-prev': () => shiftSelectedDate(-1),
+  'date-next': () => shiftSelectedDate(1),
+  'switch-tab': el => switchTab(el.dataset.tab),
+  'jump-date': el => jumpToDate(el.dataset.date),
+  'weight-range': el => { state.weightRange = Number(el.dataset.range); renderWeight(); },
+  'open-modal': el => (MODAL_OPENERS[el.dataset.modal] || modal.open)(el.dataset.modal),
+  'close-modal': () => modal.close(),
+  'toggle-theme': () => applyTheme(state.theme === 'dark' ? 'light' : 'dark', true),
+  'toggle-lang': () => applyLanguage(lang === 'zh' ? 'en' : 'zh'),
+  // photos & analysis
+  'clear-image': el => clearImage(Number(el.dataset.idx)),
+  'analyze': submitAnalysis,
+  'job-cancel': el => cancelJob(el.dataset.id),
+  'job-retry': el => retryJob(el.dataset.id),
+  'job-dismiss': el => dismissJob(el.dataset.id),
+  'job-open': el => openJobResult(el.dataset.id),
+  'remove-item': el => removeAnalysisItem(Number(el.dataset.idx)),
+  'save-meal': saveAnalysisAsMeal,
+  // meals & favorites
+  'delete-meal': el => deleteMeal(el.dataset.id),
+  'fav-meal': el => toggleFavoriteForMeal(el.dataset.id),
+  'quick-log': el => quickLogFavorite(Number(el.dataset.idx)),
+  'toggle-fav-form': () => $('#favForm').classList.toggle('hidden'),
+  'remove-fav': el => removeFavorite(Number(el.dataset.idx)),
+  // goals calculator
+  'calc-reset': resetCalc,
+  'calc-gender': el => { state.calc.gender = el.dataset.gender; renderCalc(); },
+  'save-goals': applyGoals,
+  // data management
+  'clear-all': el => confirmTwice(el, 'confirmClearBtn', clearAll),
+  'restore-demo': restoreDemo,
+  'export-csv': exportCSV,
+  'export-json': exportJSON,
+  'copy-log': copyDiagnostics,
+  'clear-log': () => { perfLog.clear(); toast(t('logCleared')); },
+  // API settings
+  'verify-key': () => verifyKey(false),
+  'save-api': saveApiSettings,
+  'clear-key': clearApiKey
+};
+
+/** `input` events by element id (data-calc / data-item inputs are matched by attribute). */
+const INPUT_HANDLERS = {
+  portionSlider: onPortionInput,
+  apiModelSelect: onModelSelectInput,
+  customModelInput: () => { $('#currentModelTag').textContent = modalModel(); },
+  apiKeyInput: () => $('#apiVerifyStatus').classList.add('hidden')
+};
+/** `change` events by element id (data-upload inputs are matched by attribute). */
+const CHANGE_HANDLERS = {
+  importFile: el => { importJSON(el.files[0]); el.value = ''; },
+  selectedDate: () => renderAll(),
+  resMealName: el => { if (state.analysis) state.analysis.name = el.value; }
+};
+const SUBMIT_HANDLERS = { weightForm: logWeightFromForm, favForm: addFavoriteFromForm };
+
+function bindEvents() {
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if (el) ACTIONS[el.dataset.action]?.(el, e);
+    if (e.target.classList?.contains('modal')) modal.close();          // click on the backdrop
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') modal.close(); });
+  document.addEventListener('input', e => {
+    const el = e.target;
+    if (el.dataset.calc) onCalcInput(el);
+    else if (el.dataset.item) onItemInput(el);
+    else INPUT_HANDLERS[el.id]?.(el);
+  });
+  document.addEventListener('change', e => {
+    const el = e.target;
+    if (el.dataset.upload !== undefined) handleImage(el.files[0], Number(el.dataset.upload));
+    else CHANGE_HANDLERS[el.id]?.(el);
+  });
+  document.addEventListener('submit', e => {
+    const handler = SUBMIT_HANDLERS[e.target.id];
+    if (handler) { e.preventDefault(); handler(); }
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tabTitle.reset(); });
+}
+
+/* ── 12. Boot ───────────────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  renderStaticTemplates();
+  initData();
+  $('#selectedDate').value = todayStr();
+  $('#mealTimeInput').value = nowTime();
+  bindEvents();
+  applyI18n();
+  applyTheme(store.str(STORAGE_KEYS.theme, document.documentElement.classList.contains('dark') ? 'dark' : 'light'));
+  updateApiDot();
+  renderAll(); renderCalc(); renderJobs();
+  setInterval(tickJobTimers, 1000);
+});
+</script>
+</body>
+</html>
