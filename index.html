@@ -601,7 +601,9 @@ details[open] .chev { transform: rotate(180deg); }
           class="hidden text-sm font-medium text-amber-700 dark:text-amber-400"
           role="alert"
           data-i18n="calcOverWarn"></p>
+        <p id="calcLowCarbWarn" class="hidden text-sm font-medium text-amber-700 dark:text-amber-400" data-i18n="calcLowCarbWarn"></p>
       </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="calcDisclaimer"></p>
 
       <!-- Explanations stay one tap away instead of filling the screen -->
       <details id="macroExplainer" class="panel p-3 text-sm leading-relaxed">
@@ -1040,8 +1042,7 @@ details[open] .chev { transform: rotate(180deg); }
 
 const I18N = {
   zh: {
-    appTitle: 'NutriLens AI 營養師',
-    appSubtitle: '多角度立體估算・智慧微調・體重趨勢追蹤',
+    appTitle: 'NutriLens AI 飲食紀錄',
     prevDay: '前一天',
     nextDay: '後一天',
     langSwitch: '語言',
@@ -1054,40 +1055,25 @@ const I18N = {
     macroCarbs: '碳水',
     macroFat: '脂肪',
     weightSecTitle: '體重',
-    weightSecDesc: '建議每天早上起床後量',
-    weightInputLabel: '體重：',
+    weightSecDesc: '建議每天起床、上完廁所後、進食前，穿相同衣物量',
     btnLogWeight: '記錄',
     statLatestW: '最新',
-    statChangeW: '近 7 天變化',
-    statChangeSub: '與首筆紀錄相比',
-    statMinW: '期間最低體重',
-    statMaxW: '期間最高體重',
-    weightChartTitle: '歷史體重趨勢曲線 (含 7 日均線)',
+    statChangeW: '和一週前比',
     range7: '近7筆',
     range14: '近14筆',
     rangeAll: '全部',
     today: '今日',
     noData: '尚無資料',
     uploadSecTitle: '記錄這一餐',
-    uploadSecDesc: '結合「90° 俯視圖」與「45° 側視圖」，分析後支援直接修改各項食材重量與名稱',
     mealTimeLabel: '用餐時間',
     angle1Title: '拍照（從正上方）',
     angle1Desc: '點這裡拍照或選照片',
     angle2Title: '再拍側面（建議）',
-    angle2Desc: '推估食物隆起高度、堆疊深度',
     angle3Title: '參考物（選填）',
-    angle3Desc: '手部餐具對比、包裝食品營養表',
     notePlaceholder: '備註（例：飯只吃半碗、無糖豆漿）',
     btnAnalyze: '開始分析',
     portionLabel: '整份吃了多少',
     reasoningTitle: 'AI 怎麼估的',
-    thFoodItem: '食材名稱 (可修改)',
-    thWeight: '估算淨重 (g，可修改)',
-    thCalories: '熱量 (kcal)',
-    thProtein: '蛋白質 (g)',
-    thCarbs: '碳水 (g)',
-    thFat: '脂肪 (g)',
-    thAction: '操作',
     mealTotalLabel: '這餐合計',
     btnSaveMeal: '儲存紀錄',
     favTitle: '常吃的（點一下就記錄）',
@@ -1095,21 +1081,10 @@ const I18N = {
     tabHistory: '每日歷史',
     btnExportCSV: '匯出 CSV',
     btnBackupJSON: '備份',
-    thDate: '日期',
-    thDayWeight: '當日體重',
-    thMeals: '餐數',
-    thCalIntake: '總攝取 / 目標熱量',
-    thMacroRatio: '三大營養素 (P / C / F)',
-    thStatus: '熱量達標狀態',
     calcTitle: '每日目標',
-    calcSub: '個人化基礎代謝 (BMR)、總熱量消耗 (TDEE) 與最佳三大營養素配比',
     calcBmrLabel: '基礎代謝',
     calcTdeeLabel: '每日總消耗',
     calcTargetLabel: '每日目標',
-    calcProteinCard: '蛋白質 Protein',
-    calcFatCard: '脂肪 Fat',
-    calcCarbsCard: '碳水化合物 Carbohydrates',
-    energyPct: '{n}% 熱量佔比',
     calcBodyMetrics: '身體資料',
     genderMale: '男',
     genderFemale: '女',
@@ -1119,7 +1094,7 @@ const I18N = {
     unitYrs: '歲',
     calcActivity: '日常活動量',
     act1: '久坐辦公 (幾乎不運動)',
-    act2: '輕度活動 (每週運動 1-3 天)',
+    act2: '輕度活動 (每週運動 1-2 天)',
     act3: '中度活動 (每週運動 3-5 天)',
     act4: '高度活動 (每週高強度 6-7 天)',
     act5: '極高強度 / 體力勞動者',
@@ -1132,7 +1107,6 @@ const I18N = {
     btnCancel: '取消',
     btnApplyGoal: '套用',
     dataModalTitle: '常用餐點與資料',
-    dataModalDesc: '可一鍵清除所有餐食、體重、目標與常用餐點；也可匯入先前備份的 JSON 或載入展示範例資料。',
     favManageTitle: '常用餐點',
     btnAddFav: '新增',
     favNamePh: '餐點名稱',
@@ -1177,16 +1151,17 @@ const I18N = {
     weightDeleted: '已刪除 {d} 的體重',
     backupDone: '已下載備份檔，請存到雲端硬碟或傳給自己保管',
     csvDone: '已下載 CSV，可用 Excel 或 Google 試算表開啟',
-    deficitLess: '→ 每天少吃 {n}%（減重）',
+    deficitLess: '→ 比估算的每日消耗少 {n}%（減重）',
     deficitKeep: '→ 吃剛好（維持體重）',
-    deficitMore: '→ 每天多吃 {n}%（增肌）',
-    belowBmrWarn: '⚠ 目標熱量低於你的基礎代謝（{bmr} kcal），長期可能影響健康，建議把減少的比例調小。',
-    belowBmrShort: '低於基礎代謝',
+    deficitMore: '→ 比估算的每日消耗多 {n}%（增重／增肌期）',
+    belowBmrWarn: '⚠ 目標熱量偏低（低於基礎代謝 {bmr} kcal，或低於一般建議下限 {floor} kcal），長期可能營養不足，建議把減少的比例調小。',
+    calcLowCarbWarn: '碳水化合物低於每日建議的 130 g，可能影響精神與運動表現；可降低蛋白質或脂肪比例。',
+    calcDisclaimer: '此為一般估算，不是醫療建議。懷孕或哺乳、腎臟病、使用糖尿病藥物、有飲食疾患病史，或 BMI 低於 18.5 者，請先諮詢醫師或營養師。',
+    belowBmrShort: '熱量偏低',
     portionHint: '只有某道沒吃完？直接改下面那道的克數。',
     ingredients: '食材細項 ({n})',
     weightOnly: '僅記錄體重',
     onTarget: '接近目標',
-    view: '查看明細',
     delete: '刪除',
     periodBreakfast: '早餐',
     periodLunch: '午餐',
@@ -1209,7 +1184,6 @@ const I18N = {
     favDeleted: '已刪除常用餐點：{name}',
     favAdded: '已成功新增常用餐點！',
     favSaved: '已加入常吃的：{name}',
-    favRemoved: '已從常用便當移除：{name}',
     favToggle: '加入 / 移除常吃的',
     favEmptyHint: '還沒有常吃的：點紀錄上的 ★ 就能加入',
     cleared: '已清空所有資料，系統已歸零！',
@@ -1235,7 +1209,6 @@ const I18N = {
     quotaExceeded: '今日免費額度已用完或請求太頻繁（已嘗試備援模型）。額度於太平洋時間午夜重置（台灣約 15:00–16:00），或改用額度較高的模型。',
     overloaded: 'Google 伺服器目前繁忙（已嘗試備援模型），請稍後重試',
     titleDone: '分析完成',
-    modelMigrated: '已將預設模型改為 {m}（免費額度較高）',
     emptyResult: 'AI 沒有回傳有效結果，請重試',
     verifying: '正在連線驗證金鑰並取得可用模型...',
     verifyOk: '金鑰有效！已載入 {n} 個可用模型',
@@ -1256,12 +1229,7 @@ const I18N = {
     mealNameLabel: '餐點名稱',
     btnAddItem: '新增食材',
     mealEditHint: '改克數，熱量會自動跟著變；也可以直接改數字。',
-    scopeTitle: '套用範圍',
-    scopeOnly: '只修改這一筆',
     scopeFav: '也更新常用餐點「{name}」（之後快速記錄用新數字）',
-    scopeAllFav: '更新常用便當＋其他 {n} 筆相同的紀錄（{range}）',
-    scopeAllNoFav: '同時更新其他 {n} 筆相同的紀錄（{range}）',
-    scopeHint: '只會更新內容與修改前完全相同的紀錄；單獨調整過的紀錄不受影響。',
     mealsUpdatedN: '已更新 {n} 筆紀錄',
     undo: '復原',
     undone: '已復原修改',
@@ -1299,7 +1267,7 @@ const I18N = {
     keyErrQuota: '請求太頻繁或今日額度已用完，請稍後再試。',
     obGoalTitle: '設定每日目標',
     obGoalSub: '依你的身體資料計算每日熱量與三大營養素。',
-    obGender: '性別',
+    obGender: '生理性別',
     obAge: '年齡',
     obHeight: '身高',
     obWeight: '體重',
@@ -1310,7 +1278,7 @@ const I18N = {
     goalKeep: '維持',
     goalKeepDesc: '保持現在體重',
     goalGain: '增肌',
-    goalGainDesc: '多吃一點',
+    goalGainDesc: '多吃一點，需搭配重量訓練',
     obResult: '每日 {cal} kcal ・ 蛋白質 {p} g ・ 碳水 {c} g ・ 脂肪 {f} g',
     obResultEmpty: '填寫完整後，這裡會顯示你的每日目標',
     obWeightNote: '體重會記為今天的紀錄，比例之後可在「每日目標」調整。',
@@ -1368,19 +1336,18 @@ const I18N = {
     macroCarbsShort: '碳水化合物：',
     macroWhyCarbs: '日常活動與運動的主要能量來源。扣掉蛋白質和脂肪後，剩下的熱量都給碳水。',
     macroOrder: '計算順序：目標熱量 → 蛋白質 → 脂肪 → 剩下的是碳水。所以調高蛋白質或脂肪，碳水就會變少。注意脂肪每克 9 kcal，是蛋白質和碳水（每克 4 kcal）的兩倍多。',
-    hintDeficit: '每天比消耗量少吃的比例；0% 為維持體重，負數為增肌期多吃。',
-    hintProtein: '有運動習慣者常見建議為每公斤 1.4–2.0 g。',
-    hintFat: '一般成人建議脂肪占總熱量 20–35%。',
+    hintDeficit: '比估算的每日消耗少吃的比例；0% 為維持體重，負數為增重／增肌期多吃。超過 20% 不建議長期使用。',
+    hintProtein: '一般成人每公斤約 1.1 g；規律運動或減脂期常見 1.4–2.0 g。腎臟病患者請遵照醫囑。',
+    hintFat: '國人建議脂肪占總熱量 20–30%。',
     calcExplainHead: '怎麼算出來的？（每 1 g：蛋白質 4 kcal、碳水 4 kcal、脂肪 9 kcal）',
     calcExplainP: '蛋白質：{w} kg × {pk} g/kg = {p} g → {p} g × 4 = {pkcal} kcal',
     calcExplainF: '脂肪：{cal} kcal × {fp}% = {fkcal} kcal → {fkcal} ÷ 9 ≈ {f} g',
     calcExplainC: '碳水：{cal} − {pkcal} − {fkcal} = {ckcal} kcal → {ckcal} ÷ 4 ≈ {c} g',
     calcExplainCZero: '碳水：熱量已被蛋白質和脂肪用完 → 0 g',
-    obMacroMeaning: '蛋白質維持肌肉、脂肪維持生理機能、碳水提供活動能量；比例之後可在「目標設定」調整。',
     portionAll: '全部',
     portionCustom: '自訂比例',
     badgeAi: 'AI 估算・可修改',
-    statChangeNone: '資料還不到 7 天',
+    statChangeNone: '還沒有一週前的紀錄',
     mealsN: '{n} 餐',
     calcHowTitle: '怎麼算出來的？',
     menuApiKey: 'Gemini 金鑰',
@@ -1404,8 +1371,7 @@ const I18N = {
     logSectionLabel: '餐點紀錄與每日歷史'
   },
   en: {
-    appTitle: 'NutriLens AI Nutritionist',
-    appSubtitle: 'Multi-Angle 3D Estimation, Smart Edits & Weight Trend',
+    appTitle: 'NutriLens AI Meal Tracker',
     prevDay: 'Previous day',
     nextDay: 'Next day',
     langSwitch: 'Language',
@@ -1418,40 +1384,25 @@ const I18N = {
     macroCarbs: 'Carbs',
     macroFat: 'Fat',
     weightSecTitle: 'Weight',
-    weightSecDesc: 'Weigh yourself in the morning after waking up',
-    weightInputLabel: 'Weight:',
+    weightSecDesc: 'Weigh yourself after waking and using the toilet, before eating, in similar clothing',
     btnLogWeight: 'Log',
     statLatestW: 'Latest',
-    statChangeW: 'Last 7 days',
-    statChangeSub: 'Since first record',
-    statMinW: 'Min Weight',
-    statMaxW: 'Max Weight',
-    weightChartTitle: 'Weight Trend Curve (w/ 7d MA)',
+    statChangeW: 'vs a week ago',
     range7: 'Last 7',
     range14: 'Last 14',
     rangeAll: 'All',
     today: 'Today',
     noData: 'No data',
     uploadSecTitle: 'Log a meal',
-    uploadSecDesc: 'Combine top & side views. Food names and gram weights stay editable after analysis.',
     mealTimeLabel: 'Meal time',
     angle1Title: 'Take a photo (from above)',
     angle1Desc: 'Tap to take or choose a photo',
     angle2Title: 'Add a side view (recommended)',
-    angle2Desc: 'Estimates food height & depth',
     angle3Title: 'Reference object (optional)',
-    angle3Desc: 'Cutlery reference or package label',
     notePlaceholder: 'Note (e.g. ate half the rice, unsweetened)',
     btnAnalyze: 'Analyze',
     portionLabel: 'How much of the whole meal?',
     reasoningTitle: 'How the AI estimated',
-    thFoodItem: 'Food Item (Editable)',
-    thWeight: 'Net Weight (g, Editable)',
-    thCalories: 'Calories (kcal)',
-    thProtein: 'Protein (g)',
-    thCarbs: 'Carbs (g)',
-    thFat: 'Fat (g)',
-    thAction: 'Action',
     mealTotalLabel: 'Meal total',
     btnSaveMeal: 'Save',
     favTitle: 'Usual meals (tap to log)',
@@ -1459,21 +1410,10 @@ const I18N = {
     tabHistory: 'Daily history',
     btnExportCSV: 'Export CSV',
     btnBackupJSON: 'Back up',
-    thDate: 'Date',
-    thDayWeight: 'Weight',
-    thMeals: 'Meals',
-    thCalIntake: 'Intake / Target Cals',
-    thMacroRatio: 'Macros (P / C / F)',
-    thStatus: 'Goal Status',
     calcTitle: 'Daily goal',
-    calcSub: 'Personalized BMR, TDEE, and macronutrient targets.',
     calcBmrLabel: 'BMR',
     calcTdeeLabel: 'TDEE',
     calcTargetLabel: 'Daily goal',
-    calcProteinCard: 'Protein',
-    calcFatCard: 'Fat',
-    calcCarbsCard: 'Carbohydrates',
-    energyPct: '{n}% of energy',
     calcBodyMetrics: 'About you',
     genderMale: 'Male',
     genderFemale: 'Female',
@@ -1483,7 +1423,7 @@ const I18N = {
     unitYrs: 'yrs',
     calcActivity: 'Activity level',
     act1: 'Sedentary (desk job, low exercise)',
-    act2: 'Lightly Active (1-3 days/wk)',
+    act2: 'Lightly Active (1-2 days/wk)',
     act3: 'Moderately Active (3-5 days/wk)',
     act4: 'Very Active (6-7 days heavy workout)',
     act5: 'Athlete / Physical Labor Job',
@@ -1496,7 +1436,6 @@ const I18N = {
     btnCancel: 'Cancel',
     btnApplyGoal: 'Apply',
     dataModalTitle: 'Usual meals & data',
-    dataModalDesc: 'Clear all meals, weights, goals and favorites, or import a JSON backup / load sample data.',
     favManageTitle: 'Usual meals',
     btnAddFav: 'Add',
     favNamePh: 'Meal name',
@@ -1540,16 +1479,17 @@ const I18N = {
     weightDeleted: 'Weight for {d} deleted',
     backupDone: 'Backup downloaded — keep it in cloud storage or send it to yourself',
     csvDone: 'CSV downloaded — open it in Excel or Google Sheets',
-    deficitLess: '→ Eat {n}% less per day (lose weight)',
+    deficitLess: '→ {n}% below your estimated daily burn (lose weight)',
     deficitKeep: '→ Eat what you burn (maintain)',
-    deficitMore: '→ Eat {n}% more per day (build muscle)',
-    belowBmrWarn: '⚠ This target is below your BMR ({bmr} kcal). Long-term this may harm your health — consider a smaller reduction.',
-    belowBmrShort: 'Below BMR',
+    deficitMore: '→ {n}% above your estimated daily burn (gain / bulk)',
+    belowBmrWarn: '⚠ This target is very low (below your BMR of {bmr} kcal or the usual minimum of {floor} kcal). Long-term it may leave you undernourished — consider a smaller reduction.',
+    calcLowCarbWarn: 'Carbohydrates are below the 130 g/day reference intake, which can affect energy and training; lower protein or fat.',
+    calcDisclaimer: 'General estimate, not medical advice. If you are pregnant or breastfeeding, have kidney disease, take diabetes medication, have a history of eating disorders, or have a BMI under 18.5, consult a doctor or dietitian first.',
+    belowBmrShort: 'Very low',
     portionHint: 'Only one dish left over? Change that dish\'s grams below.',
     ingredients: 'Ingredients ({n})',
     weightOnly: 'Weight Only',
     onTarget: 'Near target',
-    view: 'View',
     delete: 'Delete',
     periodBreakfast: 'Breakfast',
     periodLunch: 'Lunch',
@@ -1572,7 +1512,6 @@ const I18N = {
     favDeleted: 'Favorite deleted: {name}',
     favAdded: 'Favorite added!',
     favSaved: 'Added to usual meals: {name}',
-    favRemoved: 'Removed from favorites: {name}',
     favToggle: 'Add / remove usual meal',
     favEmptyHint: 'No usual meals yet: tap ★ on a meal to add it',
     cleared: 'All data cleared!',
@@ -1598,7 +1537,6 @@ const I18N = {
     quotaExceeded: 'Free quota used up or too many requests (backup models tried). The daily quota resets at midnight Pacific time, or switch to a model with a higher limit.',
     overloaded: 'Google servers are busy (backup models tried). Please retry shortly.',
     titleDone: 'Analysis done',
-    modelMigrated: 'Default model switched to {m} (higher free quota)',
     emptyResult: 'AI returned no usable result. Please retry.',
     verifying: 'Verifying key & fetching models...',
     verifyOk: 'Key valid! Loaded {n} models',
@@ -1619,12 +1557,7 @@ const I18N = {
     mealNameLabel: 'Meal name',
     btnAddItem: 'Add item',
     mealEditHint: 'Change the grams and calories follow; you can also type the numbers directly.',
-    scopeTitle: 'Apply to',
-    scopeOnly: 'This record only',
     scopeFav: 'Also update the usual meal "{name}" (future quick logs use the new values)',
-    scopeAllFav: 'The favorite + {n} other identical records ({range})',
-    scopeAllNoFav: 'Also {n} other identical records ({range})',
-    scopeHint: 'Only records whose content still matches the pre-edit version are updated; records you adjusted individually are left alone.',
     mealsUpdatedN: '{n} records updated',
     undo: 'Undo',
     undone: 'Changes undone',
@@ -1673,7 +1606,7 @@ const I18N = {
     goalKeep: 'Maintain',
     goalKeepDesc: 'Keep current weight',
     goalGain: 'Build muscle',
-    goalGainDesc: 'Eat a bit more',
+    goalGainDesc: 'Eat a bit more, with strength training',
     obResult: '{cal} kcal/day · protein {p} g · carbs {c} g · fat {f} g',
     obResultEmpty: 'Fill in all fields to see your daily goal',
     obWeightNote: 'Your weight is saved for today; ratios can be adjusted later in Daily goal.',
@@ -1731,19 +1664,18 @@ const I18N = {
     macroCarbsShort: 'Carbohydrates: ',
     macroWhyCarbs: 'the main fuel for daily activity and exercise. All calories left after protein and fat go to carbs.',
     macroOrder: 'Order: target calories → protein → fat → the rest is carbs. Raising protein or fat therefore lowers carbs. Note that fat has 9 kcal per gram, more than twice protein and carbs (4 kcal per gram).',
-    hintDeficit: 'How much less than you burn you eat each day; 0% maintains, negative means a surplus for muscle gain.',
-    hintProtein: 'A common recommendation for people who exercise is 1.4–2.0 g per kg.',
-    hintFat: 'For adults, 20–35% of calories from fat is the usual recommendation.',
+    hintDeficit: 'How much below your estimated daily burn; 0% maintains, negative means a surplus for gaining. Over 20% is not advised long term.',
+    hintProtein: 'Adults need about 1.1 g per kg; 1.4–2.0 g is common with regular exercise or while cutting. Kidney disease: follow medical advice.',
+    hintFat: 'Taiwan recommends 20–30% of calories from fat.',
     calcExplainHead: 'How is this calculated? (per 1 g: protein 4 kcal, carbs 4 kcal, fat 9 kcal)',
     calcExplainP: 'Protein: {w} kg × {pk} g/kg = {p} g → {p} g × 4 = {pkcal} kcal',
     calcExplainF: 'Fat: {cal} kcal × {fp}% = {fkcal} kcal → {fkcal} ÷ 9 ≈ {f} g',
     calcExplainC: 'Carbs: {cal} − {pkcal} − {fkcal} = {ckcal} kcal → {ckcal} ÷ 4 ≈ {c} g',
     calcExplainCZero: 'Carbs: protein and fat already use all calories → 0 g',
-    obMacroMeaning: 'Protein maintains muscle, fat supports body functions, carbs fuel activity; ratios can be adjusted later in Macro Goals.',
     portionAll: 'All',
     portionCustom: 'Custom %',
     badgeAi: 'AI estimate · editable',
-    statChangeNone: 'Less than 7 days of data',
+    statChangeNone: 'No entry from a week ago yet',
     mealsN: '{n} meals',
     calcHowTitle: 'How is this calculated?',
     menuApiKey: 'Gemini key',
@@ -1856,24 +1788,23 @@ const CONFIG = {
 
 const DEFAULT_CALC = { gender: 'male', weight: 70, height: 170, age: 30, activity: 1.55, deficit: 20, protein_g_kg: 1.8, fat_pct: 22 };
 const DEMO_CALC = { gender: 'male', weight: 72, height: 172, age: 28, activity: 1.55, deficit: 20, protein_g_kg: 1.8, fat_pct: 22 };
-const DEMO_GOALS = { cal: 2150, p: 130, c: 240, f: 55 };
 /** Built-in favorites have fixed ids so meals quick-logged from them stay linked. */
 const DEFAULT_FAVORITES = [
-  { id: 'fav-default-1', name: '無糖豆漿＋茶葉蛋2顆', cal: 310, p: 26, c: 12, f: 17, reasoning: '400ml 無糖高纖豆漿搭配兩顆超商茶葉蛋' },
-  { id: 'fav-default-2', name: '舒肥雞胸肉健康便當', cal: 550, p: 42, c: 65, f: 12, reasoning: '標準舒肥雞胸 120g、紫米飯 150g、水煮時蔬 150g' },
-  { id: 'fav-default-3', name: '乳清蛋白飲＋一根香蕉', cal: 245, p: 27, c: 30, f: 2, reasoning: '一份分離乳清蛋白粉泡水＋中型香蕉一根 (110g)' }
+  { id: 'fav-default-1', name: '無糖豆漿＋茶葉蛋2顆', cal: 305, p: 26, c: 12, f: 17, reasoning: '400ml 無糖高纖豆漿搭配兩顆超商茶葉蛋' },
+  { id: 'fav-default-2', name: '舒肥雞胸肉健康便當', cal: 536, p: 42, c: 65, f: 12, reasoning: '標準舒肥雞胸 120g、紫米飯 150g、水煮時蔬 150g' },
+  { id: 'fav-default-3', name: '乳清蛋白飲＋一根香蕉', cal: 246, p: 27, c: 30, f: 2, reasoning: '一份分離乳清蛋白粉泡水＋中型香蕉一根 (110g)' }
 ];
 /** Fixed output of the offline demo engine (used when no API key is set). */
 const DEMO_ANALYSIS_ITEMS = {
   zh: [
-    { name: '酥炸大排骨', weight: 135, cal: 365, p: 26, c: 14, f: 22 }, { name: '白飯', weight: 180, cal: 290, p: 5.5, c: 63, f: 0.6 },
-    { name: '滷蛋', weight: 55, cal: 80, p: 7, c: 1, f: 5.5 }, { name: '清炒時蔬', weight: 125, cal: 75, p: 2.5, c: 7, f: 4.2 },
-    { name: '玉米粒', weight: 55, cal: 60, p: 1.8, c: 12, f: 0.8 }
+    { name: '酥炸大排骨', weight: 135, cal: 358, p: 26, c: 14, f: 22 }, { name: '白飯', weight: 180, cal: 323, p: 5.6, c: 74, f: 0.5 },
+    { name: '滷蛋', weight: 55, cal: 82, p: 7, c: 1, f: 5.5 }, { name: '清炒時蔬', weight: 125, cal: 76, p: 2.5, c: 7, f: 4.2 },
+    { name: '玉米粒', weight: 55, cal: 62, p: 1.8, c: 12, f: 0.8 }
   ],
   en: [
-    { name: 'Deep-Fried Pork Chop', weight: 135, cal: 365, p: 26, c: 14, f: 22 }, { name: 'Steamed White Rice', weight: 180, cal: 290, p: 5.5, c: 63, f: 0.6 },
-    { name: 'Braised Egg', weight: 55, cal: 80, p: 7, c: 1, f: 5.5 }, { name: 'Stir-Fried Greens', weight: 125, cal: 75, p: 2.5, c: 7, f: 4.2 },
-    { name: 'Sweet Corn', weight: 55, cal: 60, p: 1.8, c: 12, f: 0.8 }
+    { name: 'Deep-Fried Pork Chop', weight: 135, cal: 358, p: 26, c: 14, f: 22 }, { name: 'Steamed White Rice', weight: 180, cal: 323, p: 5.6, c: 74, f: 0.5 },
+    { name: 'Braised Egg', weight: 55, cal: 82, p: 7, c: 1, f: 5.5 }, { name: 'Stir-Fried Greens', weight: 125, cal: 76, p: 2.5, c: 7, f: 4.2 },
+    { name: 'Sweet Corn', weight: 55, cal: 62, p: 1.8, c: 12, f: 0.8 }
   ]
 };
 
@@ -1882,12 +1813,12 @@ const CALC_SLIDERS = {
   body: [
     { key: 'weight', min: 35, max: 180, step: 0.5, unit: 'kg', label: 'calcWeight' },
     { key: 'height', min: 130, max: 220, step: 1, unit: 'cm', label: 'calcHeight' },
-    { key: 'age', min: 14, max: 90, step: 1, unit: 'unitYrs', label: 'calcAge' }
+    { key: 'age', min: 18, max: 90, step: 1, unit: 'unitYrs', label: 'calcAge' }
   ],
   strategy: [
-    { key: 'deficit', min: -15, max: 35, step: 1, unit: '%', label: 'calcDeficit', hint: 'hintDeficit' },
-    { key: 'protein_g_kg', min: 1.2, max: 2.8, step: 0.1, unit: 'g/kg', label: 'calcProteinRatio', hint: 'hintProtein' },
-    { key: 'fat_pct', min: 15, max: 40, step: 1, unit: '%', label: 'calcFatRatio', hint: 'hintFat', wide: true }
+    { key: 'deficit', min: -15, max: 25, step: 1, unit: '%', label: 'calcDeficit', hint: 'hintDeficit' },
+    { key: 'protein_g_kg', min: 1.2, max: 2.2, step: 0.1, unit: 'g/kg', label: 'calcProteinRatio', hint: 'hintProtein' },
+    { key: 'fat_pct', min: 20, max: 40, step: 1, unit: '%', label: 'calcFatRatio', hint: 'hintFat', wide: true }
   ]
 };
 const ALL_CALC_SLIDERS = [...CALC_SLIDERS.body, ...CALC_SLIDERS.strategy];
@@ -2117,7 +2048,15 @@ function computeMacros(s) {
 }
 /** "Eat 20% less per day" / "Maintain" / "Eat 10% more" — avoids the double negative of "deficit −10%". */
 const deficitText = d => d > 0 ? t('deficitLess', { n: d }) : d < 0 ? t('deficitMore', { n: -d }) : t('deficitKeep');
+/** Usual minimum daily intake without medical supervision (female 1,200 / male 1,500 kcal). */
+const KCAL_FLOOR = { female: 1200, male: 1500 };
+/** Floor below which a target is flagged: the higher of BMR and the usual minimum. */
+const lowTargetFloor = (s, r) => Math.max(r.bmr, KCAL_FLOOR[s.gender] ?? KCAL_FLOOR.female);
+/** Carbohydrate reference intake (g/day) used for the low-carb note. */
+const CARB_MIN_G = 130;
 const goalsFromMacros = r => ({ cal: r.target, p: r.p.g, c: r.c.g, f: r.f.g });
+/** Demo goals come from the demo profile, so the dashboard and the calculator always agree. */
+const DEMO_GOALS = goalsFromMacros(computeMacros(DEMO_CALC));
 /** True when protein + fat alone exceed the target, i.e. carbs had to be clamped to 0. */
 const macrosExceedTarget = s => { const r = computeMacros(s); return r.p.kcal + r.f.kcal > r.target; };
 
@@ -3137,12 +3076,14 @@ function renderCalc() {
   ['p', 'c', 'f'].forEach(k => { $(`#calc-${k}-g`).textContent = r[k].g + 'g'; });
   $('#calcWarn').classList.toggle('hidden', !macrosExceedTarget(cs));
   $('#calc-live-deficit').textContent = deficitText(cs.deficit);
-  const bmrWarn = $('#calcBmrWarn');
-  bmrWarn.textContent = r.target < r.bmr ? t('belowBmrWarn', { bmr: fmtNum(r.bmr) }) : '';
-  bmrWarn.classList.toggle('hidden', r.target >= r.bmr);
+  const floor = lowTargetFloor(cs, r), tooLow = r.target < floor, bmrWarn = $('#calcBmrWarn');
+  bmrWarn.textContent = tooLow ? t('belowBmrWarn', { bmr: fmtNum(r.bmr), floor: fmtNum(KCAL_FLOOR[cs.gender] ?? KCAL_FLOOR.female) }) : '';
+  bmrWarn.classList.toggle('hidden', !tooLow);
   // The warning sits mid-form; the sticky total turns amber too so it is seen without scrolling
-  $('#calc-target').classList.toggle('text-amber-600', r.target < r.bmr);
-  $('#calc-bmr-flag').classList.toggle('hidden', r.target >= r.bmr);
+  $('#calc-target').classList.toggle('text-amber-600', tooLow);
+  $('#calc-bmr-flag').classList.toggle('hidden', !tooLow);
+  // Low-carb note only when carbs are above 0 (0 g already has its own, stronger warning)
+  $('#calcLowCarbWarn').classList.toggle('hidden', !(r.c.g > 0 && r.c.g < CARB_MIN_G));
   renderCalcExplain(cs, r);
 }
 
@@ -3673,7 +3614,10 @@ function deleteWeightForDate(date = selectedDate()) {
 }
 function openGoalModal() {
   const latest = db.weights().at(-1);
-  state.calcDraft = { ...db.calcProfile(), ...(latest ? { weight: latest.weight } : {}) };
+  const draft = { ...db.calcProfile(), ...(latest ? { weight: latest.weight } : {}) };
+  // Profiles saved before a range changed (e.g. deficit 30 % when the maximum is now 25 %) are brought into range
+  ALL_CALC_SLIDERS.forEach(sl => { draft[sl.key] = clamp(num(draft[sl.key], DEFAULT_CALC[sl.key]), sl.min, sl.max); });
+  state.calcDraft = draft;
   modal.open('goalModal'); renderCalc();
 }
 /** Typing: a value inside the range applies immediately; outside it is only marked (red border)
@@ -3727,19 +3671,19 @@ function seedDemo({ withProfile = false } = {}) {
   db.saveMeals([...db.meals().filter(m => !m.demo),
     {
       id: uid(), demo: true, date: today, time: '08:20', name: '全麥酪梨水波蛋吐司＋拿鐵', angleCount: 2,
-      reasoning: '全麥吐司 65g、水波蛋 50g、酪梨 45g、拿鐵 240ml。', cal: 465, p: 21, c: 42, f: 23,
+      reasoning: '全麥吐司 65g、水波蛋 50g、酪梨 45g、拿鐵 240ml。', cal: 459, p: 21, c: 42, f: 23,
       items: [
-        { name: '厚切全麥吐司', weight: 65, cal: 170, p: 6, c: 31, f: 2 },
-        { name: '水波蛋與酪梨切片', weight: 95, cal: 175, p: 7, c: 4, f: 15 },
-        { name: '無糖鮮奶拿鐵', weight: 240, cal: 120, p: 8, c: 7, f: 6 }
+        { name: '厚切全麥吐司', weight: 65, cal: 166, p: 6, c: 31, f: 2 },
+        { name: '水波蛋與酪梨切片', weight: 95, cal: 179, p: 7, c: 4, f: 15 },
+        { name: '無糖鮮奶拿鐵', weight: 240, cal: 114, p: 8, c: 7, f: 6 }
       ]
     },
     {
       id: uid(), demo: true, date: shiftDate(today, -1), time: '12:30', name: '舒肥迷迭香雞胸餐盒（佐紫米飯）', angleCount: 2,
-      reasoning: '紫米飯 160g、舒肥雞胸肉 130g、綠花椰與時蔬 150g。', cal: 585, p: 43, c: 68, f: 15,
+      reasoning: '紫米飯 160g、舒肥雞胸肉 130g、綠花椰與時蔬 150g。', cal: 579, p: 43, c: 68, f: 15,
       items: [
-        { name: '舒肥迷迭香雞胸肉', weight: 130, cal: 215, p: 36, c: 0, f: 7 },
-        { name: '紫米五穀飯', weight: 160, cal: 260, p: 5, c: 56, f: 2 },
+        { name: '舒肥迷迭香雞胸肉', weight: 130, cal: 207, p: 36, c: 0, f: 7 },
+        { name: '紫米五穀飯', weight: 160, cal: 262, p: 5, c: 56, f: 2 },
         { name: '時令溫野菜', weight: 150, cal: 110, p: 2, c: 12, f: 6 }
       ]
     }
@@ -3964,7 +3908,7 @@ const onboarding = {
   status: () => onboarding.load().status,
   save(patch) { store.set(STORAGE_KEYS.onboarding, { ...onboarding.load(), ...patch }); },
   /** In-memory form state for the current visit. */
-  form: { keyStatus: null, gender: null, age: '', height: '', weight: '', activity: 1.55, goal: 'lose' }
+  form: { keyStatus: null, gender: null, age: '', height: '', weight: '', activity: 1.375, goal: 'lose' }
 };
 
 /** Maps key-verification errors to a sentence with a next step. */
@@ -4072,7 +4016,7 @@ const OB_STEP_VIEWS = {
     <div class="space-y-1.5">
       <div class="text-xs font-semibold">${t('obGender')}</div>
       <div class="grid grid-cols-2 gap-2">
-        ${['male', 'female'].map(g => choiceCard('obGender', g, f.gender === g, t(`gender${g === 'male' ? 'Male' : 'Female'}`), '')).join('')}
+        ${['male', 'female'].map(g => choiceCard('obGender', g, f.gender === g, t(g === 'male' ? 'genderMale' : 'genderFemale'), '')).join('')}
       </div>
     </div>
     <div class="grid grid-cols-3 gap-2">
@@ -4095,6 +4039,7 @@ const OB_STEP_VIEWS = {
     <div id="obGoalResult" class="panel p-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400" aria-live="polite"></div>
 
     <p class="text-xs text-slate-500 dark:text-slate-400">${t('obWeightNote')}</p>
+    <p class="text-xs text-slate-500 dark:text-slate-400">${t('calcDisclaimer')}</p>
     <button type="button" data-action="ob-goals-next" class="btn btn-primary w-full py-2.5">${t('obNext')}</button>`;
   },
 
@@ -4123,7 +4068,7 @@ function readGoalForm() {
   Object.assign(f, {
     gender: $('input[name="obGender"]:checked')?.value ?? null,
     age: $('#obAge').value, height: $('#obHeight').value, weight: $('#obWeight').value,
-    activity: num($('input[name="obActivity"]:checked')?.value, 1.55), goal: $('input[name="obGoal"]:checked')?.value || 'lose'
+    activity: num($('input[name="obActivity"]:checked')?.value, 1.375), goal: $('input[name="obGoal"]:checked')?.value || 'lose'
   });
   const inRange = (v, k) => { const s = CALC_SLIDERS.body.find(x => x.key === k); return Number.isFinite(v) && v >= s.min && v <= s.max; };
   const age = val('obAge'), height = val('obHeight'), weight = val('obWeight');
@@ -4136,7 +4081,8 @@ function renderGoalPreview() {
   if (!profile) { el.textContent = t('obResultEmpty'); el.classList.add('text-slate-400'); return; }
   const r = computeMacros(profile);
   el.classList.remove('text-slate-400');
-  const warn = r.target < r.bmr ? '\n' + t('belowBmrWarn', { bmr: fmtNum(r.bmr) }) : '';
+  const tooLow = r.target < lowTargetFloor(profile, r);
+  const warn = tooLow ? '\n' + t('belowBmrWarn', { bmr: fmtNum(r.bmr), floor: fmtNum(KCAL_FLOOR[profile.gender]) }) : '';
   el.textContent = t('obResult', { cal: fmtNum(r.target), p: r.p.g, c: r.c.g, f: r.f.g }) + warn;
   el.classList.add('whitespace-pre-line');
 }
