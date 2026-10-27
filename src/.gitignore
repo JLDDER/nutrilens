@@ -1,0 +1,5 @@
+# Build output and local tools (not committed)
+dist/
+tailwindcss*
+tailwind.in.css
+tailwind.out.css
