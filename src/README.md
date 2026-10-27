@@ -10,6 +10,7 @@ Each user brings their own Gemini API key (stored only in their browser).
 | `index.html` | Markup, head meta, Tailwind component classes |
 | `css/app.css` | Plain CSS that Tailwind utilities do not cover |
 | `js/i18n.js` | UI strings (zh / en), one key per line |
+| `js/foods.js` | Cooked-food composition table used by precise mode (every row cites its source) |
 | `js/app.js` | Application script, 12 numbered sections |
 | `images/` | Key-guide screenshots |
 | `icons/` | Favicon and home-screen icon |
@@ -37,3 +38,9 @@ browser can never combine a new page with cached old scripts.
 - Text uses `data-i18n` / `-placeholder` / `-title` / `-aria-label` with keys from `js/i18n.js`.
 - Every `<button>` declares its `type`.
 - Tailwind class names must appear as complete literal strings so the build can find them.
+
+## Testing build
+
+`test.html` in the repository root is a build of this source with the **precise analysis mode** and the
+**accuracy test** (資料管理 → 進階 → 準確度驗證). The live `index.html` stays on the standard mode until
+the accuracy test shows the precise mode is better.
