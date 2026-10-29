@@ -98,6 +98,9 @@ details > summary { list-style: none; cursor: pointer; }
 details > summary::-webkit-details-marker { display: none; }
 details[open] .chev { transform: rotate(180deg); }
 
+/* Photo viewer: a tap toggles 2x zoom; the scroller then pans the image */
+#photoImg.zoomed { max-width: none; max-height: none; width: 200%; cursor: zoom-out; }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }

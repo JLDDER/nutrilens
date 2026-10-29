@@ -137,6 +137,7 @@
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></symbol>
     <symbol id="i-file-up" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 14l3-3 3 3"/></symbol>
     <symbol id="i-file-csv" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
     <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></symbol>
     <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol>
@@ -260,7 +261,15 @@
     <section class="card" aria-labelledby="dashboardTitle">
       <div class="flex items-center justify-between gap-2 mb-4">
         <h2 class="font-bold text-base" id="dashboardTitle"></h2>
-        <span id="calorieStatusBadge" class="text-xs font-semibold px-2.5 py-1 rounded-full border"></span>
+        <div class="flex items-center gap-1.5">
+          <span id="calorieStatusBadge" class="text-xs font-semibold px-2.5 py-1 rounded-full border"></span>
+          <button
+            type="button"
+            data-action="share-day"
+            class="icon-btn w-9 h-9 text-slate-500 hover:text-emerald-600"
+            data-i18n-title="shareDay"
+            data-i18n-aria-label="shareDay"><svg class="icon" aria-hidden="true"><use href="#i-share"/></svg></button>
+        </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
         <div class="md:col-span-5 panel flex items-center justify-center gap-5 p-4">
@@ -584,7 +593,10 @@
           class="hidden text-sm font-medium text-amber-700 dark:text-amber-400"
           role="alert"
           data-i18n="calcOverWarn"></p>
-        <p id="calcLowCarbWarn" class="hidden text-sm font-medium text-amber-700 dark:text-amber-400" data-i18n="calcLowCarbWarn"></p>
+        <p
+          id="calcLowCarbWarn"
+          class="hidden text-sm font-medium text-amber-700 dark:text-amber-400"
+          data-i18n="calcLowCarbWarn"></p>
       </div>
       <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="calcDisclaimer"></p>
 
@@ -738,6 +750,25 @@
         </div>
       </div>
 
+      <div class="panel p-3.5 space-y-2 text-sm">
+        <label for="photoRetention" class="font-semibold flex items-center gap-1.5">
+          <svg class="icon text-emerald-600" aria-hidden="true"><use href="#i-camera"/></svg>
+          <span data-i18n="photoSettingsTitle"></span>
+        </label>
+        <select
+          id="photoRetention"
+          class="select-themed bg-slate-50 dark:bg-[#1e1e22] border border-slate-300 dark:border-[#2d2f38] text-xs w-full">
+          <option value="days" data-i18n="photoKeep90"></option>
+          <option value="forever" data-i18n="photoKeepForever"></option>
+        </select>
+        <p
+          id="photoForeverWarn"
+          class="hidden text-xs text-amber-700 dark:text-amber-400"
+          data-i18n="photoForeverWarn"></p>
+        <p id="photoUsage" class="text-xs text-slate-500"></p>
+        <p class="text-xs text-slate-400" data-i18n="photoSafariHint"></p>
+      </div>
+
       <div class="grid grid-cols-2 gap-2">
         <button type="button" data-action="restore-demo" class="btn btn-soft text-xs py-2.5">
           <svg class="icon text-emerald-500" aria-hidden="true"><use href="#i-sparkles"/></svg>
@@ -879,6 +910,86 @@
           data-action="save-api"
           class="btn btn-primary font-bold px-5"
           data-i18n="btnSaveKey"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo viewer: the photos sent for a meal's analysis (swipe or arrows between angles) -->
+  <div id="photoModal" class="modal !p-0 !bg-black" role="dialog" aria-modal="true" aria-labelledby="photoTitle">
+    <div
+      class="relative w-full h-full flex flex-col text-white pt-[env(safe-area-inset-top)]
+             pb-[env(safe-area-inset-bottom)]">
+      <div class="flex items-center gap-2 px-3 py-2 shrink-0">
+        <div class="flex-1 min-w-0">
+          <h3 id="photoTitle" class="font-semibold truncate"></h3>
+          <p id="photoCounter" class="text-xs text-slate-300"></p>
+        </div>
+        <button
+          type="button"
+          data-action="photo-share"
+          class="w-11 h-11 inline-flex items-center justify-center rounded-full hover:bg-white/10"
+          data-i18n-aria-label="shareMeal"><svg class="icon text-xl" aria-hidden="true"><use href="#i-share"/></svg></button>
+        <button
+          type="button"
+          data-action="close-modal"
+          class="w-11 h-11 inline-flex items-center justify-center rounded-full hover:bg-white/10"
+          aria-label="Close"><svg class="icon text-xl" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </div>
+      <div id="photoScroller" class="flex-1 min-h-0 overflow-auto flex">
+        <img
+          id="photoImg"
+          alt=""
+          data-action="photo-zoom"
+          class="m-auto max-w-full max-h-full object-contain cursor-zoom-in" />
+      </div>
+      <button
+        type="button"
+        data-action="photo-prev"
+        class="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/50 inline-flex items-center
+               justify-center"
+        data-i18n-aria-label="prevPhoto"><svg class="icon text-xl" aria-hidden="true"><use href="#i-chevron-left"/></svg></button>
+      <button
+        type="button"
+        data-action="photo-next"
+        class="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/50 inline-flex items-center
+               justify-center"
+        data-i18n-aria-label="nextPhoto"><svg class="icon text-xl" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
+      <p class="text-center text-xs text-slate-400 pb-3 shrink-0" data-i18n="photoZoomHint"></p>
+    </div>
+  </div>
+
+  <!-- Share: preview of the generated image, then the system share sheet or a download -->
+  <div id="shareModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <div class="modal-panel max-w-md">
+      <div class="flex items-center justify-between gap-3">
+        <h3 id="shareTitle" class="font-bold text-lg"></h3>
+        <button type="button" data-action="close-modal" class="icon-btn rounded-full" aria-label="Close">
+          <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <label id="shareGoalsRow" class="flex items-center gap-2 text-sm">
+        <input type="checkbox" id="shareGoals" class="accent-emerald-600 w-4 h-4" checked />
+        <span data-i18n="shareShowGoals"></span>
+      </label>
+      <div
+        class="rounded-xl border border-slate-200 dark:border-[#2d2f38] bg-slate-50 dark:bg-[#1e1e22]
+               max-h-[55vh] overflow-y-auto">
+        <div id="shareBusy" class="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+          <svg class="icon animate-spin text-emerald-600" aria-hidden="true"><use href="#i-loader"/></svg>
+          <span data-i18n="shareMaking"></span>
+        </div>
+        <img id="sharePreview" alt="" class="hidden w-full h-auto" />
+      </div>
+      <p class="text-xs text-slate-500" data-i18n="sharePrivacy"></p>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" data-action="share-save" class="btn btn-soft py-2.5">
+          <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+          <span data-i18n="shareSave"></span>
+        </button>
+        <button type="button" data-action="share-send" class="btn btn-primary py-2.5">
+          <svg class="icon" aria-hidden="true"><use href="#i-share"/></svg>
+          <span data-i18n="shareSend"></span>
+        </button>
       </div>
     </div>
   </div>
@@ -1041,5 +1152,6 @@
 <script src="js/i18n.js"></script>
 <script src="js/foods.js"></script>
 <script src="js/app.js"></script>
+<script src="js/photos.js"></script>
 </body>
 </html>

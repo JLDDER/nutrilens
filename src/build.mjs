@@ -9,7 +9,9 @@
 //   index.html   markup              dist/index.html   one file: CSS and scripts inlined
 //   css/app.css  plain CSS           dist/images/      key-guide screenshots
 //   js/i18n.js   UI strings          dist/icons/       favicon and home-screen icon
+//   js/foods.js  food table
 //   js/app.js    application
+//   js/photos.js photos & sharing
 //   images/, icons/
 //
 // Steps:

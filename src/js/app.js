@@ -2,7 +2,9 @@
 /* =====================================================================
  * NutriLens AI — application script
  * ---------------------------------------------------------------------
- * Dependency-light app: open index.html and it runs (strings in i18n.js).
+ * Dependency-light app: open index.html and it runs. Scripts, in load order:
+ * i18n.js (strings), foods.js (food table), app.js (this file), photos.js
+ * (meal photos and share images; registers its own actions).
  * build.mjs compiles Tailwind and inlines the scripts into dist/index.html.
  *
  * Sections (top to bottom):
@@ -43,7 +45,8 @@ const STORAGE_KEYS = {
   onboarding: 'nutrilens_onboarding_v1',     // { status: 'new'|'setup'|'exploring'|'done', step }
   hintResult: 'nutrilens_hint_result_v1',    // first-result tip dismissed
   analysisMode: 'nutrilens_analysis_mode_v1', // 'standard' | 'precise'
-  validation: 'nutrilens_validation_v1'      // accuracy-test results (no photos)
+  validation: 'nutrilens_validation_v1',     // accuracy-test results (no photos)
+  photoRetention: 'nutrilens_photo_retention_v1' // 'days' (delete after CONFIG.photos.retentionDays) | 'forever'
 };
 
 const CONFIG = {
@@ -71,7 +74,7 @@ const CONFIG = {
      *  CORS/CSP block, so retrying with ?key= would only waste more time. */
     stallMs: 5_000
   },
-  /** Precise mode (testing): main analysis, then the weights re-estimated by two light models. */
+  /** Precise mode: main analysis, then the weights re-estimated by two light models. */
   precise: {
     weightModels: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
     weightTimeoutMs: 30_000,
@@ -80,6 +83,10 @@ const CONFIG = {
     maxWeightRatio: 3
   },
   image: { maxDim: 768, jpegQuality: 0.8 },
+  /** Meal photos are kept in IndexedDB; by default those older than retentionDays are deleted at startup. */
+  photos: { dbName: 'nutrilens_photos', retentionDays: 90 },
+  /** Share images: 1080 px wide; maxPixels keeps long day images under mobile canvas limits. */
+  share: { maxPixels: 16_000_000, maxItems: 6, jpegQuality: 0.9 },
   jobs: { maxStored: 6 },
   perfLog: { maxRecords: 50 },
   weight: { min: 25, max: 250 },
@@ -199,7 +206,8 @@ const DAY_STATUS_CLASSES = {
 /**
  * @typedef {{ name: string, weight: number, cal: number, p: number, c: number, f: number }} FoodItem
  * @typedef {{ id: string, date: string, time: string, name: string, angleCount: number, reasoning: string,
- *             cal: number, p: number, c: number, f: number, items: FoodItem[], favId?: string }} Meal
+ *             cal: number, p: number, c: number, f: number, items: FoodItem[], favId?: string, photoId?: string }} Meal
+ *   `photoId` = key of the meal's photos in IndexedDB (js/photos.js).
  * @typedef {{ id: string, name: string, cal: number, p: number, c: number, f: number, reasoning?: string, items?: FoodItem[] }} Favorite
  *   A meal template. Meals created from it carry `favId`, which drives the ★ and "apply to" options.
  * @typedef {'running'|'done'|'error'|'cancelled'|'interrupted'} JobStatus
@@ -261,6 +269,7 @@ const sanitizeMeal = m => ({
   cal: Math.round(num(m?.cal)), p: Math.round(num(m?.p)), c: Math.round(num(m?.c)), f: Math.round(num(m?.f)),
   items: Array.isArray(m?.items) ? m.items.map(sanitizeItem) : [],
   favId: typeof m?.favId === 'string' && m.favId ? m.favId : undefined,
+  photoId: typeof m?.photoId === 'string' && /^[\w-]{1,40}$/.test(m.photoId) ? m.photoId : undefined,   // key in photoStore
   demo: m?.demo === true ? true : undefined           // seeded demo record (see clearDemoData)
 });
 const sanitizeFavorite = f => ({
@@ -460,7 +469,8 @@ function per100gToAbsolute(apiItem) {
 /** Builds the Meal to store from the analysis being edited (portion already applied). */
 function mealFromAnalysis(analysis, { portion, name, date, time, reasoning }) {
   const items = analysis.items.map(it => roundItem({ name: it.name, weight: Math.round(effectiveWeight(it, portion)), ...itemNutrients(it, portion) }));
-  return { id: uid(), date, time, name, angleCount: analysis.angleCount, reasoning, ...roundedTotals(items), items };
+  return { id: uid(), date, time, name, angleCount: analysis.angleCount, reasoning, ...roundedTotals(items), items,
+    ...(analysis.photoId ? { photoId: analysis.photoId } : {}) };
 }
 
 /* Saved-meal editor rows keep the displayed (rounded) values plus a per-gram density `d`.
@@ -960,7 +970,9 @@ function scaleToPackage(items, packageKcal) {
 async function analyzePrecise({ key, model, job, signal, rec, backups }) {
   const prompt = buildPrecisePrompt({ lang: job.lang, imageCount: job.images.length, note: job.note });
   const images = job.images.map(dataUrlToPart);
-  const main = await gemini.generateWithFallback({ key, model, parts: [{ text: prompt.user }, ...images], system: prompt.system, signal, rec, task: PRECISE_TASK, backups });
+  const main = await gemini.generateWithFallback({
+    key, model, parts: [{ text: prompt.user }, ...images], system: prompt.system, signal, rec, task: PRECISE_TASK, backups
+  });
 
   const wp = buildWeightPrompt(main.rawItems, job.note);
   const started = Date.now();
@@ -975,7 +987,9 @@ async function analyzePrecise({ key, model, job, signal, rec, backups }) {
       Object.assign(run, { result: 'ok', endMs: Date.now() - started });
       return r.weights.length === main.rawItems.length ? r.weights : null;
     } catch (e) {
-      Object.assign(run, { result: ctrl.signal.reason === 'MODEL_TIMEOUT' ? 'timeout' : 'error', error: String(e.message || e).slice(0, 200), endMs: Date.now() - started });
+      Object.assign(run, {
+        result: ctrl.signal.reason === 'MODEL_TIMEOUT' ? 'timeout' : 'error', error: String(e.message || e).slice(0, 200), endMs: Date.now() - started
+      });
       if (signal.aborted) throw e;
       return null;
     } finally { clearTimeout(timer); signal.removeEventListener('abort', forward); }
@@ -983,7 +997,10 @@ async function analyzePrecise({ key, model, job, signal, rec, backups }) {
   if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
   const weightSets = settled.map(s => (s.status === 'fulfilled' ? s.value : null)).filter(Boolean);
   const items = scaleToPackage(combinePrecise(main.rawItems, weightSets), main.packageKcal);
-  if (rec) rec.precise = { weightSets: weightSets.length, packageKcal: main.packageKcal, items: items.map(it => ({ n: it.name, w: it.src.estimates, med: it.weight, src: it.src.kind, oil: it.src.oilG })) };
+  if (rec) {
+    rec.precise = { weightSets: weightSets.length, packageKcal: main.packageKcal,
+      items: items.map(it => ({ n: it.name, w: it.src.estimates, med: it.weight, src: it.src.kind, oil: it.src.oilG })) };
+  }
   return { name: main.name, reasoning: main.reasoning, items, modelUsed: main.modelUsed, meta: main.meta, precise: true };
 }
 
@@ -1299,26 +1316,44 @@ const mealItemTemplate = it => `
     </div>
   </div>`;
 
+/** Thumbnail of a meal's first photo; rendered hidden and shown by photos.decorate() once loaded. */
+const mealThumbTemplate = m => !m.photoId ? '' : `
+  <button type="button" data-action="view-photos" data-id="${esc(m.id)}" data-photo-thumb="${esc(m.photoId)}"
+    class="hidden w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-slate-100 dark:bg-[#1e1e22]
+           border border-slate-200 dark:border-[#2d2f38]"
+    aria-label="${t('photoView')}"><img alt="" class="w-full h-full object-cover" /></button>`;
+
+const CHIP_CLASSES = {
+  photo: 'text-xs text-emerald-700 dark:text-emerald-300 font-medium bg-emerald-50 dark:bg-emerald-950/70 px-1.5 py-0.5 rounded border '
+    + 'border-emerald-100 dark:border-emerald-800/50',
+  quick: 'text-xs text-amber-700 dark:text-amber-300 font-medium bg-amber-50 dark:bg-amber-950/70 px-1.5 py-0.5 rounded border '
+    + 'border-amber-100 dark:border-amber-800/50',
+  demo: 'text-xs font-semibold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300'
+};
+/** "2 angles" (a button that opens the photos when they were kept), or "Quick log" for a meal from a favorite. */
+function mealSourceChip(m) {
+  if (m.angleCount === 0) return `<span class="${CHIP_CLASSES.quick}">${icon('star', 'mr-0.5')}${t('quickBadge')}</span>`;
+  const label = `${icon('camera', 'mr-0.5')}${m.angleCount === 1 ? t('angle1') : t('angles', { n: m.angleCount })}`;
+  return m.photoId
+    ? `<button type="button" data-action="view-photos" data-id="${esc(m.id)}" title="${t('photoView')}" class="${CHIP_CLASSES.photo}">${label}</button>`
+    : `<span class="${CHIP_CLASSES.photo}">${label}</span>`;
+}
+
 function mealCardTemplate(m, isFavorite) {
   return `
   <article class="panel p-4" data-meal-id="${esc(m.id)}">
     <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="mono text-sm font-bold">${esc(m.time)}</span>${periodBadge(m.time)}
-        <h4 class="font-bold">${esc(m.name)}</h4>
-        ${m.angleCount > 0 ? `<span
-          class="text-xs text-emerald-700 dark:text-emerald-300 font-medium
-                 bg-emerald-50 dark:bg-emerald-950/70 px-1.5 py-0.5 rounded border
-                 border-emerald-100 dark:border-emerald-800/50">${icon('camera', 'mr-0.5')}${t('angles', { n: m.angleCount })}</span>` : `<span
-                   class="text-xs text-amber-700 dark:text-amber-300 font-medium bg-amber-50
-                          dark:bg-amber-950/70 px-1.5 py-0.5 rounded border border-amber-100
-                          dark:border-amber-800/50">${icon('star', 'mr-0.5')}${t('quickBadge')}</span>`}
-        ${m.demo ? `<span
-          class="text-xs font-semibold px-1.5 py-0.5 rounded bg-amber-100
-                 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300">${t('demoBadge')}</span>` : ''}
+      <div class="flex items-center gap-3 min-w-0">
+        ${mealThumbTemplate(m)}
+        <div class="flex flex-wrap items-center gap-2 min-w-0">
+          <span class="mono text-sm font-bold">${esc(m.time)}</span>${periodBadge(m.time)}
+          <h4 class="font-bold">${esc(m.name)}</h4>
+          ${mealSourceChip(m)}
+          ${m.demo ? `<span class="${CHIP_CLASSES.demo}">${t('demoBadge')}</span>` : ''}
+        </div>
       </div>
-      <div class="flex items-center gap-1">
-        <span class="mono font-bold text-emerald-600 dark:text-emerald-400 text-base mr-1">${m.cal} <span class="text-xs">kcal</span></span>
+      <div class="flex items-center gap-1 ml-auto">
+        <span class="mono font-bold text-emerald-600 dark:text-emerald-400 text-base mr-1 whitespace-nowrap">${m.cal} <span class="text-xs">kcal</span></span>
         <button type="button" data-action="fav-meal" data-id="${esc(m.id)}"
           class="w-10 h-10 inline-flex items-center justify-center rounded-lg
                  hover:bg-slate-100 dark:hover:bg-[#2d2f38]
@@ -1326,6 +1361,11 @@ function mealCardTemplate(m, isFavorite) {
           aria-pressed="${isFavorite}" title="${t('favToggle')}" aria-label="${t('favToggle')}">
           <svg class="icon text-lg" ${isFavorite ? 'style="fill:currentColor"' : ''} aria-hidden="true"><use href="#i-star"/></svg>
         </button>
+        <button type="button" data-action="share-meal" data-id="${esc(m.id)}"
+          class="w-10 h-10 inline-flex items-center justify-center rounded-lg
+                 hover:bg-slate-100 dark:hover:bg-[#2d2f38] text-slate-400
+                 hover:text-emerald-600"
+          title="${t('shareMeal')}" aria-label="${t('shareMeal')}">${icon('share', 'text-lg')}</button>
         <button type="button" data-action="edit-meal" data-id="${esc(m.id)}"
           class="w-10 h-10 inline-flex items-center justify-center rounded-lg
                  hover:bg-slate-100 dark:hover:bg-[#2d2f38] text-slate-400
@@ -1370,6 +1410,7 @@ function renderTimeline(dayMeals) {
   const favIds = new Set(db.favs().map(f => f.id));               // ★ = the meal is linked to an existing favorite
   const expanded = new Set($$('#timeline details[open]').map(d => d.closest('article').dataset.mealId));   // keep expanded cards expanded
   el.innerHTML = [...dayMeals].sort((a, b) => a.time.localeCompare(b.time)).map(m => mealCardTemplate(m, !!m.favId && favIds.has(m.favId))).join('');
+  photos.decorate(el);
   $$('#timeline article').forEach(a => { if (expanded.has(a.dataset.mealId)) $('details', a).open = true; });
 }
 
@@ -1829,6 +1870,7 @@ function submitAnalysis() {
   const job = { id: uid().slice(0, 8), at: Date.now(), date: selectedDate(), time: mealTime.current(),
     note, images, imageInfo: state.imageInfo.filter(Boolean), lang, status: 'running', startedAt: Date.now() };
   state.jobs.push(job);
+  photos.saveForJob(job);
   $('#mealNoteInput').value = ''; clearAllImages(); mealTime.reset();
   persistJobs(); renderJobs(); toast(t('jobQueued'));
   runJob(job);
@@ -1930,8 +1972,11 @@ function openJobResult(id, el) {
   const current = state.analysis;
   if (current?.dirty && current.jobId !== id && el) return confirmTwice(el, 'discardEdits', () => openJobResult(id));
   const r = job.result;
-  state.analysis = { name: r.name, reasoning: r.reasoning, angleCount: r.angleCount, modelUsed: r.modelUsed, meta: r.meta, isDemo: r.isDemo, precise: !!r.precise,
-    jobId: job.id, date: job.date, time: job.time, dirty: false, items: r.items.map(toEditableItem) };
+  state.analysis = {
+    name: r.name, reasoning: r.reasoning, angleCount: r.angleCount, modelUsed: r.modelUsed, meta: r.meta, isDemo: r.isDemo, precise: !!r.precise,
+    jobId: job.id, date: job.date, time: job.time, dirty: false, items: r.items.map(toEditableItem),
+    photoId: (job.imageInfo?.length || job.images.length) ? job.id : undefined      // photos were kept under the job id
+  };
   setPortion(100);
   renderAnalysis();
   $('#analysisResultBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2277,6 +2322,7 @@ function clearAll() {
   db.saveGoals(goalsFromMacros(computeMacros(DEFAULT_CALC)));
   liveJobs.forEach(ctrl => ctrl.abort('USER'));
   state.jobs = []; persistJobs(); renderJobs();
+  photos.clear();
   state.analysis = null; renderAnalysis();
   $('#dailyWeightInput').value = '';
   modal.close(); toast(t('cleared')); renderAll();
@@ -2788,7 +2834,9 @@ function renderValidation() {
     <label class="relative h-20 rounded-xl border-2 border-dashed border-slate-300 dark:border-[#2d2f38] flex items-center justify-center
                   text-xs text-slate-500 cursor-pointer overflow-hidden">
       <input type="file" accept="image/*" class="sr-only" data-val-photo="${i}" />
-      ${validation.images[i] ? `<img src="${validation.images[i]}" alt="" class="absolute inset-0 w-full h-full object-cover" />` : esc(t(['valPhoto1', 'valPhoto2', 'valPhoto3'][i]))}
+      ${validation.images[i]
+        ? `<img src="${validation.images[i]}" alt="" class="absolute inset-0 w-full h-full object-cover" />`
+        : esc(t(['valPhoto1', 'valPhoto2', 'valPhoto3'][i]))}
     </label>`;
   const truthField = (id, labelKey, required) => `
     <label class="flex flex-col gap-0.5 text-xs text-slate-500"><span>${t(labelKey)}${required ? ' *' : ''}</span>
@@ -2806,7 +2854,8 @@ function renderValidation() {
     </tr>` : '';
   const caseRow = c => {
     const st = validationCaseStats(c);
-    const cell = m => (st[m] ? `${Math.round(st[m].mean.cal)} <span class="${Math.abs(st[m].errPct.cal) <= 10 ? 'text-emerald-600' : 'text-amber-600'}">${pct(st[m].errPct.cal)}</span>` : '—');
+    const errClass = m => (Math.abs(st[m].errPct.cal) <= 10 ? 'text-emerald-600' : 'text-amber-600');
+    const cell = m => (st[m] ? `${Math.round(st[m].mean.cal)} <span class="${errClass(m)}">${pct(st[m].errPct.cal)}</span>` : '—');
     return `<div class="panel p-2.5 text-xs flex items-center gap-2">
       <div class="flex-1 min-w-0">
         <div class="font-semibold truncate">${esc(c.label || c.note || c.at.slice(0, 16))}</div>
@@ -2836,12 +2885,15 @@ function renderValidation() {
         <label class="flex items-center gap-1.5"><input type="checkbox" id="valStd" checked class="accent-emerald-600 w-4 h-4" />${t('valModeStandard')}</label>
         <label class="flex items-center gap-1.5"><input type="checkbox" id="valPre" checked class="accent-emerald-600 w-4 h-4" />${t('valModePrecise')}</label>
         <label class="flex items-center gap-1.5">${t('valRuns')}
-          <select id="valRuns" class="field py-1 px-2 text-sm">${VAL_RUNS.map(n => `<option value="${n}" ${n === 3 ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+          <select id="valRuns" class="field py-1 px-2 text-sm">
+            ${VAL_RUNS.map(n => `<option value="${n}" ${n === 3 ? 'selected' : ''}>${n}</option>`).join('')}
+          </select></label>
       </div>
       <p class="text-xs text-slate-500">${t('valModelNote', { m: db.model() })}</p>
       <p id="valCost" class="text-xs text-slate-500"></p>
       ${running
-        ? `<div class="flex items-center gap-2 text-sm">${icon('loader', 'animate-spin text-emerald-600')}<span class="flex-1">${esc(validation.progress)}</span>
+        ? `<div class="flex items-center gap-2 text-sm">${icon('loader', 'animate-spin text-emerald-600')}
+             <span class="flex-1">${esc(validation.progress)}</span>
              <button type="button" data-action="val-cancel" class="btn btn-soft text-xs">${t('jobCancel')}</button></div>`
         : `<button type="button" data-action="val-run" class="btn btn-primary w-full py-2.5">${t('valRun')}</button>`}
     </div>
@@ -2851,8 +2903,8 @@ function renderValidation() {
       <div class="text-sm font-semibold">${t('valSummary', { n: cases.length })}</div>
       <div class="overflow-x-auto"><table class="w-full text-xs">
         <thead class="text-slate-500"><tr>
-          <th class="text-left font-medium pb-1">${t('valColMode')}</th><th class="font-medium">${t('valColAcc')}</th><th class="font-medium">${t('valColBias')}</th>
-          <th class="font-medium">P</th><th class="font-medium">C</th><th class="font-medium">F</th><th class="font-medium">${t('valColSpread')}</th><th class="font-medium">${t('valColCases')}</th>
+          <th class="text-left font-medium pb-1">${t('valColMode')}</th>
+          ${[t('valColAcc'), t('valColBias'), 'P', 'C', 'F', t('valColSpread'), t('valColCases')].map(h => `<th class="font-medium">${h}</th>`).join('')}
         </tr></thead>
         <tbody>${summaryRow('standard')}${summaryRow('precise')}</tbody>
       </table></div>
@@ -2876,7 +2928,8 @@ async function onValidationPhoto(el) {
   const i = Number(el.dataset.valPhoto), out = await downscaleImage(el.files[0]); el.value = '';
   if (!out) return;
   validation.images[i] = out.data; validation.infos[i] = out.info;
-  const keep = { label: $('#valLabel').value, note: $('#valNote').value, cal: $('#valCal').value, p: $('#valP').value, c: $('#valC').value, f: $('#valF').value };
+  const keep = { label: $('#valLabel').value, note: $('#valNote').value,
+    cal: $('#valCal').value, p: $('#valP').value, c: $('#valC').value, f: $('#valF').value };
   renderValidation();
   $('#valLabel').value = keep.label; $('#valNote').value = keep.note;
   ['cal', 'p', 'c', 'f'].forEach(k => { $('#val' + k[0].toUpperCase() + k.slice(1)).value = keep[k]; });
@@ -2940,7 +2993,7 @@ function validationCsv(cases) {
 /** Modal id → opener. Modals not listed simply open. */
 const MODAL_OPENERS = {
   goalModal: openGoalModal,
-  dataModal: () => { renderFavManage(); modal.open('dataModal'); },
+  dataModal: () => { renderFavManage(); photos.renderSettings(); modal.open('dataModal'); },
   apiModal: openApiModal
 };
 
