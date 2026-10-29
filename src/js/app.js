@@ -1050,6 +1050,26 @@ function toast(message, type = 'success', action = null) {
   setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, action ? CONFIG.ui.undoToastMs : CONFIG.ui.toastMs);
 }
 
+/**
+ * Freezes the page behind an overlay while it is open. iOS Safari still scrolls a body with
+ * overflow: hidden, and hands a swipe that an inner list cannot use to the page behind;
+ * fixing the body in place (and restoring the position afterwards) stops both. Counted, so
+ * overlapping overlays (onboarding + key guide, modal → modal) unlock only once.
+ */
+const scrollLock = {
+  depth: 0, y: 0,
+  lock() {
+    if (scrollLock.depth++ > 0) return;
+    scrollLock.y = window.scrollY;
+    Object.assign(document.body.style, { position: 'fixed', top: `-${scrollLock.y}px`, left: '0', right: '0' });
+  },
+  unlock() {
+    if (scrollLock.depth === 0 || --scrollLock.depth > 0) return;
+    Object.assign(document.body.style, { position: '', top: '', left: '', right: '' });
+    window.scrollTo(0, scrollLock.y);
+  }
+};
+
 const modal = {
   lastFocus: null,
   /** Per-modal cleanup when it closes (Cancel, ✕, Esc or backdrop). */
@@ -1059,12 +1079,13 @@ const modal = {
   open(id) {
     $('#toastContainer')?.replaceChildren();                       // a stale toast must not cover the dialog
     modal.lastFocus = document.activeElement;
-    const el = $('#' + id); el.classList.add('open');
+    const el = $('#' + id);
+    if (!el.classList.contains('open')) { el.classList.add('open'); scrollLock.lock(); }
     el.querySelector('button,input,select')?.focus();
   },
   close() {
     confirmTwice.reset();
-    $$('.modal.open').forEach(m => { m.classList.remove('open'); modal.onClose[m.id]?.(); });
+    $$('.modal.open').forEach(m => { m.classList.remove('open'); scrollLock.unlock(); modal.onClose[m.id]?.(); });
     modal.lastFocus?.focus?.();
   },
   isOpen: id => $('#' + id).classList.contains('open')
@@ -2535,13 +2556,13 @@ function keyErrorMessage(err) {
 }
 
 function openOnboarding(step = 'welcome') {
+  if ($('#onboarding').classList.contains('hidden')) scrollLock.lock();
   $('#onboarding').classList.remove('hidden');
-  document.body.classList.add('overflow-hidden');
   showOnboardingStep(step);
 }
 function closeOnboarding() {
+  if (!$('#onboarding').classList.contains('hidden')) scrollLock.unlock();
   $('#onboarding').classList.add('hidden');
-  document.body.classList.remove('overflow-hidden');
   renderAll();
 }
 function showOnboardingStep(step) {
@@ -2772,10 +2793,12 @@ function openKeyGuide() {
         ${(s.images || []).filter(([id]) => shots[id]).map(([id, alt]) => `<img src="${shots[id]}" alt="${esc(t(alt))}" loading="lazy"
           class="w-full rounded-xl border border-slate-200 dark:border-[#2d2f38]" />`).join('')}
       </div></li>`).join('');
+  if (!keyGuideOpen()) scrollLock.lock();
   $('#keyGuide').classList.remove('hidden');
   $('#guideTitle').focus();
 }
 function closeKeyGuide() {
+  if (keyGuideOpen()) scrollLock.unlock();
   $('#keyGuide').classList.add('hidden');
   ($('#onboarding').classList.contains('hidden') ? $('#apiKeyInput') : $('#obKey'))?.focus();
 }
