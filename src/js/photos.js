@@ -108,7 +108,7 @@ const photos = {
     try {
       const [count, estimate] = await Promise.all([photoStore.count(), navigator.storage?.estimate?.().catch(() => null)]);
       $('#photoUsage').textContent = estimate?.usage
-        ? t('photoUsage', { n: count, mb: (estimate.usage / 1048576).toFixed(1) }) : t('photoCount', { n: count });
+        ? t('photoUsage', { n: count, mb: Math.max(0.1, estimate.usage / 1048576).toFixed(1) }) : t('photoCount', { n: count });
     } catch { $('#photoUsage').textContent = t('photoUnavailable'); }
   },
   onRetentionChange(el) {
@@ -306,7 +306,7 @@ function drawDayMealRow(ctx, y, meal, thumbImg) {
 /** A whole day as one long image: every meal is included, the image grows with the day. */
 async function renderDayShare(date, showGoals) {
   const meals = db.meals().filter(m => m.date === date).sort((a, b) => a.time.localeCompare(b.time));
-  const goals = db.goals(), total = sumNutrients(meals);
+  const goals = db.goalsFor(date), total = sumNutrients(meals);
   const thumbs = await Promise.all(meals.map(async m => {
     const [first] = await loadPhotos(m.photoId);
     return first ? loadImage(first).catch(() => null) : null;

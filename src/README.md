@@ -42,6 +42,18 @@ browser can never combine a new page with cached old scripts.
 - **Standard** — prompt v4, 1 request; the model estimates everything.
 - **Accuracy test** (資料管理 → 準確度驗證) compares both modes against known values (labels or weighed meals).
 
+## Goal history
+
+Goals are kept as a history (`nutrilens_goal_history_v1`: `[{ from, cal, p, c, f }]`). A change applies
+from the day it is made, so past days keep the goals they had (dashboard, history list and day share use
+`db.goalsFor(date)`). Goals set before this existed apply from the first recorded day.
+
+## Reminders
+
+A banner reminds to back up after 14 days without a backup (`nutrilens_last_backup_v1`) and to recalculate
+the goals when the latest weight differs by 2 kg or more from the weight they were calculated with. "Later"
+is stored in `nutrilens_reminders_v1`. Meals logged from a description only carry `source: 'text'`.
+
 ## Meal photos and sharing
 
 - The photos of each analysis are stored in IndexedDB (`nutrilens_photos`), keyed by the job id that the

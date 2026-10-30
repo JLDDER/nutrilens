@@ -12,6 +12,7 @@
 //   js/foods.js  food table
 //   js/app.js    application
 //   js/photos.js photos & sharing
+//   manifest.webmanifest              dist/manifest.webmanifest  "Add to Home Screen" as an app
 //   images/, icons/
 //
 // Steps:
@@ -29,6 +30,8 @@ const OUT_DIR = 'dist';
 const TMP_IN = 'tailwind.in.css';
 const TMP_OUT = 'tailwind.out.css';
 const COPY_DIRS = ['images', 'icons'];
+/** Files served next to index.html as they are. */
+const COPY_FILES = ['manifest.webmanifest'];
 /** A standalone Tailwind binary in this folder takes precedence over npx. */
 const standalone = fs.readdirSync('.').find(f => /^tailwindcss(-[\w-]+)?(\.exe)?$/i.test(f) && fs.statSync(f).isFile());
 const fail = msg => { console.error(`\n✖ ${msg}\n`); process.exit(1); };
@@ -76,7 +79,8 @@ fs.rmSync(OUT_DIR, { recursive: true, force: true });
 fs.mkdirSync(OUT_DIR);
 fs.writeFileSync(path.join(OUT_DIR, 'index.html'), html);
 for (const dir of COPY_DIRS) if (fs.existsSync(dir)) fs.cpSync(dir, path.join(OUT_DIR, dir), { recursive: true });
+for (const file of COPY_FILES) if (fs.existsSync(file)) fs.copyFileSync(file, path.join(OUT_DIR, file));
 
 const kb = f => Math.round(fs.statSync(f).size / 1024);
-console.log(`✔ Done -> ${OUT_DIR}/index.html (${kb(path.join(OUT_DIR, 'index.html'))} KB) + ${COPY_DIRS.join('/, ')}/`);
+console.log(`✔ Done -> ${OUT_DIR}/index.html (${kb(path.join(OUT_DIR, 'index.html'))} KB) + ${COPY_DIRS.join('/, ')}/, ${COPY_FILES.join(', ')}`);
 console.log('  Upload the CONTENTS of the dist folder to GitHub. (把 dist 資料夾「裡面」的檔案上傳到 GitHub)');

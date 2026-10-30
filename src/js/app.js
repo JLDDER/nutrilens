@@ -30,7 +30,8 @@
 const STORAGE_KEYS = {
   meals: 'nutrilens_meals_v1',
   weights: 'nutrilens_weights_v1',
-  goals: 'nutrilens_goals_v1',
+  goals: 'nutrilens_goals_v1',              // current daily goals (also the latest goal-history entry)
+  goalHistory: 'nutrilens_goal_history_v1',  // [{ from: 'YYYY-MM-DD', cal, p, c, f }]: the goals in force from each date
   calc: 'nutrilens_calc_profile_v1',
   favs: 'nutrilens_favorites_v1',
   jobs: 'nutrilens_jobs_v1',
@@ -46,7 +47,9 @@ const STORAGE_KEYS = {
   hintResult: 'nutrilens_hint_result_v1',    // first-result tip dismissed
   analysisMode: 'nutrilens_analysis_mode_v1', // 'standard' | 'precise'
   validation: 'nutrilens_validation_v1',     // accuracy-test results (no photos)
-  photoRetention: 'nutrilens_photo_retention_v1' // 'days' (delete after CONFIG.photos.retentionDays) | 'forever'
+  photoRetention: 'nutrilens_photo_retention_v1', // 'days' (delete after CONFIG.photos.retentionDays) | 'forever'
+  lastBackup: 'nutrilens_last_backup_v1',    // YYYY-MM-DD of the last JSON backup (or restore)
+  reminders: 'nutrilens_reminders_v1'        // { backupSnoozedUntil, recalcSnoozedAt }: "Later" on the reminder banners
 };
 
 const CONFIG = {
@@ -90,6 +93,8 @@ const CONFIG = {
   jobs: { maxStored: 6 },
   perfLog: { maxRecords: 50 },
   weight: { min: 25, max: 250 },
+  /** Reminder banners: back up after this many days; recalculate goals after this weight change; "Later" waits this long. */
+  reminders: { backupDays: 14, backupSnoozeDays: 7, recalcKg: 2 },
   ui: {
     onTargetToleranceKcal: 120,
     toastMs: 2600,
@@ -206,8 +211,10 @@ const DAY_STATUS_CLASSES = {
 /**
  * @typedef {{ name: string, weight: number, cal: number, p: number, c: number, f: number }} FoodItem
  * @typedef {{ id: string, date: string, time: string, name: string, angleCount: number, reasoning: string,
- *             cal: number, p: number, c: number, f: number, items: FoodItem[], favId?: string, photoId?: string }} Meal
- *   `photoId` = key of the meal's photos in IndexedDB (js/photos.js).
+ *             cal: number, p: number, c: number, f: number, items: FoodItem[], favId?: string, photoId?: string,
+ *             source?: 'text' }} Meal
+ *   `photoId` = key of the meal's photos in IndexedDB (js/photos.js). How it was logged: angleCount > 0 = photos,
+ *   source 'text' = a description only, otherwise (angleCount 0) a favorite.
  * @typedef {{ id: string, name: string, cal: number, p: number, c: number, f: number, reasoning?: string, items?: FoodItem[] }} Favorite
  *   A meal template. Meals created from it carry `favId`, which drives the ★ and "apply to" options.
  * @typedef {'running'|'done'|'error'|'cancelled'|'interrupted'} JobStatus
@@ -231,6 +238,8 @@ const fmtDate = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getD
 /** Parses YYYY-MM-DD in the local time zone (new Date('YYYY-MM-DD') would be UTC). */
 const parseDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const shiftDate = (s, days) => { const d = parseDate(s); d.setDate(d.getDate() + days); return fmtDate(d); };
+/** Whole days from date a to date b (YYYY-MM-DD). */
+const daysBetween = (a, b) => Math.round((parseDate(b) - parseDate(a)) / 864e5);
 const todayStr = () => fmtDate(new Date());
 const nowTime = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
@@ -270,6 +279,7 @@ const sanitizeMeal = m => ({
   items: Array.isArray(m?.items) ? m.items.map(sanitizeItem) : [],
   favId: typeof m?.favId === 'string' && m.favId ? m.favId : undefined,
   photoId: typeof m?.photoId === 'string' && /^[\w-]{1,40}$/.test(m.photoId) ? m.photoId : undefined,   // key in photoStore
+  source: m?.source === 'text' ? 'text' : undefined,  // analysed from a description only (no photo)
   demo: m?.demo === true ? true : undefined           // seeded demo record (see clearDemoData)
 });
 const sanitizeFavorite = f => ({
@@ -277,6 +287,8 @@ const sanitizeFavorite = f => ({
   name: String(f?.name || '').slice(0, 60), cal: num(f?.cal), p: num(f?.p), c: num(f?.c), f: num(f?.f),
   reasoning: String(f?.reasoning || '').slice(0, 200), items: Array.isArray(f?.items) ? f.items.map(sanitizeItem) : undefined
 });
+const sanitizeGoalEntry = g => (DATE_RE.test(g?.from) && num(g?.cal) > 0
+  ? { from: g.from, cal: Math.round(num(g.cal)), p: Math.round(num(g.p)), c: Math.round(num(g.c)), f: Math.round(num(g.f)) } : null);
 const isValidWeightEntry = w => DATE_RE.test(w?.date) && Number.isFinite(num(w?.weight, NaN));
 
 /** Repository: the only place that knows how each collection is stored. */
@@ -296,8 +308,21 @@ const db = {
     return db.saveWeights(list);
   },
 
+  /** Current goals: what the calculator shows and today is measured against. */
   goals: () => ({ ...DEMO_GOALS, ...store.get(STORAGE_KEYS.goals, {}) }),
-  saveGoals: goals => store.set(STORAGE_KEYS.goals, goals),
+  goalHistory: () => { const v = store.get(STORAGE_KEYS.goalHistory, []); return Array.isArray(v) ? v.map(sanitizeGoalEntry).filter(Boolean) : []; },
+  /** The goals that applied on `date`, so a later change never rewrites how past days look. */
+  goalsFor: date => goalsOn(db.goalHistory(), date) || db.goals(),
+  /** Sets new goals, in force from `from` (default today) until the next change. */
+  saveGoals(goals, from = todayStr()) {
+    db.saveGoalHistory(withGoalChange(db.goalHistory(), goals, from));
+    return store.set(STORAGE_KEYS.goals, goals);
+  },
+  saveGoalHistory: list => store.set(STORAGE_KEYS.goalHistory, list),
+  /** Replaces the whole history with one set of goals, in force from `from` (first visit, "clear all", old backups). */
+  resetGoals(goals, from = todayStr()) { db.saveGoalHistory([{ from, ...goals }]); return store.set(STORAGE_KEYS.goals, goals); },
+  /** Earliest date with a meal or weight, or today: goals of unknown age are taken to apply from there. */
+  firstRecordedDate: () => [...db.meals(), ...db.weights()].map(r => r.date).sort()[0] || todayStr(),
   calcProfile: () => ({ ...DEFAULT_CALC, ...store.get(STORAGE_KEYS.calc, {}) }),
   saveCalcProfile: profile => store.set(STORAGE_KEYS.calc, profile),
 
@@ -338,6 +363,16 @@ const MIGRATIONS = [
     store.set(STORAGE_KEYS.favs, favs);
     const meals = store.get(STORAGE_KEYS.meals, null);
     if (Array.isArray(meals)) store.set(STORAGE_KEYS.meals, linkMealsToFavoritesByName(meals, favs));
+    return null;
+  },
+  // 3: goals were one global setting; start a history so later changes leave past days as they were.
+  //    Past goals were never recorded, so the current ones apply from the first recorded day.
+  () => {
+    const goals = store.get(STORAGE_KEYS.goals, null);
+    if (!goals || store.has(STORAGE_KEYS.goalHistory)) return null;
+    const dates = [...store.get(STORAGE_KEYS.meals, []), ...store.get(STORAGE_KEYS.weights, [])].map(r => r?.date).filter(d => DATE_RE.test(d));
+    const from = dates.length ? dates.sort()[0] : todayStr();
+    store.set(STORAGE_KEYS.goalHistory, [{ from, ...goals }]);
     return null;
   }
 ];
@@ -393,6 +428,25 @@ const lowTargetFloor = (s, r) => Math.max(r.bmr, KCAL_FLOOR[s.gender] ?? KCAL_FL
 /** Carbohydrate reference intake (g/day) used for the low-carb note. */
 const CARB_MIN_G = 130;
 const goalsFromMacros = r => ({ cal: r.target, p: r.p.g, c: r.c.g, f: r.f.g });
+/**
+ * Goal history: [{ from, cal, p, c, f }] sorted by `from`. The goals of a date are those of the
+ * latest entry starting on or before it; dates before the first entry use the first entry
+ * (nothing older is known). Returns null for an empty history. Pure.
+ */
+function goalsOn(history, date) {
+  if (!history.length) return null;
+  const entry = history.filter(g => g.from <= date).at(-1) || history[0];
+  return { cal: entry.cal, p: entry.p, c: entry.c, f: entry.f };
+}
+/** History with `goals` in force from `from`: replaces a change made the same day, keeps it sorted,
+ *  and adds nothing when the goals in force already match. Pure. */
+function withGoalChange(history, goals, from) {
+  const others = history.filter(g => g.from !== from);
+  const current = goalsOn(others, from);
+  const same = current && ['cal', 'p', 'c', 'f'].every(k => current[k] === goals[k]) && others.some(g => g.from <= from);
+  if (same) return others;
+  return [...others, { from, cal: goals.cal, p: goals.p, c: goals.c, f: goals.f }].sort((a, b) => a.from.localeCompare(b.from));
+}
 /** Demo goals come from the demo profile, so the dashboard and the calculator always agree. */
 const DEMO_GOALS = goalsFromMacros(computeMacros(DEMO_CALC));
 /** True when protein + fat alone exceed the target, i.e. carbs had to be clamped to 0. */
@@ -470,7 +524,7 @@ function per100gToAbsolute(apiItem) {
 function mealFromAnalysis(analysis, { portion, name, date, time, reasoning }) {
   const items = analysis.items.map(it => roundItem({ name: it.name, weight: Math.round(effectiveWeight(it, portion)), ...itemNutrients(it, portion) }));
   return { id: uid(), date, time, name, angleCount: analysis.angleCount, reasoning, ...roundedTotals(items), items,
-    ...(analysis.photoId ? { photoId: analysis.photoId } : {}) };
+    ...(analysis.photoId ? { photoId: analysis.photoId } : {}), ...(analysis.source ? { source: analysis.source } : {}) };
 }
 
 /* Saved-meal editor rows keep the displayed (rounded) values plus a per-gram density `d`.
@@ -498,11 +552,15 @@ function setEditRowValue(row, field, value) {
   return next;
 }
 /** Returns `meal` with new name/time/items and totals recomputed from the items. */
-function withEditedItems(meal, { name, time, items }) {
+function withEditedItems(meal, { name, time, date, items }) {
   const clean = items.map(it => roundItem({ name: String(it.name).trim().slice(0, 80), weight: Math.max(0, Math.round(num(it.weight))),
     cal: Math.max(0, num(it.cal)), p: Math.max(0, num(it.p)), c: Math.max(0, num(it.c)), f: Math.max(0, num(it.f)) }));
-  return { ...meal, name: name || meal.name, time: TIME_RE.test(time) ? time : meal.time, items: clean, ...roundedTotals(clean) };
+  return { ...meal, name: name || meal.name, time: TIME_RE.test(time) ? time : meal.time, date: DATE_RE.test(date) ? date : meal.date,
+    items: clean, ...roundedTotals(clean) };
 }
+
+/** A copy of a meal logged again on another date and time (photos and favorite link kept). Pure. */
+const mealCopy = (meal, date, time) => ({ ...meal, id: uid(), date, time, demo: undefined });
 
 /** Content fingerprint used to find records that are still identical copies of each other. */
 const mealSignature = m => JSON.stringify([m.name, m.cal, m.p, m.c, m.f, m.items.map(i => [i.name, i.weight, i.cal, i.p, i.c, i.f])]);
@@ -595,6 +653,12 @@ const NUTRITION_SCHEMA = {
  *  - user: the per-request facts (photo count, note), placed before the images
  *    as the current Gemini image-understanding guide recommends.
  */
+/** The user turn of both prompts: which photo is which, or, without photos, the description to estimate from. */
+const promptUserText = (imageCount, note) => (imageCount > 0
+  ? `${imageCount} photo(s): 1st top view, 2nd ~45° side view, 3rd scale reference or nutrition label. User note: "${note || 'None'}".`
+  : `No photo. The user describes what they ate: "${note}". Estimate from this description alone: one usual Taiwanese serving `
+    + 'of each food unless it says otherwise (brands and chain menus at their usual size); name the serving you assumed in reasoning.');
+
 function buildNutritionPrompt({ lang: replyLang, imageCount, note }) {
   const system = `You estimate nutrition from meal photos, usually Taiwanese food (便當/自助餐, 夜市, 手搖飲, 早餐店, 超商, 火鍋, 麵食). Reply in ${replyLang === 'zh' ? 'Traditional Chinese (繁體中文)' : 'English'}.
 Apply these rules the same way every time:
@@ -609,8 +673,7 @@ Apply these rules the same way every time:
  - 沙茶醬 ≈ 60 g fat, 美乃滋 ≈ 70 g fat; noodle-soup broth 1–4 g fat;
  - drinks: carbs include added sugar — 全糖 ≈ 8–10 g/100 ml, 少糖 ×0.7, 半糖 ×0.5, 微糖 ×0.3, 無糖 0; cooked tapioca pearls ≈ 45 g carbs.
 6. Write "reasoning" first: under 60 words naming the reference used, the key weight assumptions and any adjustment made from the note.`;
-  const user = `${imageCount} photo(s): 1st top view, 2nd ~45° side view, 3rd scale reference or nutrition label. User note: "${note || 'None'}".`;
-  return { system, user };
+  return { system, user: promptUserText(imageCount, note) };
 }
 
 const dataUrlToPart = url => {
@@ -853,8 +916,7 @@ Apply these rules the same way every time:
 7b. Hidden food: rice or noodles are often hidden under toppings in 丼飯, bowls and boxed meals. If the dish type or container depth implies a base that is not visible, include it as an item and estimate it from the container depth; say so in reasoning.
 8. Drinks: carbs include added sugar. Measured: 半糖 700 ml ≈ 46.5 g total sugar (≈ 6.6 g/100 ml, National Taiwan University); scale other levels proportionally (全糖 ×2, 少糖 ×1.4, 微糖 ×0.6, 無糖: milk and toppings only). Cooked tapioca pearls ≈ 45 g carbs/100 g.
 9. Write "reasoning" first: under 70 words naming the reference used, the portion reasoning and any adjustment from the note.`;
-  const user = `${imageCount} photo(s): 1st top view, 2nd ~45° side view, 3rd scale reference or nutrition label. User note: "${note || 'None'}".`;
-  return { system, user };
+  return { system, user: promptUserText(imageCount, note) };
 }
 
 const parseJsonText = data => {
@@ -976,7 +1038,9 @@ async function analyzePrecise({ key, model, job, signal, rec, backups }) {
 
   const wp = buildWeightPrompt(main.rawItems, job.note);
   const started = Date.now();
-  const settled = await Promise.allSettled(CONFIG.precise.weightModels.map(async m => {
+  // The re-estimates look at the photos; a description alone has nothing more for them to measure.
+  const weightModels = images.length ? CONFIG.precise.weightModels : [];
+  const settled = await Promise.allSettled(weightModels.map(async m => {
     const ctrl = new AbortController(), forward = () => ctrl.abort(signal.reason);
     signal.addEventListener('abort', forward, { once: true });
     const timer = setTimeout(() => ctrl.abort('MODEL_TIMEOUT'), CONFIG.precise.weightTimeoutMs);
@@ -1074,10 +1138,15 @@ const modal = {
   lastFocus: null,
   /** Per-modal cleanup when it closes (Cancel, ✕, Esc or backdrop). */
   onClose: {
-    mealModal: () => { state.editing = null; }
+    mealModal: () => {
+      const fromFavorites = !!state.editing?.favId;
+      state.editing = null;
+      if (fromFavorites) setTimeout(() => MODAL_OPENERS.dataModal('dataModal', { keepToast: true }));   // back to the favorites list
+    }
   },
-  open(id) {
-    $('#toastContainer')?.replaceChildren();                       // a stale toast must not cover the dialog
+  /** `keepToast`: when returning to a dialog right after an action whose toast (e.g. Undo) must stay. */
+  open(id, { keepToast = false } = {}) {
+    if (!keepToast) $('#toastContainer')?.replaceChildren();       // a stale toast must not cover the dialog
     modal.lastFocus = document.activeElement;
     const el = $('#' + id);
     if (!el.classList.contains('open')) { el.classList.add('open'); scrollLock.lock(); }
@@ -1266,11 +1335,11 @@ function renderStaticTemplates() {
 }
 
 function renderAll() {
-  const meals = db.meals(), goals = db.goals(), date = selectedDate();
+  const meals = db.meals(), date = selectedDate();
   const dayMeals = meals.filter(m => m.date === date);
-  renderDashboard(dayMeals, goals, date);
+  renderDashboard(dayMeals, db.goalsFor(date), date);
   renderTimeline(dayMeals);
-  renderHistory(meals, goals);
+  renderHistory(meals);
   renderWeight();
   renderFavorites();
   renderBanner();
@@ -1351,8 +1420,9 @@ const CHIP_CLASSES = {
     + 'border-amber-100 dark:border-amber-800/50',
   demo: 'text-xs font-semibold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300'
 };
-/** "2 angles" (a button that opens the photos when they were kept), or "Quick log" for a meal from a favorite. */
+/** How the meal was logged: "2 angles" (a button that opens the photos when they were kept), "Description" or "Quick log". */
 function mealSourceChip(m) {
+  if (m.source === 'text') return `<span class="${CHIP_CLASSES.photo}">${icon('pencil', 'mr-0.5')}${t('textBadge')}</span>`;
   if (m.angleCount === 0) return `<span class="${CHIP_CLASSES.quick}">${icon('star', 'mr-0.5')}${t('quickBadge')}</span>`;
   const label = `${icon('camera', 'mr-0.5')}${m.angleCount === 1 ? t('angle1') : t('angles', { n: m.angleCount })}`;
   return m.photoId
@@ -1415,8 +1485,12 @@ function mealCardTemplate(m, isFavorite) {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mt-3 pt-2 border-t border-dashed border-slate-200 dark:border-[#2d2f38]">
         ${m.items.map(mealItemTemplate).join('')}
       </div>
-      <div class="flex justify-end mt-2"><button type="button" data-action="edit-meal" data-id="${esc(m.id)}"
-        class="btn btn-soft text-xs px-2.5 py-1">${icon('pencil')}<span>${t('mealEdit')}</span></button></div>
+      <div class="flex justify-end gap-2 mt-2">
+        <button type="button" data-action="log-again" data-id="${esc(m.id)}"
+          class="btn btn-soft text-xs px-2.5 py-1">${icon('plus')}<span>${t('logAgainToday')}</span></button>
+        <button type="button" data-action="edit-meal" data-id="${esc(m.id)}"
+          class="btn btn-soft text-xs px-2.5 py-1">${icon('pencil')}<span>${t('mealEdit')}</span></button>
+      </div>
     </details>
   </article>`;
 }
@@ -1435,7 +1509,9 @@ function renderTimeline(dayMeals) {
   $$('#timeline article').forEach(a => { if (expanded.has(a.dataset.mealId)) $('details', a).open = true; });
 }
 
-function renderHistory(meals, goals) {
+/** One row per day, each measured against the goals in force that day. */
+function renderHistory(meals) {
+  const history = db.goalHistory(), current = db.goals();
   const days = {}, weightByDate = {};
   const blank = () => ({ n: 0, cal: 0, p: 0, c: 0, f: 0 });
   db.weights().forEach(w => { weightByDate[w.date] = w.weight; days[w.date] ??= blank(); });
@@ -1444,6 +1520,7 @@ function renderHistory(meals, goals) {
   const dates = Object.keys(days).sort().reverse(), body = $('#historyBody');
   if (!dates.length) { body.innerHTML = `<div class="py-6 text-center text-slate-500 text-sm">${t('noHistory')}</div>`; return; }
   body.innerHTML = dates.map(date => {
+    const goals = goalsOn(history, date) || current;
     const d = days[date], diff = d.cal - goals.cal, status = dayStatus(d.cal, goals.cal, d.n);
     const label = { weightOnly: t('weightOnly'), onTarget: t('onTarget'), over: `+${diff} kcal`, under: `${diff} kcal` }[status];
     const w = weightByDate[date];
@@ -1479,8 +1556,14 @@ function renderFavManage() {
     <div class="flex items-center justify-between bg-white dark:bg-[#161618] px-3 py-2 rounded-lg border border-slate-200 dark:border-[#2d2f38] text-xs">
       <div><div class="font-bold">${esc(f.name)}</div><div
         class="text-xs text-slate-400 mono">${Math.round(f.cal)} kcal (P:${f.p}g / C:${f.c}g / F:${f.f}g)</div></div>
-      <button type="button" data-action="remove-fav" data-idx="${i}"
-        class="w-7 h-7 text-slate-400 hover:text-rose-500 rounded-lg" aria-label="${t('delete')}">${icon('trash', 'text-xs')}</button>
+      <span class="flex shrink-0">
+        <button type="button" data-action="edit-fav" data-idx="${i}"
+          class="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:text-emerald-600 rounded-lg"
+          aria-label="${t('mealEdit')}">${icon('pencil')}</button>
+        <button type="button" data-action="remove-fav" data-idx="${i}"
+          class="w-10 h-10 inline-flex items-center justify-center text-slate-400 hover:text-rose-500 rounded-lg"
+          aria-label="${t('delete')}">${icon('trash')}</button>
+      </span>
     </div>`).join('') : `<div class="text-xs text-slate-400 text-center py-2">${t('noFav')}</div>`;
 }
 
@@ -1633,7 +1716,8 @@ const analysisBadgeText = a => (a.isDemo ? t('badgeDemo') : t('badgeAi'));
 /** Technical details (model, time, tokens) for the curious; shown inside "How the AI estimated". */
 function analysisMetaText(a) {
   if (a.isDemo || !a.meta) return '';
-  const parts = [t('badge', { n: a.angleCount }), a.modelUsed, t('badgeMeta', { s: (a.meta.ms / 1000).toFixed(1), th: a.meta.thoughts, in: a.meta.prompt })];
+  const parts = [a.angleCount ? t('badge', { n: a.angleCount }) : t('badgeText'), a.modelUsed,
+    t('badgeMeta', { s: (a.meta.ms / 1000).toFixed(1), th: a.meta.thoughts, in: a.meta.prompt })];
   if (a.meta.attempts > 1) parts.push(t('badgeRetries', { n: a.meta.attempts - 1 }));
   return parts.filter(Boolean).join(' · ');
 }
@@ -1886,7 +1970,7 @@ const friendlyError = err => err.status === 429 ? t('quotaExceeded') : err.statu
 
 function submitAnalysis() {
   const images = state.images.filter(Boolean), note = $('#mealNoteInput').value.trim();
-  if (db.apiKey() && images.length === 0) return toast(t('needPhoto'), 'error');
+  if (db.apiKey() && images.length === 0 && !note) return toast(t('needPhoto'), 'error');   // a description alone is enough
   /** @type {AnalysisJob} */
   const job = { id: uid().slice(0, 8), at: Date.now(), date: selectedDate(), time: mealTime.current(),
     note, images, imageInfo: state.imageInfo.filter(Boolean), lang, status: 'running', startedAt: Date.now() };
@@ -1956,7 +2040,7 @@ async function runJob(job) {
   try {
     const result = await analyzeJob(job, { apiKey, model, signal: ctrl.signal, rec, mode });
     job.result = {
-      name: String(result.name || '').slice(0, 120), reasoning: String(result.reasoning || ''), angleCount: job.images.length || 1,
+      name: String(result.name || '').slice(0, 120), reasoning: String(result.reasoning || ''), angleCount: job.images.length,
       modelUsed: result.modelUsed, meta: result.meta, isDemo: !!result.isDemo, precise: !!result.precise,
       items: result.items.map(({ name, weight, cal, p, c, f, src, range }) => ({ name, weight, cal, p, c, f, ...(src ? { src, range } : {}) }))
     };
@@ -1996,7 +2080,8 @@ function openJobResult(id, el) {
   state.analysis = {
     name: r.name, reasoning: r.reasoning, angleCount: r.angleCount, modelUsed: r.modelUsed, meta: r.meta, isDemo: r.isDemo, precise: !!r.precise,
     jobId: job.id, date: job.date, time: job.time, dirty: false, items: r.items.map(toEditableItem),
-    photoId: (job.imageInfo?.length || job.images.length) ? job.id : undefined      // photos were kept under the job id
+    photoId: (job.imageInfo?.length || job.images.length) ? job.id : undefined,     // photos were kept under the job id
+    source: r.angleCount === 0 ? 'text' : undefined
   };
   setPortion(100);
   renderAnalysis();
@@ -2100,6 +2185,15 @@ function quickLogFavorite(idx) {
   const n = db.meals().filter(m => m.favId === fav.id && m.date === meal.date).length;
   undo.commit(n > 1 ? t('quickLoggedNth', { name: fav.name, n }) : t('quickLogged', { name: fav.name }));
 }
+/** "Log again today": the same meal, today at the current time, with Undo. */
+function logMealAgain(mealId) {
+  const meal = db.meals().find(m => m.id === mealId); if (!meal) return;
+  const copy = mealCopy(meal, todayStr(), nowTime());
+  const undo = undoable().track('meals', [copy.id]);
+  if (!db.addMeal(copy)) return;
+  renderAll();
+  undo.commit(t('loggedAgain', { name: meal.name, time: copy.time }));
+}
 function removeFavorite(idx) {
   const fav = db.favs()[idx]; if (!fav) return;
   deleteFavorite(fav, t('favDeleted', { name: fav.name }));
@@ -2113,12 +2207,33 @@ function addFavoriteFromForm() {
 
 /* 10.6 Saved-meal editor (#mealModal)
  * Works on copies of the items (see toEditRow); nothing is stored until "Save". */
+/** Items to edit; a record without an item list becomes one item holding its totals. */
+const editableItems = r => (r.items?.length ? r.items : [{ name: r.name, weight: 0, cal: r.cal, p: r.p, c: r.c, f: r.f }]).map(toEditRow);
+/** The same editor serves saved meals and favorites; a favorite has no date, time, scope or delete. */
+function setEditorMode(isFavorite) {
+  $('#mealModalTitleText').dataset.i18n = isFavorite ? 'favModalTitle' : 'mealModalTitle';
+  $('#mealEditHintText').dataset.i18n = isFavorite ? 'favEditHint' : 'mealEditHint';
+  $('#mealModalTitleText').textContent = t($('#mealModalTitleText').dataset.i18n);
+  $('#mealEditHintText').textContent = t($('#mealEditHintText').dataset.i18n);
+  $$('#mealModal [data-meal-only]').forEach(el => el.classList.toggle('hidden', isFavorite));
+}
 function openMealEditor(mealId) {
   const meal = db.meals().find(m => m.id === mealId); if (!meal) return;
-  const source = meal.items.length ? meal.items : [{ name: meal.name, weight: 0, cal: meal.cal, p: meal.p, c: meal.c, f: meal.f }];
-  state.editing = { mealId, items: source.map(toEditRow) };
-  $('#editMealName').value = meal.name; $('#editMealTime').value = meal.time;
+  state.editing = { mealId, items: editableItems(meal) };
+  setEditorMode(false);
+  $('#editMealName').value = meal.name; $('#editMealDate').value = meal.date; $('#editMealTime').value = meal.time;
   renderEditScope(meal);
+  renderMealEditor();
+  modal.open('mealModal');
+}
+/** Edits a favorite from the data modal; closing the editor returns there (see modal.onClose). */
+function openFavoriteEditor(idx) {
+  const fav = db.favs()[idx]; if (!fav) return;
+  modal.close();
+  state.editing = { favId: fav.id, items: editableItems(fav) };
+  setEditorMode(true);
+  $('#editMealName').value = fav.name;
+  $('#editScopeWrap').classList.add('hidden');
   renderMealEditor();
   modal.open('mealModal');
 }
@@ -2202,13 +2317,15 @@ function removeEditItem(idx) { state.editing.items.splice(idx, 1); renderMealEdi
  */
 function saveMealEdit() {
   const ed = state.editing; if (!ed) return;
+  if (ed.favId) return saveFavoriteEdit(ed);
   const meals = db.meals(), original = meals.find(m => m.id === ed.mealId); if (!original) return modal.close();
   const items = ed.items.filter(it => String(it.name).trim());
   if (!items.length) return toast(t('mealNeedItem'), 'error');
   const { fav, twins } = editScopeTargets(original);
   const updateFav = !!fav && $('#scopeFav').checked, updateTwins = twins.length > 0 && $('#scopeTwins').checked;
 
-  const updated = withEditedItems(original, { name: $('#editMealName').value.trim(), time: $('#editMealTime').value, items });
+  const updated = withEditedItems(original, { name: $('#editMealName').value.trim(), time: $('#editMealTime').value, date: $('#editMealDate').value, items });
+  const moved = updated.date !== original.date;
   const changed = [updated, ...(updateTwins ? twins.map(m => withEditedItems(m, { name: updated.name, time: m.time, items: updated.items })) : [])];
   const undo = undoable().track('meals', changed.map(m => m.id));
   if (updateFav) undo.track('favs', [fav.id]);
@@ -2216,7 +2333,19 @@ function saveMealEdit() {
   if (!db.saveMeals(meals.map(m => byId.get(m.id) || m))) return;
   if (updateFav) db.saveFavs(db.favs().map(f => (f.id === fav.id ? { ...favoriteFromMeal(updated), id: fav.id } : f)));
   modal.close(); renderAll();
-  undo.commit(changed.length > 1 ? t('mealsUpdatedN', { n: changed.length }) : t('mealUpdated', { name: updated.name }));
+  undo.commit(moved ? t('mealMoved', { name: updated.name, d: updated.date.slice(5).replace('-', '/') })
+    : changed.length > 1 ? t('mealsUpdatedN', { n: changed.length }) : t('mealUpdated', { name: updated.name }));
+}
+/** A favorite keeps its id, so meals already linked to it keep their ★; their own values do not change. */
+function saveFavoriteEdit(ed) {
+  const fav = db.favs().find(f => f.id === ed.favId); if (!fav) return modal.close();
+  const items = ed.items.filter(it => String(it.name).trim());
+  if (!items.length) return toast(t('mealNeedItem'), 'error');
+  const edited = withEditedItems({ ...fav, items: [] }, { name: $('#editMealName').value.trim(), items });
+  const undo = undoable().track('favs', [fav.id]);
+  db.saveFavs(db.favs().map(f => (f.id === fav.id ? { ...favoriteFromMeal(edited), id: fav.id } : f)));
+  modal.close(); renderAll();
+  undo.commit(t('favUpdated', { name: edited.name }));
 }
 
 /* 10.7 Weight & goals (the calculator edits state.calcDraft; only "Apply" stores it) */
@@ -2323,7 +2452,7 @@ function seedDemo({ withProfile = false } = {}) {
   ]);
   const favs = db.favs(), favIds = new Set(favs.map(f => f.id));
   db.saveFavs([...favs, ...DEFAULT_FAVORITES.filter(f => !favIds.has(f.id))]);
-  if (withProfile) { db.saveCalcProfile(DEMO_CALC); db.saveGoals(DEMO_GOALS); }
+  if (withProfile) { db.saveCalcProfile(DEMO_CALC); db.resetGoals(DEMO_GOALS); }
 }
 /** First visit gets demo data; later visits only backfill missing goals. */
 function initData() {
@@ -2334,13 +2463,16 @@ function initData() {
   // Existing users (any stored data) never see the onboarding; new users get demo data plus the welcome screen.
   if (!store.has(STORAGE_KEYS.onboarding)) onboarding.save({ status: isNewUser ? 'new' : 'done', step: 0 });
   if (isNewUser) seedDemo({ withProfile: true });
-  else if (!store.has(STORAGE_KEYS.goals)) db.saveGoals(goalsFromMacros(computeMacros(db.calcProfile())));
+  else if (!store.has(STORAGE_KEYS.goals)) db.resetGoals(goalsFromMacros(computeMacros(db.calcProfile())), db.firstRecordedDate());
+  // The current goals may have been changed by a version without goal history (e.g. the site was
+  // opened in an older cached copy): record that change from today so today uses the current goals.
+  else db.saveGoalHistory(withGoalChange(db.goalHistory(), db.goals(), todayStr()));
 }
 function clearAll() {
   store.setStr(STORAGE_KEYS.cleared, 'true');
   db.saveMeals([]); db.saveWeights([]); db.saveFavs([]);
   db.saveCalcProfile({ ...DEFAULT_CALC });
-  db.saveGoals(goalsFromMacros(computeMacros(DEFAULT_CALC)));
+  db.resetGoals(goalsFromMacros(computeMacros(DEFAULT_CALC)));
   liveJobs.forEach(ctrl => ctrl.abort('USER'));
   state.jobs = []; persistJobs(); renderJobs();
   photos.clear();
@@ -2362,13 +2494,22 @@ function exportCSV() {
   download(new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' }), `NutriLens_${todayStr()}.csv`);
   toast(t('csvDone'));
 }
+/** "Last backup: 10/20" under the backup buttons. */
+function renderBackupStatus() {
+  const el = $('#backupStatus'); if (!el) return;
+  const last = store.str(STORAGE_KEYS.lastBackup);
+  if (!DATE_RE.test(last)) { el.textContent = t('backupNever'); return; }
+  const n = daysBetween(last, todayStr());
+  el.textContent = n === 0 ? t('backupToday') : t('backupLast', { d: last.slice(5).replace('-', '/'), n });
+}
 function exportJSON() {
   const data = {
-    goals: db.goals(), calcProfile: db.calcProfile(), weights: db.weights(), meals: db.meals(),
+    goals: db.goals(), goalHistory: db.goalHistory(), calcProfile: db.calcProfile(), weights: db.weights(), meals: db.meals(),
     favorites: db.favs(), exportedAt: new Date().toISOString()
   };
   download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `NutriLens_Backup_${todayStr()}.json`);
-  toast(t('backupDone'));
+  store.setStr(STORAGE_KEYS.lastBackup, todayStr());
+  toast(t('backupDone')); renderBanner(); renderBackupStatus();
 }
 /** Restores a backup made by exportJSON. Each section is optional and sanitized. */
 function importJSON(file, onDone = null) {
@@ -2378,8 +2519,12 @@ function importJSON(file, onDone = null) {
     try {
       const d = JSON.parse(e.target.result);
       if (typeof d !== 'object' || d === null) throw new Error('not an object');
+      let pendingGoals = null;
       if (d.goals && typeof d.goals === 'object') {
-        db.saveGoals({ cal: num(d.goals.cal, DEMO_GOALS.cal), p: num(d.goals.p), c: num(d.goals.c), f: num(d.goals.f) });
+        const goals = { cal: num(d.goals.cal, DEMO_GOALS.cal), p: num(d.goals.p), c: num(d.goals.c), f: num(d.goals.f) };
+        const history = Array.isArray(d.goalHistory) ? d.goalHistory.map(sanitizeGoalEntry).filter(Boolean) : [];
+        if (history.length) { store.set(STORAGE_KEYS.goals, goals); db.saveGoalHistory(history); }
+        else pendingGoals = goals;                                    // backup made before goal history: set after the meals
       }
       if (d.calcProfile && typeof d.calcProfile === 'object') db.saveCalcProfile({ ...DEFAULT_CALC, ...d.calcProfile });
       if (Array.isArray(d.weights)) db.saveWeights(d.weights.map(w => ({ date: w.date, weight: num(w.weight) }))
@@ -2391,6 +2536,8 @@ function importJSON(file, onDone = null) {
         const legacy = Array.isArray(d.favorites) && d.favorites.some(f => !f?.id);
         db.saveMeals(legacy ? linkMealsToFavoritesByName(meals, db.favs()) : meals);
       }
+      if (pendingGoals) db.resetGoals(pendingGoals, db.firstRecordedDate());
+      store.setStr(STORAGE_KEYS.lastBackup, todayStr());           // what is stored now is also in that file
       modal.close(); toast(t('importOk')); renderAll(); onDone?.();
     } catch { toast(t('importBad'), 'error'); }
   };
@@ -2497,8 +2644,36 @@ const BANNER_STATES = [
   // Setup finished but the user chose to keep the demo records.
   () => hasDemoData() && { text: 'bannerDemoLeft', actions: [['clear-demo', 'bannerClearDemo', 'btn-soft']] },
   // No key: analysis results are only the demo engine's.
-  () => !db.apiKey() && { text: 'bannerNoKey', actions: [['open-modal', 'bannerSetKey', 'btn-primary', 'apiModal']] }
+  () => !db.apiKey() && { text: 'bannerNoKey', actions: [['open-modal', 'bannerSetKey', 'btn-primary', 'apiModal']] },
+  // Real records exist but have not been backed up for a while (they live only on this device).
+  () => { const r = backupReminder(); return r && { text: r.never ? 'bannerBackupNever' : 'bannerBackup', vars: r,
+    actions: [['export-json', 'bannerBackupNow', 'btn-primary'], ['snooze-backup', 'bannerLater', 'btn-soft']] }; },
+  // The weight moved enough since the goals were calculated that they no longer fit.
+  () => { const r = recalcReminder(); return r && { text: 'bannerRecalc', vars: r,
+    actions: [['open-modal', 'bannerRecalcNow', 'btn-primary', 'goalModal'], ['snooze-recalc', 'bannerLater', 'btn-soft']] }; }
 ];
+/** Days since the last backup (or since the first real record when there was none), when a reminder is due. */
+function backupReminder() {
+  const real = db.meals().filter(m => !m.demo);
+  if (!real.length) return null;
+  const today = todayStr(), last = store.str(STORAGE_KEYS.lastBackup);
+  if ((store.get(STORAGE_KEYS.reminders, {}).backupSnoozedUntil || '') > today) return null;
+  const since = DATE_RE.test(last) ? last : real.map(m => m.date).sort()[0];
+  const n = daysBetween(since, today);
+  return n >= CONFIG.reminders.backupDays ? { n, never: !DATE_RE.test(last) } : null;
+}
+/** The weight the goals were calculated with vs the latest real weight, when they differ by enough. */
+function recalcReminder() {
+  const latest = db.weights().filter(w => !w.demo).at(-1); if (!latest) return null;
+  const from = num(db.calcProfile().weight), snoozedAt = store.get(STORAGE_KEYS.reminders, {}).recalcSnoozedAt;
+  const far = (a, b) => Math.abs(a - b) >= CONFIG.reminders.recalcKg;
+  if (!far(latest.weight, from) || (Number.isFinite(snoozedAt) && !far(latest.weight, snoozedAt))) return null;
+  return { from: round1(from), to: round1(latest.weight) };
+}
+function snoozeReminder(patch) {
+  store.set(STORAGE_KEYS.reminders, { ...store.get(STORAGE_KEYS.reminders, {}), ...patch });
+  renderBanner();
+}
 function renderBanner() {
   const banner = BANNER_STATES.map(s => s()).find(Boolean), el = $('#appBanner');
   el.classList.toggle('hidden', !banner);
@@ -2507,7 +2682,7 @@ function renderBanner() {
     class="panel bg-amber-50 dark:bg-amber-950/40 border-amber-200
            dark:border-amber-800/60 px-4 py-2.5 flex flex-wrap items-center
            justify-between gap-2 text-sm">
-    <span class="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-medium">${icon('circle-alert')}${t(banner.text)}</span>
+    <span class="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-medium">${icon('circle-alert')}${t(banner.text, banner.vars)}</span>
     <span class="flex flex-wrap gap-2">${banner.actions.map(([action, label, cls, modalId]) =>
       `<button type="button" data-action="${action}" ${modalId ? `data-modal="${modalId}"` : ''}
         class="btn ${cls} text-xs px-3 py-1.5">${t(label)}</button>`).join('')}</span>
@@ -3016,7 +3191,7 @@ function validationCsv(cases) {
 /** Modal id → opener. Modals not listed simply open. */
 const MODAL_OPENERS = {
   goalModal: openGoalModal,
-  dataModal: () => { renderFavManage(); photos.renderSettings(); modal.open('dataModal'); },
+  dataModal: (id, opts) => { renderFavManage(); renderBackupStatus(); photos.renderSettings(); modal.open('dataModal', opts); },
   apiModal: openApiModal
 };
 
@@ -3046,6 +3221,10 @@ const ACTIONS = {
   'save-meal': saveAnalysisAsMeal,
   // meals & favorites
   'delete-meal': el => deleteMeal(el.dataset.id),
+  'log-again': el => logMealAgain(el.dataset.id),
+  'snooze-backup': () => snoozeReminder({ backupSnoozedUntil: shiftDate(todayStr(), CONFIG.reminders.backupSnoozeDays) }),
+  'snooze-recalc': () => snoozeReminder({ recalcSnoozedAt: db.weights().filter(w => !w.demo).at(-1)?.weight ?? null }),
+  'edit-fav': el => openFavoriteEditor(Number(el.dataset.idx)),
   'edit-meal': el => openMealEditor(el.dataset.id),
   'edit-add-item': addEditItem,
   'edit-remove-item': el => removeEditItem(Number(el.dataset.idx)),
