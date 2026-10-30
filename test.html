@@ -4731,6 +4731,9 @@ function initData() {
   if (!store.has(STORAGE_KEYS.onboarding)) onboarding.save({ status: isNewUser ? 'new' : 'done', step: 0 });
   if (isNewUser) seedDemo({ withProfile: true });
   else if (!store.has(STORAGE_KEYS.goals)) db.resetGoals(goalsFromMacros(computeMacros(db.calcProfile())), db.firstRecordedDate());
+  // The current goals may have been changed by a version without goal history (e.g. the site was
+  // opened in an older cached copy): record that change from today so today uses the current goals.
+  else db.saveGoalHistory(withGoalChange(db.goalHistory(), db.goals(), todayStr()));
 }
 function clearAll() {
   store.setStr(STORAGE_KEYS.cleared, 'true');
