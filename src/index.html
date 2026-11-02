@@ -325,6 +325,9 @@
       <!-- Slot 1 is the main photo button; slots 2–3 appear once a photo is chosen -->
       <div class="grid grid-cols-2 gap-3 mb-3" id="uploadSlots"></div>
 
+      <!-- Measured scale references in the photo (js: renderRefRow); shown once there is a photo -->
+      <div id="refRow" class="hidden mb-3"></div>
+
       <div class="flex flex-col sm:flex-row gap-2.5">
         <input
           type="text"
@@ -731,6 +734,36 @@
           <button type="submit" class="btn btn-primary py-1.5" data-i18n="btnSave"></button>
         </form>
         <div id="favManageList" class="space-y-1.5"></div>
+      </div>
+
+      <!-- Scale references: measured once, ticked under the photos (js: renderRefManage) -->
+      <div id="refPanel" class="panel p-3.5 space-y-2 scroll-mt-4">
+        <div class="text-sm font-semibold flex items-center gap-1.5">
+          <svg class="icon text-emerald-600" aria-hidden="true"><use href="#i-ruler"/></svg>
+          <span data-i18n="refTitle"></span>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="refHint"></p>
+        <div id="refList" class="space-y-1.5"></div>
+        <form id="refForm" class="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1fr_auto] gap-1.5 text-sm">
+          <input
+            type="text"
+            id="newRefName"
+            required
+            maxlength="30"
+            data-i18n-placeholder="refNamePh"
+            data-i18n-aria-label="refNamePh"
+            class="field py-1.5 min-w-0 col-span-2 sm:col-span-1" />
+          <input
+            type="text"
+            id="newRefSize"
+            required
+            maxlength="30"
+            data-i18n-placeholder="refSizePh"
+            data-i18n-aria-label="refSizePh"
+            class="field py-1.5 min-w-0" />
+          <button type="submit" class="btn btn-primary px-3 py-1.5" data-i18n="refAdd"></button>
+        </form>
+        <div id="refPresets" class="flex flex-wrap gap-1.5"></div>
       </div>
 
       <div class="space-y-2">

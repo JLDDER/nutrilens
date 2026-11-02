@@ -34,12 +34,16 @@ browser can never combine a new page with cached old scripts.
 
 ## Analysis modes
 
-- **Precise (default)** — prompt v6, 3 requests. The model identifies foods, cooking method and portion
+- **Precise (default)** — prompt v8, 3 requests. The model identifies foods, cooking method and portion
   (from container, area and thickness); composition comes from `js/foods.js` (294 as-served foods:
   衛福部 TFND and 日本食品標準成分表 八訂) when the food and method match exactly, otherwise from the model;
   oil is added from measured absorption rates only when the value excludes it; the weight is the median of
   the main estimate and two Flash-Lite re-estimates; a total kcal printed on the package scales the items.
-- **Standard** — prompt v4, 1 request; the model estimates everything.
+- **Standard** — prompt v5, 1 request; the model estimates everything.
+- The two re-estimates also name each item's cooking method (`METHOD_GUIDE`); the oil is the average over the
+  three votes, so a split vote adds part of the oil (shown as 做法判斷不一) instead of all or none.
+- Both modes and the weight re-estimates share `PORTION_GUIDE`: scale (the user's references first, then
+  typical sizes), volume, bulk density and the edible share of bone-in cuts, with sources in the code.
 - **Accuracy test** (資料管理 → 準確度驗證) compares both modes against known values (labels or weighed meals).
 
 ## Goal history
@@ -53,6 +57,13 @@ from the day it is made, so past days keep the goals they had (dashboard, histor
 A banner reminds to back up after 14 days without a backup (`nutrilens_last_backup_v1`) and to recalculate
 the goals when the latest weight differs by 2 kg or more from the weight they were calculated with. "Later"
 is stored in `nutrilens_reminders_v1`. Meals logged from a description only carry `source: 'text'`.
+
+## Scale references
+
+Objects the user measured (`nutrilens_scale_refs_v1`: `[{ id, name, size }]`, managed in 資料管理) appear as
+chips under the photos. The ticked ones (`nutrilens_scale_refs_on_v1`, remembered between meals) go with the
+photos as "Reference objects in the photo, measured by the user: …", are kept in the job as `refs` and in the
+diagnostics record, and are part of the JSON backup.
 
 ## Meal photos and sharing
 
