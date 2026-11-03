@@ -97,8 +97,11 @@ minimum instead). Each target adds up (kcal = 4p + 4c + 9f): protein is set firs
 split between carbohydrate and fat. It then sends only text — targets, places, today's food names, favorites, restrictions, note — to
 Gemini (`buildSuggestPrompt`). The model returns foods with portions, grams, table keys and methods; the
 nutrients are computed like a precise analysis (`combinePrecise`), so a suggestion and the later photo agree.
-Options more than 15 % off in calories or 20 % short of protein are sent back once with the app's numbers
-(`suggestCorrection`); the closer of the two answers is kept. Places and restrictions are kept in
+The prompt (v4) uses a text-only method guide (`SUGGEST_METHOD_GUIDE`) and states the oil the app will add, read
+from `COOK_METHODS` (`buildOilRateNote`); chain and packaged items come in whole units. Restrictions and the note are
+sent inside `<restrictions>` / `<user_note>` with their own angle brackets made full-width (`promptData`).
+Options more than 15 % off in calories or 20 % short of protein are sent back once with the app's numbers, food by
+food (`suggestCorrection`); the closer of the two answers is kept. Places and restrictions are kept in
 `nutrilens_suggest_prefs_v1` (backed up); today's last result in `nutrilens_suggest_cache_v1` until a meal
 changes. Suggestions are never logged: meals are still logged by photo.
 

@@ -138,6 +138,25 @@ it('meal suggestions: request, nutrients computed by the app, no log button', as
   return page;
 });
 
+it('meal suggestions: an option far off target is sent back once, with the app\'s numbers food by food', async browser => {
+  const page = await freshPage(browser);
+  const food = over => ({ name: '茶葉蛋', portion: '1 顆', grams: 55, published: false, foodKey: '', method: 'plain', foodType: 'other',
+    proteinPer100g: 12, carbsPer100g: 1, fatPer100g: 9, ...over });
+  const calls = await fakeGemini(page, body => {
+    const text = body.contents[0].parts[0].text, slot = text.match(/^- (\w+):/m)[1];
+    const grams = text.includes('Your previous answer') ? 2000 : 55;            // the first answer is far too small
+    return { meals: [{ slot, options: [{ title: 'A', place: '超商', why: 'w', foods: [food({ grams })] }] }], tip: '' };
+  });
+  await page.goto(BASE);
+  await page.click('[data-action="open-suggest"]');
+  await page.click('[data-action="suggest-run"]');
+  await page.waitForFunction(() => document.querySelector('#suggestResult')?.textContent.includes('茶葉蛋'), null, { timeout: 15000 });
+  if (calls.length !== 2) throw new Error(`expected 2 requests (answer + one correction), got ${calls.length}`);
+  const fix = calls[1].body.contents[0].parts[0].text;
+  if (!/Foods: 茶葉蛋 55 g → \d+ kcal/.test(fix)) throw new Error('correction request lacks the food-by-food numbers');
+  return page;
+});
+
 it('no JavaScript errors on load in English and dark mode', async browser => {
   const page = await freshPage(browser, { nutrilens_lang_v1: 'en', nutrilens_theme_v1: 'dark' });
   await page.goto(BASE);
