@@ -47,7 +47,7 @@ as `app.get('name')`. Objects from the vm are another realm: compare them after 
 
 ## Analysis modes
 
-- **Precise (default)** — prompt v10, 3 requests. The model identifies foods, cooking method and portion
+- **Precise (default)** — prompt v11, 3 requests. The model identifies foods, cooking method and portion
   (from container, area and thickness); composition comes from `js/foods.js` (294 as-served foods:
   衛福部 TFND and 日本食品標準成分表 八訂) when the food and method match exactly, otherwise from the model;
   oil is added from measured absorption rates only when the value excludes it; the weight is the median of
@@ -56,7 +56,14 @@ as `app.get('name')`. Objects from the vm are another realm: compare them after 
   and a factor outside 0.5–1.8 is ignored as a misread).
 - The re-estimates answer one numbered object per item with a short geometry note first (`WEIGHT_SCHEMA`,
   `alignEstimates`), so a skipped item only loses its own vote.
-- **Standard** — prompt v5, 1 request; the model estimates everything.
+- **Standard** — prompt v6, 1 request; the model estimates everything.
+- Both modes share `DRINK_GUIDE`: measured total sugar of 700 ml cups (衛福部 / TFND, National Taiwan University),
+  which does not scale with the sweetness level. The user's references and note are sent inside
+  `<scale_references>` / `<user_note>` (`promptData` makes their angle brackets full-width).
+- `METHOD_GUIDE` (shared with the re-estimates, so all three vote alike) names dishes fried before braising
+  (滷排骨, 排骨酥, 紅燒獅子頭…); sauces and drizzled oils (肉燥, 油蔥酥, 麻醬, 辣油…) are always separate items.
+- Photos are sent at 768 px; the third slot (scale reference or nutrition label) at 1280 px so small print stays
+  legible, while the copy kept on the device is 768 px like the others (`CONFIG.image`).
 - Branded, chain and packaged products use their published nutrition (`PUBLISHED_GUIDE`, `published: true`):
   taken as served, no oil added. The main request (and suggestions) offer Google Search as a tool; a model or
   key that cannot use it (free keys often answer 429 "quota exceeded") gets the request again without it,

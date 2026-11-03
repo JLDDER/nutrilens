@@ -62,12 +62,13 @@ const photoRetention = () => (store.str(STORAGE_KEYS.photoRetention) === 'foreve
 
 /* ── P2. Hooks used by app.js ───────────────────────────────────────── */
 const photos = {
-  /** A new analysis job: keep its photos. Failure only means the meal will have no photo. */
-  async saveForJob(job) {
-    if (!job.images.length) return;
+  /** A new analysis job: keep its photos (`images`: the copies to keep, which can be smaller than those sent to the
+   *  model; default the job's own). Failure only means the meal will have no photo. */
+  async saveForJob(job, images = job.images) {
+    if (!images.length) return;
     try {
-      await photoStore.put({ id: job.id, date: job.date, savedAt: Date.now(), images: [...job.images] });
-      photoCache.set(job.id, [...job.images]);
+      await photoStore.put({ id: job.id, date: job.date, savedAt: Date.now(), images: [...images] });
+      photoCache.set(job.id, [...images]);
       navigator.storage?.persist?.().catch(() => {});              // ask the browser not to evict the data
     } catch (err) { console.warn('[NutriLens] photos not saved', err); }
   },

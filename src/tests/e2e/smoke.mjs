@@ -111,6 +111,36 @@ it('package total: only the package\'s items are scaled, the drink beside it is 
   return page;
 });
 
+it('label slot: sent at 1280 px, kept on the device at 768 px; other slots 768 px', async browser => {
+  const page = await freshPage(browser);
+  const calls = await fakeGemini(page, body => (body.generationConfig.responseSchema.properties.items
+    ? { reasoning: 'r', name: 'x', packageKcal: 0, items: [item()] } : { estimates: [{ index: 1, geo: '', weight: 100, method: 'plain' }] }));
+  await page.goto(BASE);
+  // A 2000 × 1500 photo in slot 0 and in the label slot (2).
+  const bytes = await page.evaluate(() => new Promise(res => {
+    const c = Object.assign(document.createElement('canvas'), { width: 2000, height: 1500 });
+    c.getContext('2d').fillRect(0, 0, 10, 10);
+    c.toBlob(async blob => res(Array.from(new Uint8Array(await blob.arrayBuffer()))), 'image/jpeg', 0.9);
+  }));
+  const buffer = Buffer.from(bytes);
+  for (const slot of [0, 2]) await page.setInputFiles(`[data-upload="${slot}"]`, { name: 'p.jpg', mimeType: 'image/jpeg', buffer });
+  await page.waitForSelector('#preview2:not(.hidden)');
+  await page.click('#analyzeBtn');
+  await page.locator('[data-action="job-open"]').first().click({ timeout: 15000 });
+  const sent = calls[0].body.contents[0].parts.filter(p => p.inline_data).map(p => p.inline_data.data);
+  const dims = await page.evaluate(async list => Promise.all(list.map(d => new Promise(res => {
+    const img = new Image(); img.onload = () => res(Math.max(img.width, img.height)); img.src = 'data:image/jpeg;base64,' + d;
+  }))), sent);
+  if (dims.join() !== '768,1280') throw new Error(`sent sizes ${dims}, expected 768,1280`);
+  const kept = await page.evaluate(async () => {
+    const job = JSON.parse(localStorage.getItem('nutrilens_jobs_v1'))[0];
+    const rec = await photoStore.get(job.id);
+    return Promise.all(rec.images.map(src => new Promise(res => { const img = new Image(); img.onload = () => res(Math.max(img.width, img.height)); img.src = src; })));
+  });
+  if (kept.join() !== '768,768') throw new Error(`kept sizes ${kept}, expected 768,768`);
+  return page;
+});
+
 it('saving the analysis adds a meal to today', async browser => {
   const page = await freshPage(browser);
   await analyse(page, body => (body.generationConfig.responseSchema.properties.items
