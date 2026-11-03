@@ -34,12 +34,16 @@ browser can never combine a new page with cached old scripts.
 
 ## Analysis modes
 
-- **Precise (default)** — prompt v8, 3 requests. The model identifies foods, cooking method and portion
+- **Precise (default)** — prompt v9, 3 requests. The model identifies foods, cooking method and portion
   (from container, area and thickness); composition comes from `js/foods.js` (294 as-served foods:
   衛福部 TFND and 日本食品標準成分表 八訂) when the food and method match exactly, otherwise from the model;
   oil is added from measured absorption rates only when the value excludes it; the weight is the median of
   the main estimate and two Flash-Lite re-estimates; a total kcal printed on the package scales the items.
 - **Standard** — prompt v5, 1 request; the model estimates everything.
+- Branded, chain and packaged products use their published nutrition (`PUBLISHED_GUIDE`, `published: true`):
+  taken as served, no oil added. The main request (and suggestions) offer Google Search as a tool; a model or
+  key that cannot use it (free keys often answer 429 "quota exceeded") gets the request again without it,
+  and search is not offered again for 12 hours (`nutrilens_search_off_until_v1`, `run.searchOff`).
 - The two re-estimates also name each item's cooking method (`METHOD_GUIDE`); the oil is the average over the
   three votes, so a split vote adds part of the oil (shown as 做法判斷不一) instead of all or none.
 - Both modes and the weight re-estimates share `PORTION_GUIDE`: scale (the user's references first, then
@@ -64,6 +68,19 @@ Objects the user measured (`nutrilens_scale_refs_v1`: `[{ id, name, size }]`, ma
 chips under the photos. The ticked ones (`nutrilens_scale_refs_on_v1`, remembered between meals) go with the
 photos as "Reference objects in the photo, measured by the user: …", are kept in the job as `refs` and in the
 diagnostics record, and are part of the JSON backup.
+
+## Meal suggestions
+
+「建議吃什麼」 on today's dashboard. The app picks the meals still to plan from the clock and today's meal times
+(`defaultSlots`), divides what is left of today's goals over the chosen meals by 25/35/30/10, renormalised over
+the chosen ones (`mealTargets`; when the day is nearly or fully used, each meal gets a light, protein-first
+minimum instead), and sends only text — targets, places, today's food names, favorites, restrictions, note — to
+Gemini (`buildSuggestPrompt`). The model returns foods with portions, grams, table keys and methods; the
+nutrients are computed like a precise analysis (`combinePrecise`), so a suggestion and the later photo agree.
+Options more than 15 % off in calories or 20 % short of protein are sent back once with the app's numbers
+(`suggestCorrection`); the closer of the two answers is kept. Places and restrictions are kept in
+`nutrilens_suggest_prefs_v1` (backed up); today's last result in `nutrilens_suggest_cache_v1` until a meal
+changes. Suggestions are never logged: meals are still logged by photo.
 
 ## Meal photos and sharing
 
