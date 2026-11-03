@@ -52,8 +52,9 @@ as `app.get('name')`. Objects from the vm are another realm: compare them after 
   衛福部 TFND and 日本食品標準成分表 八訂) when the food and method match exactly, otherwise from the model;
   oil is added from measured absorption rates only when the value excludes it; the weight is the median of
   the main estimate and two Flash-Lite re-estimates, and the kcal range covers all three; a total kcal printed on a
-  package rescales only that package's estimated items (`inPackage`; table, published and label values are kept,
-  and a factor outside 0.5–1.8 is ignored as a misread).
+  package rescales only that package's items (`inPackage`). FOOD_TABLE values are kept; model estimates and the
+  label / published values the model reported give way to the printed number (`PACKAGE_SCALABLE`); a factor
+  outside 0.5–1.8 is ignored as a misread.
 - The re-estimates answer one numbered object per item with a short geometry note first (`WEIGHT_SCHEMA`,
   `alignEstimates`), so a skipped item only loses its own vote.
 - **Standard** — prompt v7, 1 request; the model estimates everything.

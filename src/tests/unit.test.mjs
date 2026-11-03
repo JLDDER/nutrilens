@@ -147,9 +147,15 @@ describe('scaleToPackage', () => {
     assert.equal(scale(before, 0), before);
     assert.equal(scale(before, 5000), before);
   });
-  test('not scaled when an item comes from a nutrition label', () => {
-    const list = combine([rawItem({ fromLabel: true, inPackage: true }), rawItem({ inPackage: true })]);
-    assert.equal(scale(list, 300), list);
+  test('the printed total wins over label or published values the model reported (sticker 336 kcal, "label" 405)', () => {
+    for (const flag of ['fromLabel', 'published']) {
+      const list = combine([rawItem({ name: '蕎麥麵', [flag]: true, inPackage: true, weight: 330, proteinPer100g: 5, carbsPer100g: 25.07, fatPer100g: 0.2727 }),
+        rawItem({ name: '地瓜', inPackage: false })]);
+      near(list[0].cal, 405, 0.5);
+      const out = scale(list, 336);
+      near(out[0].cal, 336, 0.01, flag); assert.equal(out[0].src.packageKcal, 336);
+      assert.equal(out[1], list[1]);
+    }
   });
   const kcal = list => list.reduce((s, x) => s + x.cal, 0);
   test('only the package\'s items are scaled; the rest of the meal keeps its value', () => {
@@ -175,15 +181,15 @@ describe('scaleToPackage', () => {
     assert.equal(scale(list, 100), list);
     assert.equal(scale(list, 1200), list);
   });
-  test('measured items in the package keep their value; the estimates take up the difference', () => {
+  test('table items in the package keep their value; the others take up the difference', () => {
     const list = combine([rawItem({ name: '白飯', foodKey: '白飯', inPackage: true, weight: 200, foodType: 'starch' }),   // 2.84 kcal/g → 280 kcal-ish
       rawItem({ name: '排骨', inPackage: true, weight: 100 })]);                                                          // 125 kcal
     const rice = list[0].cal, out = scale(list, rice + 150);
     assert.equal(out[0], list[0]);
     near(out[1].cal, 150, 0.01);
   });
-  test('only measured items in the package: nothing to scale', () => {
-    const list = combine([rawItem({ foodKey: '白飯', inPackage: true }), rawItem({ published: true, inPackage: true })]);
+  test('only table items in the package: nothing to scale', () => {
+    const list = combine([rawItem({ foodKey: '白飯', inPackage: true }), rawItem({ foodKey: '滷蛋', inPackage: true })]);
     assert.equal(scale(list, 500), list);
   });
 });

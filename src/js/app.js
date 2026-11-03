@@ -1267,18 +1267,21 @@ function combinePrecise(rawItems, { weightSets = [], methodSets = [], maxRatio =
   });
 }
 
+/** Item sources a printed package total may correct. FOOD_TABLE rows are lab-measured and stay; the model's own
+ *  estimates and the label or published values it reported (which it sometimes assembles itself: a 336 kcal sticker
+ *  came back as a 405–522 kcal "label") give way to the number printed on the package. */
+const PACKAGE_SCALABLE = ['model', 'label', 'published'];
 /**
- * When the packaging prints the whole product's kcal, the package's own estimated items are scaled so the package adds
- * up to it. Only items inside the package count (a drink or a banana beside a rice ball keeps its value); a lone item is
- * the package. Measured values (table, published, label) are kept as they are and the estimates take up the difference.
- * Skipped when a label is visible (its values are already exact) or the factor is implausible (see packageScale). Pure.
+ * When the packaging prints the whole product's kcal, the package's items are scaled so the package adds up to it.
+ * Only items inside the package count (a drink or a banana beside a rice ball keeps its value); a lone item is the
+ * package. Table values are kept and the other items take up the difference. Skipped when the factor is implausible
+ * (see packageScale: most likely a per-100 g or per-piece number was read as the total). Pure.
  */
 function scaleToPackage(items, packageKcal) {
   if (!(packageKcal >= 30 && packageKcal <= 3000)) return items;
   const inPkg = items.length === 1 ? items : items.filter(it => it.src.inPackage);
-  if (!inPkg.length || inPkg.some(it => it.src.kind === 'label')) return items;
-  const scalable = inPkg.filter(it => it.src.kind === 'model');
-  const fixedCal = inPkg.reduce((s, it) => s + (it.src.kind === 'model' ? 0 : it.cal), 0);
+  const scalable = inPkg.filter(it => PACKAGE_SCALABLE.includes(it.src.kind));
+  const fixedCal = inPkg.reduce((s, it) => s + (scalable.includes(it) ? 0 : it.cal), 0);
   const estCal = scalable.reduce((s, it) => s + it.cal, 0);
   const k = (packageKcal - fixedCal) / estCal;
   if (!(estCal > 0) || !(k >= CONFIG.precise.packageScale.min && k <= CONFIG.precise.packageScale.max)) return items;
