@@ -367,6 +367,12 @@ describe('prompts', () => {
     assert.match(MG, /滷排骨/); assert.match(MG, /紅燒肉, 滷雞腿\) stays plain/);
     assert.ok(fn('buildWeightPrompt')([{ name: 'A' }], '', []).system.includes(MG));
   });
+  test('noodle-soup and hot-pot broth: 75 % unless the note says otherwise, in every prompt that estimates weight', () => {
+    const PG = fn('PORTION_GUIDE');
+    assert.match(PG, /count 75 % of the visible broth/); assert.match(PG, /預設喝 75% 湯/);
+    const standard = fn('buildNutritionPrompt')({ lang: 'zh', imageCount: 1, note: '' }).system;
+    assert.doesNotMatch(standard, /Hot-pot broth only if/);
+  });
   test('sauces and drizzled oils are always separate; packageKcal only when printed', () => {
     const sys = fn('buildPrecisePrompt')({ lang: 'zh', imageCount: 1, note: '' }).system;
     assert.match(sys, /燙青菜上的肉燥或油蔥酥/);

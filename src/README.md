@@ -47,7 +47,7 @@ as `app.get('name')`. Objects from the vm are another realm: compare them after 
 
 ## Analysis modes
 
-- **Precise (default)** — prompt v11, 3 requests. The model identifies foods, cooking method and portion
+- **Precise (default)** — prompt v12, 3 requests. The model identifies foods, cooking method and portion
   (from container, area and thickness); composition comes from `js/foods.js` (294 as-served foods:
   衛福部 TFND and 日本食品標準成分表 八訂) when the food and method match exactly, otherwise from the model;
   oil is added from measured absorption rates only when the value excludes it; the weight is the median of
@@ -56,7 +56,7 @@ as `app.get('name')`. Objects from the vm are another realm: compare them after 
   and a factor outside 0.5–1.8 is ignored as a misread).
 - The re-estimates answer one numbered object per item with a short geometry note first (`WEIGHT_SCHEMA`,
   `alignEstimates`), so a skipped item only loses its own vote.
-- **Standard** — prompt v6, 1 request; the model estimates everything.
+- **Standard** — prompt v7, 1 request; the model estimates everything.
 - Both modes share `DRINK_GUIDE`: measured total sugar of 700 ml cups (衛福部 / TFND, National Taiwan University),
   which does not scale with the sweetness level. The user's references and note are sent inside
   `<scale_references>` / `<user_note>` (`promptData` makes their angle brackets full-width).
@@ -73,7 +73,8 @@ as `app.get('name')`. Objects from the vm are another realm: compare them after 
   answer picked an oil-included table row (炒, 炸) but the votes say plain, the row is dropped for the model's
   oil-free composition plus the voted oil.
 - Both modes and the weight re-estimates share `PORTION_GUIDE`: scale (the user's references first, then
-  typical sizes), volume, bulk density and the edible share of bone-in cuts, with sources in the code.
+  typical sizes), volume, bulk density and the edible share of bone-in cuts, with sources in the code. Broth of
+  noodle soups and one-person hot pots counts 75 % unless the note says how much was drunk (shown as 預設喝 75% 湯).
 - **Accuracy test** (資料管理 → 準確度驗證) compares both modes against known values (labels or weighed meals).
 
 ## Goal history
