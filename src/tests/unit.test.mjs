@@ -132,6 +132,11 @@ describe('combinePrecise', () => {
     const b = combineOne([[150], [150]]);
     near(b.range.lowCal, at(140), 1); near(b.range.highCal, at(160), 1);
   });
+  test('an implausible low / high from the model is held to main ÷ 3 … main × 3', () => {
+    const [a] = combine([rawItem({ weightLow: 1, weight: 15, weightHigh: 110 })]);
+    const at = g => fn('nutrientsAt')({ p: 20, c: 0, f: 5 }, 0, g).cal;
+    near(a.range.lowCal, at(5), 0.5); near(a.range.highCal, at(45), 0.5);
+  });
   test('kcal always equals 4p + 4c + 9f', () => {
     const [a] = combine([rawItem({ method: 'deepfry_breaded', carbsPer100g: 12 })]);
     near(a.cal, fn('kcalFromMacros')(a.p, a.c, a.f), 1e-9);
@@ -297,7 +302,6 @@ describe('weight re-estimates', () => {
       { index: 4, weight: 50, method: 'stirfry' }] }, 4);
     assert.deepEqual(r.weights, [160, 120, null, 50]);
     assert.deepEqual(r.methods, ['plain', 'deepfry_breaded', '', 'stirfry']);
-    assert.equal(r.geo[0], 'g1');
   });
   test('out-of-range and duplicate indexes are ignored (first answer wins); old array format still read', () => {
     const r = align({ estimates: [{ index: 0, weight: 1 }, { index: 3, weight: 9 }, { index: 1, weight: 100 }, { index: 1, weight: 999 }] }, 2);

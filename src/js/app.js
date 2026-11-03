@@ -1149,11 +1149,12 @@ const WEIGHT_SCHEMA = {
   }
 };
 /**
- * Lines a re-estimate up with the n listed items: { weights, methods, geo }, one slot per item, NaN / '' where the
- * model gave nothing usable (combinePrecise ignores those). Accepts the old { weights, methods } arrays too. Pure.
+ * Lines a re-estimate up with the n listed items: { weights, methods }, one slot per item, NaN / '' where the model gave
+ * nothing usable (combinePrecise ignores those); the geometry notes stay in the diagnostics (WEIGHT_TASK.summarize).
+ * Accepts the old { weights, methods } arrays too. Pure.
  */
 function alignEstimates(parsed, n) {
-  const weights = Array(n).fill(NaN), methods = Array(n).fill(''), geo = Array(n).fill('');
+  const weights = Array(n).fill(NaN), methods = Array(n).fill('');
   const list = Array.isArray(parsed?.estimates) ? parsed.estimates
     : Array.isArray(parsed?.weights) ? parsed.weights.map((w, i) => ({ index: i + 1, weight: w, method: parsed.methods?.[i] })) : [];
   for (const e of list) {
@@ -1161,9 +1162,8 @@ function alignEstimates(parsed, n) {
     if (!Number.isInteger(i) || i < 0 || i >= n || Number.isFinite(weights[i]) || methods[i]) continue;   // first answer per item wins
     weights[i] = num(e.weight, NaN);
     methods[i] = typeof e.method === 'string' ? e.method : '';
-    geo[i] = cleanText(e.geo, 40);
   }
-  return { weights, methods, geo };
+  return { weights, methods };
 }
 const WEIGHT_TASK = {
   get schema() { return WEIGHT_SCHEMA; },
@@ -1237,8 +1237,11 @@ function combinePrecise(rawItems, { weightSets = [], methodSets = [], maxRatio =
     const scale = weight / main;
     // The range covers the main answer's own range and every weight the three estimates gave, so a wide disagreement
     // between them shows as a wide range instead of hiding behind one confident answer.
-    const low = Math.min(Math.max(1, num(raw.weightLow, main)) * scale, main, ...others);
-    const high = Math.max(low, num(raw.weightHigh, main) * scale, main, ...others);
+    // The model's own low / high are held to the same main ÷ 3 … main × 3 band as the re-estimates: unchecked, a
+    // weightHigh of 110 g for a 15 g spoon of 肉燥 would stretch a 989 kcal meal's range to 767–1477 kcal.
+    const band = w => Math.min(main * maxRatio, Math.max(main / maxRatio, w));
+    const low = Math.min(band(num(raw.weightLow, main) * scale), main, ...others);
+    const high = Math.max(band(num(raw.weightHigh, main) * scale), main, ...others);
 
     // Methods: the main answer, then each re-estimate's (unknown names dropped).
     const mainMethod = COOK_METHODS[raw.method] ? raw.method : 'plain';
