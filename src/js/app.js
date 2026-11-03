@@ -672,8 +672,9 @@ function defaultSlots(nowHHMM, mealTimes) {
  * Every target adds up (cal = 4p + 4c + 9f), so the model is never given numbers that contradict each other: calories
  * and protein are set first, and what protein leaves is split between carbohydrate and fat — in proportion to what is
  * left of them today, or 0.45 : 0.25 (LIGHT_MEAL_SPLIT) for a light meal or when neither is left. Protein is never cut
- * (someone may want one meal to make up for the day's protein): if it needs more than the meal's calories, the
- * calories rise to it. Pure (unit-tested).
+ * (someone may want one meal to make up for the day's protein). A light meal, or one whose protein would take all its
+ * calories, still keeps the carbohydrate and fat part of its minimum (70 % of minKcal), so the target stays a real meal
+ * (not "56 g protein, 0 carbs, 0 fat") and the calories rise by what the extra protein adds. Pure (unit-tested).
  */
 function mealTargets(left, slotIds) {
   const slots = MEAL_SLOTS.filter(s => slotIds.includes(s.id));
@@ -685,8 +686,8 @@ function mealTargets(left, slotIds) {
     const k = s.share / shares, light = mode !== 'normal';
     const cal = light ? s.minKcal : Math.round(left.cal * k);
     const p = Math.max(light ? Math.round(cal * lightP / KCAL_PER_G.p) : 0, Math.round(pos('p') * k));
-    const rest = cal - p * KCAL_PER_G.p;
-    if (rest <= 0) return { slot: s.id, cal: p * KCAL_PER_G.p, p, c: 0, f: 0 };
+    const minRest = s.minKcal * (lightC + lightF);
+    const rest = Math.max(cal - p * KCAL_PER_G.p, light || cal <= p * KCAL_PER_G.p ? minRest : 0);
     const cKcal = light ? lightC : pos('c') * KCAL_PER_G.c, fKcal = light ? lightF : pos('f') * KCAL_PER_G.f;
     const fatShare = cKcal + fKcal > 0 ? fKcal / (cKcal + fKcal) : lightF / (lightC + lightF);
     const f = Math.round(rest * fatShare / KCAL_PER_G.f), c = Math.max(0, Math.round((rest - f * KCAL_PER_G.f) / KCAL_PER_G.c));

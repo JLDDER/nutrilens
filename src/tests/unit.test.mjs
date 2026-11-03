@@ -231,13 +231,20 @@ describe('meal suggestions: planning', () => {
       assert.ok(r.meals.every(m => m.p >= 0 && m.c >= 0 && m.f >= 0));
     }
   });
-  test('mealTargets tight: the meal keeps its minimum kcal and all the protein asked for', () => {
+  test('mealTargets tight: all the protein asked for, plus the carbs and fat of a light meal (70 % of the minimum)', () => {
     const [m] = mealTargets({ cal: 200, p: 55, c: 30, f: 5 }, ['dinner']).meals;
-    near(m.cal, 350, 2); assert.equal(m.p, 55); assert.ok(m.c > 0 && m.f > 0);
+    assert.equal(m.p, 55);
+    near(4 * m.c + 9 * m.f, 350 * 0.7, 4);
+    near(m.cal, 55 * 4 + 245, 4);
   });
-  test('mealTargets: protein is never cut — if it needs more than the calories, the calories rise', () => {
+  test('mealTargets: protein is never cut, and the meal still has carbs and fat', () => {
     const [m] = mealTargets({ cal: 400, p: 150, c: 0, f: 0 }, ['dinner']).meals;
-    assert.deepEqual(plain(m), { slot: 'dinner', cal: 600, p: 150, c: 0, f: 0 });
+    assert.equal(m.p, 150);
+    assert.ok(m.c > 0 && m.f > 0, JSON.stringify(m));
+    near(4 * m.c + 9 * m.f, 350 * 0.7, 4);
+  });
+  test('mealTargets normal with plenty of calories is unchanged by the light-meal floor', () => {
+    assert.deepEqual(plain(mealTargets({ cal: 900, p: 90, c: 60, f: 25 }, ['dinner']).meals[0]), { slot: 'dinner', cal: 901, p: 90, c: 70, f: 29 });
   });
   test('mealTargets tight / over: each meal gets its minimum, never 0', () => {
     assert.equal(mealTargets({ cal: 200, p: 55, c: 30, f: 5 }, ['dinner']).mode, 'tight');

@@ -103,7 +103,8 @@ diagnostics record, and are part of the JSON backup.
 (`defaultSlots`), divides what is left of today's goals over the chosen meals by 25/35/30/10, renormalised over
 the chosen ones (`mealTargets`; when the day is nearly or fully used, each meal gets a light, protein-first
 minimum instead). Each target adds up (kcal = 4p + 4c + 9f): protein is set first and never cut, and the rest is
-split between carbohydrate and fat. It then sends only text — targets, places, today's food names, favorites, restrictions, note — to
+split between carbohydrate and fat; a light meal (or one whose protein would take all its calories) keeps at least
+70 % of its minimum for carbohydrate and fat, so it stays a real meal. It then sends only text — targets, places, today's food names, favorites, restrictions, note — to
 Gemini (`buildSuggestPrompt`). The model returns foods with portions, grams, table keys and methods; the
 nutrients are computed like a precise analysis (`combinePrecise`), so a suggestion and the later photo agree.
 The prompt (v4) uses a text-only method guide (`SUGGEST_METHOD_GUIDE`) and states the oil the app will add, read
