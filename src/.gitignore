@@ -3,3 +3,4 @@ dist/
 tailwindcss*
 tailwind.in.css
 tailwind.out.css
+tests/e2e/out/

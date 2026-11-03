@@ -32,6 +32,19 @@ This folder (`src/`) is the source; the repository root holds the built site tha
 `dist/index.html` is self-contained apart from the images: CSS and scripts are inlined, so a
 browser can never combine a new page with cached old scripts.
 
+## Tests
+
+All tests live in `tests/` and are not part of the built site. Run them from `src/`:
+
+| Command | What it checks |
+|---|---|
+| `node --test "tests/*.test.mjs"` | Unit tests of the pure logic (nutrition, food table, oil, `combinePrecise`, suggestions, prompts, Gemini fallback and search retry with a fake `fetch`) and static checks (unique ids, button types, zh/en keys, `data-action` handlers, `#id` lookups, line length). Node 18+, no install. |
+| `node tests/lint.mjs` | ESLint over the four scripts concatenated (they share one global scope). Needs `npm i eslint globals` somewhere and `NODE_PATH` pointing at that `node_modules`. |
+| `node build.mjs && node tests/e2e/smoke.mjs` | The built page in Chromium with Gemini replaced by fixed answers: analysis, saving, suggestions, no page errors. Needs Playwright (`npm i playwright`, `npx playwright install chromium`). |
+
+`tests/load.mjs` loads the scripts into a Node `vm` the way the browser does; any top-level name is available
+as `app.get('name')`. Objects from the vm are another realm: compare them after `JSON.parse(JSON.stringify(…))`.
+
 ## Analysis modes
 
 - **Precise (default)** — prompt v9, 3 requests. The model identifies foods, cooking method and portion
