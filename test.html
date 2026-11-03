@@ -2663,7 +2663,8 @@ const STORAGE_KEYS = {
   scaleRefs: 'nutrilens_scale_refs_v1',      // [{ id, name, size }]: objects the user measured, ticked in photos for scale
   scaleRefsOn: 'nutrilens_scale_refs_on_v1', // ids ticked in the photo area; kept between meals (same table, same chopsticks)
   suggestPrefs: 'nutrilens_suggest_prefs_v1', // { places: [SUGGEST_PLACES id], diet: 'restrictions' } for meal suggestions
-  suggestCache: 'nutrilens_suggest_cache_v1'  // today's last suggestion: { v, date, mealsSig, slots, note, result, avoid }
+  suggestCache: 'nutrilens_suggest_cache_v1', // today's last suggestion: { v, date, mealsSig, slots, note, result, avoid }
+  searchOff: 'nutrilens_search_off_until_v1'  // ms timestamp: Google Search is not offered to the model until then
 };
 
 const CONFIG = {
@@ -2689,7 +2690,9 @@ const CONFIG = {
     timeoutMs: 125_000,
     /** A fetch that fails after this long is a dropped connection rather than a
      *  CORS/CSP block, so retrying with ?key= would only waste more time. */
-    stallMs: 5_000
+    stallMs: 5_000,
+    /** After a key could not use Google Search (free keys often cannot), it is not offered again for this long. */
+    searchOffHours: 12
   },
   /** Precise mode: main analysis, then the weights re-estimated by two light models. */
   precise: {
@@ -3454,6 +3457,12 @@ const NUTRITION_TASK = {
   })
 };
 
+/** Whether to offer Google Search to the model: off for CONFIG.gemini.searchOffHours after a key could not use it. */
+const webSearch = {
+  available: () => !(Number(store.str(STORAGE_KEYS.searchOff)) > Date.now()),
+  turnOff: () => store.setStr(STORAGE_KEYS.searchOff, String(Date.now() + CONFIG.gemini.searchOffHours * 3600_000))
+};
+
 const gemini = {
   /**
    * Sends the key in the x-goog-api-key header so it stays out of URLs. If the
@@ -3494,9 +3503,10 @@ const gemini = {
     const generationConfig = { responseMimeType: 'application/json', temperature: CONFIG.gemini.temperature, responseSchema: task.schema };
     const url = `${CONFIG.gemini.apiBase}/models/${encodeURIComponent(model)}:generateContent`;
     const attempts = task.thinking ? task.thinking(model) : thinkingAttemptsFor(model);
-    // Tasks that may look up published nutrition (task.search) send Google Search as a tool; a model or key that cannot
-    // use it answers 400/429 naming it, and the same request goes again without it.
-    let res, thinking = null, tools = task.search ? [{ google_search: {} }] : null;
+    // Tasks that may look up published nutrition (task.search) send Google Search as a tool. Free keys often may not use
+    // it: the answer is then 429 (as "quota exceeded", even with plenty of requests left) or a 400/403 naming it. The same
+    // request goes again without it, and search stays off for a while so later requests do not waste a call.
+    let res, thinking = null, tools = task.search && webSearch.available() ? [{ google_search: {} }] : null;
     for (let i = 0; i < attempts.length;) {
       const cfg = attempts[i];
       thinking = cfg;
@@ -3518,9 +3528,12 @@ const gemini = {
         run?.attempts.push({ thinking: cfg, error: `${e.name}: ${String(e.message).slice(0, 80)}`, ms: Date.now() - attemptStart });
         throw e;
       }
-      if (res.status !== 400 && !(tools && res.status === 429)) break;
+      if (res.status !== 400 && !(tools && (res.status === 429 || res.status === 403))) break;
       const err = await apiError(res);
-      if (tools && /search|tool|ground/i.test(err.message)) { tools = null; if (run) run.searchOff = res.status; continue; }
+      if (tools && (res.status === 429 || /search|tool|ground/i.test(err.message))) {
+        tools = null; webSearch.turnOff(); if (run) run.searchOff = res.status;
+        continue;
+      }
       if (res.status !== 400 || !/thinking/i.test(err.message) || i === attempts.length - 1) throw err;   // would fail the same way again
       i++;
     }
@@ -6327,8 +6340,11 @@ async function runSuggest({ more = false } = {}) {
     favorites: db.favs().slice(0, CONFIG.suggest.maxFavorites) });
   const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort('TIMEOUT'), CONFIG.gemini.timeoutMs);
   Object.assign(s, { busy: true, correcting: false, error: '', ctrl }); renderSuggest();
+  // Diagnostics like an analysis (no note or restriction text): which models answered, searches, errors.
+  const rec = { id: uid().slice(0, 8), at: new Date().toISOString(), mode: 'api', analysisMode: 'suggest', model: db.model(), lang,
+    promptVersion: CONFIG.suggest.promptVersion, slots: s.slots, runs: [], outcome: 'unknown', ua: navigator.userAgent };
   const ask = text => gemini.generateWithFallback({
-    key, model: db.model(), parts: [{ text }], system: prompt.system, signal: ctrl.signal, task: SUGGEST_TASK
+    key, model: db.model(), parts: [{ text }], system: prompt.system, signal: ctrl.signal, task: SUGGEST_TASK, rec
   });
   let arrived = false;
   try {
@@ -6352,12 +6368,14 @@ async function runSuggest({ more = false } = {}) {
     s.avoid = [...avoid, ...result.meals.flatMap(m => m.options.map(o => o.title))].slice(-CONFIG.suggest.maxAvoid);
     store.set(STORAGE_KEYS.suggestCache,
       { v: CONFIG.suggest.promptVersion, date: todayStr(), mealsSig: todayMealsSig(), slots: s.slots, note, result, avoid: s.avoid });
-    arrived = true;
+    arrived = true; rec.outcome = 'ok';
   } catch (err) {
     const reason = ctrl.signal.reason;
+    rec.outcome = reason === 'TIMEOUT' ? 'timeout' : ctrl.signal.aborted ? 'cancelled' : 'error'; rec.error = String(err.message || err).slice(0, 300);
     s.error = reason === 'TIMEOUT' ? t('analysisTimeout', { n: CONFIG.gemini.timeoutMs / 1000 }) : ctrl.signal.aborted ? '' : friendlyError(err);
   } finally {
     clearTimeout(timer); Object.assign(s, { busy: false, correcting: false, ctrl: null }); renderSuggest();
+    perfLog.push(rec);
     // The form fills the screen on a phone: bring the new options into view.
     if (arrived && modal.isOpen('suggestModal')) $('#suggestResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
