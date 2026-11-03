@@ -86,7 +86,7 @@ it('precise analysis: three requests, table values, result editor shows the item
   const page = await freshPage(browser);
   const calls = await analyse(page, (body, model) => (body.generationConfig.responseSchema.properties.items
     ? { reasoning: 'r', name: '便當', packageKcal: 0, items: [item({ name: '白飯', foodKey: '白飯', foodType: 'starch', weight: 200 }), item({ name: '雞腿' })] }
-    : { weights: [200, 100], methods: ['plain', 'plain'] }));
+    : { estimates: [{ index: 1, geo: '', weight: 200, method: 'plain' }, { index: 2, geo: '', weight: 100, method: 'plain' }] }));
   if (calls.length !== 3) throw new Error(`expected 3 Gemini calls, got ${calls.length}`);
   if (calls.some(c => JSON.stringify(c.body).includes('TEST-KEY'))) throw new Error('API key leaked into the body');
   const rows = await page.locator('#resTableBody > [data-idx]').count();
@@ -97,10 +97,24 @@ it('precise analysis: three requests, table values, result editor shows the item
   return page;
 });
 
+it('package total: only the package\'s items are scaled, the drink beside it is not', async browser => {
+  const page = await freshPage(browser);
+  await analyse(page, body => (body.generationConfig.responseSchema.properties.items
+    ? { reasoning: 'r', name: '飯糰＋豆漿', packageKcal: 209, items: [
+      item({ name: '飯糰', inPackage: true, proteinPer100g: 5, carbsPer100g: 35, fatPer100g: 2.2222 }),        // 180 kcal → 209
+      item({ name: '無糖豆漿', inPackage: false, proteinPer100g: 10, carbsPer100g: 10, fatPer100g: 6.6667 })] } // 140 kcal, unchanged
+    : { estimates: [{ index: 1, geo: '', weight: 100, method: 'plain' }, { index: 2, geo: '', weight: 100, method: 'plain' }] }));
+  const [cal] = await totals(page);
+  if (Math.abs(cal - 349) > 2) throw new Error(`total ${cal} kcal, expected 349 (209 + 140)`);
+  const text = await page.locator('#resTableBody').innerText();
+  if (!text.includes('209')) throw new Error('the package correction note is missing');
+  return page;
+});
+
 it('saving the analysis adds a meal to today', async browser => {
   const page = await freshPage(browser);
   await analyse(page, body => (body.generationConfig.responseSchema.properties.items
-    ? { reasoning: 'r', name: '雞胸', packageKcal: 0, items: [item({ name: '雞胸' })] } : { weights: [100], methods: ['plain'] }));
+    ? { reasoning: 'r', name: '雞胸', packageKcal: 0, items: [item({ name: '雞胸' })] } : { estimates: [{ index: 1, geo: '', weight: 100, method: 'plain' }] }));
   await page.click('[data-action="save-meal"]');
   await page.waitForFunction(() => JSON.parse(localStorage.getItem('nutrilens_meals_v1') || '[]').some(m => m.name === '雞胸'));
   return page;

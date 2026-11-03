@@ -3,7 +3,7 @@
  * with just enough of the browser stubbed for the pure parts to run: localStorage in memory, an inert
  * document/window (the boot code only registers listeners) and a replaceable fetch.
  *
- * Usage: const app = loadApp(); app.get('mealTargets')(…)
+ * Usage: const app = loadApp(); app.get('mealTargets')(…)   (jsDir: load another copy of the scripts, e.g. an older version)
  * Objects created inside the vm belong to another realm, so compare them with `plain()` (a JSON round trip)
  * rather than assert.deepStrictEqual on the raw values.
  */
@@ -30,7 +30,7 @@ function memoryStorage(initial = {}) {
 
 const inert = () => new Proxy(function () {}, { get: (_, k) => (k === Symbol.toPrimitive ? () => '' : inert()), apply: () => inert() });
 
-export function loadApp({ storage = {}, fetch } = {}) {
+export function loadApp({ storage = {}, fetch, jsDir = JS_DIR } = {}) {
   const localStorage = memoryStorage(storage);
   const listeners = () => ({ addEventListener() {}, removeEventListener() {} });
   const document = {
@@ -47,7 +47,7 @@ export function loadApp({ storage = {}, fetch } = {}) {
     fetchImpl: null
   };
   const ctx = vm.createContext(sandbox);
-  const source = FILES.map(f => readFileSync(path.join(JS_DIR, f), 'utf8')).join('\n;\n');
+  const source = FILES.map(f => readFileSync(path.join(jsDir, f), 'utf8')).join('\n;\n');
   vm.runInContext(source, ctx, { filename: 'nutrilens-bundle.js' });
   return {
     ctx, localStorage,

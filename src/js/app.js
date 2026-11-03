@@ -88,9 +88,12 @@ const CONFIG = {
   precise: {
     weightModels: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
     weightTimeoutMs: 30_000,
-    promptVersion: 9,
+    promptVersion: 10,
     /** A re-estimate outside main ÷ 3 … main × 3 is treated as a misread and ignored. */
-    maxWeightRatio: 3
+    maxWeightRatio: 3,
+    /** A printed package total only rescales the package's own estimated items when it needs a factor in this range;
+     *  further off, the model has most likely read a per-100 g or per-piece value, or missed a part of the product. */
+    packageScale: { min: 0.5, max: 1.8 }
   },
   image: { maxDim: 768, jpegQuality: 0.8 },
   /** Meal photos are kept in IndexedDB; by default those older than retentionDays are deleted at startup. */
@@ -663,20 +666,29 @@ function defaultSlots(nowHHMM, mealTimes) {
 /**
  * Divides what is left of the day over the chosen meals by their usual share.
  * mode 'normal': the shares of what is left; 'tight' (less left than the meals' minimums) or 'over' (nothing left):
- * each meal gets its minimum as a light, protein-first meal — never "skip it". Pure (unit-tested).
+ * each meal gets its minimum as a light, protein-first meal — never "skip it".
+ * Every target adds up (cal = 4p + 4c + 9f), so the model is never given numbers that contradict each other: calories
+ * and protein are set first, and what protein leaves is split between carbohydrate and fat — in proportion to what is
+ * left of them today, or 0.45 : 0.25 (LIGHT_MEAL_SPLIT) for a light meal or when neither is left. Protein is never cut
+ * (someone may want one meal to make up for the day's protein): if it needs more than the meal's calories, the
+ * calories rise to it. Pure (unit-tested).
  */
 function mealTargets(left, slotIds) {
   const slots = MEAL_SLOTS.filter(s => slotIds.includes(s.id));
   const shares = slots.reduce((a, s) => a + s.share, 0), minimum = slots.reduce((a, s) => a + s.minKcal, 0);
   const mode = left.cal <= 0 ? 'over' : left.cal < minimum ? 'tight' : 'normal';
   const pos = k => Math.max(0, left[k]);
+  const [lightP, lightC, lightF] = LIGHT_MEAL_SPLIT;
   const meals = slots.map(s => {
-    const k = s.share / shares;
-    if (mode === 'normal') {
-      return { slot: s.id, cal: Math.round(left.cal * k), p: Math.round(pos('p') * k), c: Math.round(pos('c') * k), f: Math.round(pos('f') * k) };
-    }
-    const [p, c, f] = LIGHT_MEAL_SPLIT.map((share, i) => Math.round(s.minKcal * share / (i === 2 ? 9 : 4)));
-    return { slot: s.id, cal: s.minKcal, p: Math.max(p, Math.round(pos('p') * k)), c, f };
+    const k = s.share / shares, light = mode !== 'normal';
+    const cal = light ? s.minKcal : Math.round(left.cal * k);
+    const p = Math.max(light ? Math.round(cal * lightP / KCAL_PER_G.p) : 0, Math.round(pos('p') * k));
+    const rest = cal - p * KCAL_PER_G.p;
+    if (rest <= 0) return { slot: s.id, cal: p * KCAL_PER_G.p, p, c: 0, f: 0 };
+    const cKcal = light ? lightC : pos('c') * KCAL_PER_G.c, fKcal = light ? lightF : pos('f') * KCAL_PER_G.f;
+    const fatShare = cKcal + fKcal > 0 ? fKcal / (cKcal + fKcal) : lightF / (lightC + lightF);
+    const f = Math.round(rest * fatShare / KCAL_PER_G.f), c = Math.max(0, Math.round((rest - f * KCAL_PER_G.f) / KCAL_PER_G.c));
+    return { slot: s.id, cal: Math.round(kcalFromMacros(p, c, f)), p, c, f };
   });
   return { mode, meals };
 }
@@ -1005,7 +1017,7 @@ function demoAnalysis(note, angleCount) {
  * structure and repetition (DietAI24 2025, Open-KNEAD 2026); models over-estimate fat
  * (7-11 bento study, Nutrients 2025), so oil is no longer left to the model. */
 
-const PRECISE_ITEM_FIELDS = ['name', 'fromLabel', 'published', 'foodKey', 'method', 'foodType', 'portionText',
+const PRECISE_ITEM_FIELDS = ['name', 'fromLabel', 'inPackage', 'published', 'foodKey', 'method', 'foodType', 'portionText',
   'weightLow', 'weight', 'weightHigh', 'proteinPer100g', 'carbsPer100g', 'fatPer100g'];
 const PRECISE_SCHEMA = {
   type: 'OBJECT',
@@ -1024,6 +1036,7 @@ const PRECISE_SCHEMA = {
         properties: {
           name: { type: 'STRING', description: 'Natural Taiwanese menu name with cooking method; count for countable foods' },
           fromLabel: { type: 'BOOLEAN', description: 'True only if the values come from a visible nutrition label' },
+          inPackage: { type: 'BOOLEAN', description: 'True only if this item is inside the packaged product whose printed total is packageKcal' },
           published: { type: 'BOOLEAN', description: 'True if the values are the published nutrition of this exact branded, chain or packaged product' },
           foodKey: { type: 'STRING', description: 'Exact key from the FOOD TABLE list when the item is exactly that food, else empty' },
           method: { type: 'STRING', enum: Object.keys(COOK_METHODS) },
@@ -1041,10 +1054,12 @@ const PRECISE_SCHEMA = {
   }
 };
 
-/** Prompt v9 (precise mode). v5: oil moves from the model to the app. v6: portions from geometry (no default 1 碗), strict table matching.
+/** Prompt v10 (precise mode). v5: oil moves from the model to the app. v6: portions from geometry (no default 1 碗), strict table matching.
  *  v7: shared PORTION_GUIDE (reference sizes, densities, edible share of bone-in cuts) and the user's measured references.
  *  v8: METHOD_GUIDE (surface cues, no lean default; the re-estimates vote on it) and sauces/cheese as items.
- *  v9: PUBLISHED_GUIDE — branded / chain / packaged products use their published values (web search when available). */
+ *  v9: PUBLISHED_GUIDE — branded / chain / packaged products use their published values (web search when available).
+ *  v10: inPackage — a printed package total applies only to the items inside that package (scaleToPackage);
+ *       the re-estimates answer one numbered object per item, geometry first (WEIGHT_SCHEMA). */
 function buildPrecisePrompt({ lang: replyLang, imageCount, note, refs = [] }) {
   const keys = FOOD_TABLE.map(f => f.key).join('、');
   const system = `You estimate nutrition from meal photos, usually Taiwanese food (便當/自助餐, 夜市, 手搖飲, 早餐店, 超商, 火鍋, 麵食). Reply in ${replyLang === 'zh' ? 'Traditional Chinese (繁體中文)' : 'English'}.
@@ -1059,7 +1074,7 @@ ${PORTION_GUIDE}
  foodType: veg, meat, mixed, starch, other.
 6. FOOD TABLE (measured as-served values from 衛福部 TFND and Japan's 八訂 table): ${keys}. Set foodKey ONLY when the row is the same food AND the same cooking method (高麗菜（炒） for stir-fried cabbage, not 高麗菜（燙）). A similar food is NOT a match: 滷雞腿 is not 雞腿（水煮） or 雞腿（烤／煎）, 香腸 is not 熱狗, 滷排骨 is not 豬里肌（煎／烤）. When unsure, leave foodKey empty and give your own composition — a wrong match is worse than none. Rows for 炒/炸 forms and prepared dishes already include their oil.
 7a. Branded, chain-restaurant and packaged products (麥當勞, 摩斯, 7-11 / 全家 商品, 星巴克…): ${PUBLISHED_GUIDE}
-7. A visible nutrition label wins: fromLabel = true, method = plain, use the label's per-100 g values (convert per-serving values) and the net weight. If the packaging shows the total calories of the whole product (e.g. "430 大卡" on the sleeve, or per-serving kcal × servings), put that number in packageKcal; the app scales the items to it. Otherwise packageKcal = 0.
+7. A visible nutrition label wins: fromLabel = true, method = plain, use the label's per-100 g values (convert per-serving values) and the net weight. If the packaging shows the total calories of the whole product (e.g. "430 大卡" on the sleeve, or per-serving kcal × servings), put that number in packageKcal and set inPackage = true only on the items inside that package (other foods and drinks in the photo: inPackage = false); the app scales the package's items to it. Otherwise packageKcal = 0 and inPackage = false.
 7b. Hidden food: rice or noodles are often hidden under toppings in 丼飯, bowls and boxed meals. If the dish type or container depth implies a base that is not visible, include it as an item and estimate it from the container depth; say so in reasoning.
 8. Drinks: carbs include added sugar. Measured: 半糖 700 ml ≈ 46.5 g total sugar (≈ 6.6 g/100 ml, National Taiwan University); scale other levels proportionally (全糖 ×2, 少糖 ×1.4, 微糖 ×0.6, 無糖: milk and toppings only). Cooked tapioca pearls ≈ 45 g carbs/100 g.
 9. Write "reasoning" first: under 70 words naming the reference used, the portion reasoning and any adjustment from the note.`;
@@ -1090,21 +1105,52 @@ const PRECISE_TASK = {
   })
 };
 
+/** One object per item, matched by its number: a skipped or merged item costs that item's vote only, where two parallel
+ *  arrays went out of step and had to be dropped whole. "geo" comes first so the model writes the geometry before the
+ *  grams (it is kept in the diagnostics only). */
+const WEIGHT_ESTIMATE_FIELDS = ['index', 'geo', 'weight', 'method'];
 const WEIGHT_SCHEMA = {
-  type: 'OBJECT', required: ['weights', 'methods'], propertyOrdering: ['weights', 'methods'],
+  type: 'OBJECT', required: ['estimates'], propertyOrdering: ['estimates'],
   properties: {
-    weights: { type: 'ARRAY', items: { type: 'NUMBER' }, description: 'Edible grams per listed item, same order' },
-    methods: { type: 'ARRAY', items: { type: 'STRING', enum: Object.keys(COOK_METHODS) }, description: 'Cooking method per listed item, same order' }
+    estimates: {
+      type: 'ARRAY', description: 'One estimate per listed item, matched by its number',
+      items: {
+        type: 'OBJECT', required: WEIGHT_ESTIMATE_FIELDS, propertyOrdering: WEIGHT_ESTIMATE_FIELDS,
+        properties: {
+          index: { type: 'INTEGER', description: 'The item number from the list (1-based)' },
+          geo: { type: 'STRING', description: 'Brief geometry, under 35 characters, e.g. 9x8x1.5cm ×0.85 or 半碗' },
+          weight: { type: 'NUMBER', description: 'Edible grams as served' },
+          method: { type: 'STRING', enum: Object.keys(COOK_METHODS) }
+        }
+      }
+    }
   }
 };
+/**
+ * Lines a re-estimate up with the n listed items: { weights, methods, geo }, one slot per item, NaN / '' where the
+ * model gave nothing usable (combinePrecise ignores those). Accepts the old { weights, methods } arrays too. Pure.
+ */
+function alignEstimates(parsed, n) {
+  const weights = Array(n).fill(NaN), methods = Array(n).fill(''), geo = Array(n).fill('');
+  const list = Array.isArray(parsed?.estimates) ? parsed.estimates
+    : Array.isArray(parsed?.weights) ? parsed.weights.map((w, i) => ({ index: i + 1, weight: w, method: parsed.methods?.[i] })) : [];
+  for (const e of list) {
+    const i = Number(e?.index) - 1;
+    if (!Number.isInteger(i) || i < 0 || i >= n || Number.isFinite(weights[i]) || methods[i]) continue;   // first answer per item wins
+    weights[i] = num(e.weight, NaN);
+    methods[i] = typeof e.method === 'string' ? e.method : '';
+    geo[i] = cleanText(e.geo, 40);
+  }
+  return { weights, methods, geo };
+}
 const WEIGHT_TASK = {
   get schema() { return WEIGHT_SCHEMA; },
   parse(data) {
     const { parsed } = parseJsonText(data);
-    if (!Array.isArray(parsed?.weights)) throw new Error(t('emptyResult'));
-    return { weights: parsed.weights.map(w => num(w, NaN)), methods: Array.isArray(parsed.methods) ? parsed.methods : [] };
+    if (!Array.isArray(parsed?.estimates) && !Array.isArray(parsed?.weights)) throw new Error(t('emptyResult'));
+    return { parsed };
   },
-  summarize: r => ({ weights: r.weights, methods: r.methods })
+  summarize: r => ({ estimates: (r.parsed.estimates || []).slice(0, 20).map(e => [e?.index, e?.weight, e?.method, cleanText(e?.geo, 40)]) })
 };
 /** Second-opinion prompt (weights and cooking methods): the item list is fixed, so the three answers refer to the same
  *  foods. The first answer's weights and methods are not shown, so the second opinion is independent. */
@@ -1115,8 +1161,9 @@ function buildWeightPrompt(items, note, refs = []) {
     system: `You estimate the edible weight in grams of foods in meal photos. Judge what is actually in this photo, never a standard serving:
 ${PORTION_GUIDE}
 Also name each item's cooking method — ${METHOD_GUIDE}
-Answer only with the weights and methods, in the order given.`,
-    user: [`Items:\n${list}`, refsLine(refs).trim(), `User note: "${note || 'None'}". Return one weight and one method per item.`].filter(Boolean).join('\n')
+For each item write a brief geometry calculation in "geo" first (area × thickness × density, or a count), then its weight and method.`,
+    user: [`Items:\n${list}`, refsLine(refs).trim(),
+      `User note: "${note || 'None'}". Return one estimate (index, geo, weight, method) per listed item.`].filter(Boolean).join('\n')
   };
 }
 
@@ -1165,14 +1212,23 @@ function combinePrecise(rawItems, { weightSets = [], methodSets = [], maxRatio =
     const others = weightSets.map(ws => num(ws?.[i], NaN)).filter(w => Number.isFinite(w) && w >= main / maxRatio && w <= main * maxRatio);
     const weight = Math.round(median([main, ...others]));
     const scale = weight / main;
-    const low = Math.max(1, num(raw.weightLow, main)) * scale, high = Math.max(low, num(raw.weightHigh, main) * scale);
+    // The range covers the main answer's own range and every weight the three estimates gave, so a wide disagreement
+    // between them shows as a wide range instead of hiding behind one confident answer.
+    const low = Math.min(Math.max(1, num(raw.weightLow, main)) * scale, main, ...others);
+    const high = Math.max(low, num(raw.weightHigh, main) * scale, main, ...others);
 
+    // Methods: the main answer, then each re-estimate's (unknown names dropped).
+    const mainMethod = COOK_METHODS[raw.method] ? raw.method : 'plain';
+    const votes = [mainMethod, ...methodSets.map(ms => ms?.[i]).filter(m => COOK_METHODS[m])];
     // A visible label or a product's published values are used as they are: as served, oil included.
-    const label = raw.fromLabel === true || raw.published === true, food = label ? null : findFood(raw.foodKey);
+    const label = raw.fromLabel === true || raw.published === true;
+    let food = label ? null : findFood(raw.foodKey);
+    // The main answer chose an oil-included row (炒, 炸) because it judged the food fried, and the votes overruled that
+    // (e.g. blanched cabbage matched to 高麗菜（炒）): the row's oil no longer applies, so use the model's oil-free
+    // composition plus the voted oil. Rows the main answer itself called plain (百頁豆腐, 水餃) are kept.
+    if (food?.oilIncluded && mainMethod !== 'plain' && majorityMethod(votes) === 'plain') food = null;
     const per100 = food ? { p: food.p, c: food.c, f: food.f }
       : { p: Math.max(0, num(raw.proteinPer100g)), c: Math.max(0, num(raw.carbsPer100g)), f: Math.max(0, num(raw.fatPer100g)) };
-    // Methods: the main answer, then each re-estimate's (unknown names dropped).
-    const votes = [COOK_METHODS[raw.method] ? raw.method : 'plain', ...methodSets.map(ms => ms?.[i]).filter(m => COOK_METHODS[m])];
     // A label or a table dish measured with its oil (炒, 炸, prepared dishes) gets no extra oil.
     const [oilLo, oilMid, oilHi] = label || food?.oilIncluded ? [0, 0, 0] : votedOil(votes, raw.foodType);
     const n = nutrientsAt(per100, oilMid, weight);
@@ -1181,21 +1237,33 @@ function combinePrecise(rawItems, { weightSets = [], methodSets = [], maxRatio =
       name: String(raw.name || '').slice(0, 80), weight, ...n,
       src: { kind: raw.fromLabel === true ? 'label' : label ? 'published' : food ? 'table' : 'model', key: food?.key || '', srcName: food?.srcName || '',
         method: label ? 'plain' : majorityMethod(votes), methodVotes: votes, methodSplit: !label && new Set(votes).size > 1,
-        oilIncluded: !!food?.oilIncluded, oilG: round1(oilMid * foodWeight / 100),
+        oilIncluded: !!food?.oilIncluded, oilG: round1(oilMid * foodWeight / 100), inPackage: raw.inPackage === true,
         portionText: String(raw.portionText || '').slice(0, 40), estimates: [main, ...others].map(Math.round) },
       range: { lowCal: Math.round(nutrientsAt(per100, oilLo, low).cal), highCal: Math.round(nutrientsAt(per100, oilHi, high).cal) }
     };
   });
 }
 
-/** When the packaging prints the whole product's kcal, the items are scaled to it (portions keep their ratio). Pure. */
+/**
+ * When the packaging prints the whole product's kcal, the package's own estimated items are scaled so the package adds
+ * up to it. Only items inside the package count (a drink or a banana beside a rice ball keeps its value); a lone item is
+ * the package. Measured values (table, published, label) are kept as they are and the estimates take up the difference.
+ * Skipped when a label is visible (its values are already exact) or the factor is implausible (see packageScale). Pure.
+ */
 function scaleToPackage(items, packageKcal) {
-  const total = items.reduce((s, it) => s + it.cal, 0);
-  if (!(packageKcal >= 30 && packageKcal <= 3000) || !(total > 0) || items.some(it => it.src.kind === 'label')) return items;
-  const k = packageKcal / total;
-  return items.map(it => ({ ...it, weight: Math.round(it.weight * k), cal: it.cal * k, p: it.p * k, c: it.c * k, f: it.f * k,
+  if (!(packageKcal >= 30 && packageKcal <= 3000)) return items;
+  const inPkg = items.length === 1 ? items : items.filter(it => it.src.inPackage);
+  if (!inPkg.length || inPkg.some(it => it.src.kind === 'label')) return items;
+  const scalable = inPkg.filter(it => it.src.kind === 'model');
+  const fixedCal = inPkg.reduce((s, it) => s + (it.src.kind === 'model' ? 0 : it.cal), 0);
+  const estCal = scalable.reduce((s, it) => s + it.cal, 0);
+  const k = (packageKcal - fixedCal) / estCal;
+  if (!(estCal > 0) || !(k >= CONFIG.precise.packageScale.min && k <= CONFIG.precise.packageScale.max)) return items;
+  return items.map(it => (!scalable.includes(it) ? it : {
+    ...it, weight: Math.round(it.weight * k), cal: it.cal * k, p: it.p * k, c: it.c * k, f: it.f * k,
     src: { ...it.src, packageKcal: Math.round(packageKcal), oilG: round1(it.src.oilG * k) },
-    range: { lowCal: Math.round(it.cal * k), highCal: Math.round(it.cal * k) } }));
+    range: { lowCal: Math.round(it.cal * k), highCal: Math.round(it.cal * k) }
+  }));
 }
 
 /** Precise pipeline: main analysis (with fallback), then two light weight re-estimates in parallel. */
@@ -1219,8 +1287,8 @@ async function analyzePrecise({ key, model, job, signal, rec, backups }) {
     try {
       const r = await gemini.generate({ key, model: m, parts: [{ text: wp.user }, ...images], system: wp.system, signal: ctrl.signal, run, task: WEIGHT_TASK });
       Object.assign(run, { result: 'ok', endMs: Date.now() - started });
-      const n = main.rawItems.length;   // an answer for a different number of items cannot be matched up
-      return r.weights.length === n ? { weights: r.weights, methods: r.methods.length === n ? r.methods : [] } : null;
+      const aligned = alignEstimates(r.parsed, main.rawItems.length);
+      return aligned.weights.some(Number.isFinite) ? aligned : null;
     } catch (e) {
       Object.assign(run, {
         result: ctrl.signal.reason === 'MODEL_TIMEOUT' ? 'timeout' : 'error', error: String(e.message || e).slice(0, 200), endMs: Date.now() - started

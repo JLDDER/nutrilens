@@ -105,6 +105,33 @@ describe('combinePrecise', () => {
     assert.equal(a.src.methodSplit, true);
     near(a.src.oilG, 3.5, 0.1);
   });
+  test('votes overruling an oil-included row: the row is dropped, model composition + voted oil used', () => {
+    const [a] = combine([rawItem({ name: '燙高麗菜', foodKey: '高麗菜（炒）', method: 'stirfry', foodType: 'veg', proteinPer100g: 1.3, carbsPer100g: 5, fatPer100g: 0.2 })],
+      { weightSets: [[100], [100]], methodSets: [['plain'], ['plain']] });
+    assert.equal(a.src.kind, 'model');
+    assert.equal(a.src.method, 'plain');
+    assert.ok(a.f / a.weight * 100 < 6, `fat ${a.f} g per 100 g should be below the stir-fried row's 6 g`);
+  });
+  test('an oil-included row the main answer itself called plain is kept (百頁豆腐, 水餃)', () => {
+    for (const key of ['百頁豆腐', '水餃（高麗菜，熟）']) {
+      const [a] = combine([rawItem({ foodKey: key, method: 'plain', foodType: 'other' })], { weightSets: [[100], [100]], methodSets: [['plain'], ['plain']] });
+      assert.equal(a.src.kind, 'table', key);
+      assert.equal(a.src.key, key);
+    }
+  });
+  test('a row the votes agree with is kept', () => {
+    const [a] = combine([rawItem({ foodKey: '高麗菜（炒）', method: 'stirfry', foodType: 'veg' })], { weightSets: [[100], [100]], methodSets: [['stirfry'], ['plain']] });
+    assert.equal(a.src.kind, 'table');
+  });
+  test('the kcal range covers every weight the three estimates gave', () => {
+    const combineOne = (sets) => combine([rawItem({ weightLow: 140, weight: 150, weightHigh: 160 })], { weightSets: sets })[0];
+    const a = combineOne([[80], [230]]);
+    assert.equal(a.weight, 150);
+    const at = g => fn('nutrientsAt')({ p: 20, c: 0, f: 5 }, 0, g).cal;
+    near(a.range.lowCal, at(80), 1); near(a.range.highCal, at(230), 1);
+    const b = combineOne([[150], [150]]);
+    near(b.range.lowCal, at(140), 1); near(b.range.highCal, at(160), 1);
+  });
   test('kcal always equals 4p + 4c + 9f', () => {
     const [a] = combine([rawItem({ method: 'deepfry_breaded', carbsPer100g: 12 })]);
     near(a.cal, fn('kcalFromMacros')(a.p, a.c, a.f), 1e-9);
@@ -121,8 +148,43 @@ describe('scaleToPackage', () => {
     assert.equal(scale(before, 5000), before);
   });
   test('not scaled when an item comes from a nutrition label', () => {
-    const list = combine([rawItem({ fromLabel: true }), rawItem()]);
+    const list = combine([rawItem({ fromLabel: true, inPackage: true }), rawItem({ inPackage: true })]);
     assert.equal(scale(list, 300), list);
+  });
+  const kcal = list => list.reduce((s, x) => s + x.cal, 0);
+  test('only the package\'s items are scaled; the rest of the meal keeps its value', () => {
+    // rice ball (model estimate, 180 kcal) printed 209 kcal + soy milk beside it (140 kcal)
+    const list = combine([rawItem({ name: '飯糰', inPackage: true, weight: 100, proteinPer100g: 5, carbsPer100g: 35, fatPer100g: 2.2222 }),
+      rawItem({ name: '豆漿', inPackage: false, weight: 100, proteinPer100g: 10, carbsPer100g: 10, fatPer100g: 6.6667 })]);
+    near(list[0].cal, 180, 0.1); near(list[1].cal, 140, 0.1);
+    const out = scale(list, 209);
+    near(out[0].cal, 209, 0.01); assert.equal(out[0].src.packageKcal, 209);
+    assert.equal(out[1], list[1]);
+    near(kcal(out), 349, 0.1);
+  });
+  test('a lone item is the package even if not marked', () => {
+    const list = combine([rawItem({ inPackage: false })]);
+    near(scale(list, 200)[0].cal, 200, 0.01);
+  });
+  test('several items, none in the package: not scaled', () => {
+    const list = items();
+    assert.equal(scale(list, 300), list);
+  });
+  test('an implausible factor (outside 0.5–1.8) is ignored', () => {
+    const list = combine([rawItem({ inPackage: true, weight: 600, proteinPer100g: 20, carbsPer100g: 0, fatPer100g: 2.2222 })]);   // 600 kcal
+    assert.equal(scale(list, 100), list);
+    assert.equal(scale(list, 1200), list);
+  });
+  test('measured items in the package keep their value; the estimates take up the difference', () => {
+    const list = combine([rawItem({ name: '白飯', foodKey: '白飯', inPackage: true, weight: 200, foodType: 'starch' }),   // 2.84 kcal/g → 280 kcal-ish
+      rawItem({ name: '排骨', inPackage: true, weight: 100 })]);                                                          // 125 kcal
+    const rice = list[0].cal, out = scale(list, rice + 150);
+    assert.equal(out[0], list[0]);
+    near(out[1].cal, 150, 0.01);
+  });
+  test('only measured items in the package: nothing to scale', () => {
+    const list = combine([rawItem({ foodKey: '白飯', inPackage: true }), rawItem({ published: true, inPackage: true })]);
+    assert.equal(scale(list, 500), list);
   });
 });
 
@@ -139,13 +201,38 @@ describe('meal suggestions: planning', () => {
   test('mealTargets normal: shares renormalised over the chosen meals', () => {
     const r = mealTargets({ cal: 900, p: 90, c: 60, f: 25 }, ['dinner']);
     assert.equal(r.mode, 'normal');
-    assert.deepEqual(plain(r.meals[0]), { slot: 'dinner', cal: 900, p: 90, c: 60, f: 25 });
+    // protein first (360 kcal); the other 540 kcal split by what is left of carbs (240) and fat (225)
+    assert.deepEqual(plain(r.meals[0]), { slot: 'dinner', cal: 901, p: 90, c: 70, f: 29 });
+    const two = mealTargets({ cal: 1000, p: 80, c: 100, f: 30 }, ['lunch', 'dinner']);
+    near(two.meals[0].cal, 1000 * 35 / 65, 3); near(two.meals[1].cal, 1000 * 30 / 65, 3);
+  });
+  const adds = m => near(m.cal, 4 * m.p + 4 * m.c + 9 * m.f, 0, `${m.slot}:`);
+  test('mealTargets: every target adds up (4p + 4c + 9f) in all three modes', () => {
+    const cases = [
+      [{ cal: 800, p: 95, c: 110, f: -20 }, ['lunch', 'dinner']],      // fat already over today
+      [{ cal: 200, p: 55, c: 30, f: 5 }, ['dinner']],                  // tight, a lot of protein left
+      [{ cal: -300, p: -10, c: -50, f: -20 }, ['dinner', 'night']],    // over
+      [{ cal: 1500, p: 0, c: 0, f: 0 }, ['breakfast', 'lunch', 'dinner']]
+    ];
+    for (const [left, slots] of cases) {
+      const r = mealTargets(left, slots);
+      r.meals.forEach(adds);
+      assert.ok(r.meals.every(m => m.p >= 0 && m.c >= 0 && m.f >= 0));
+    }
+  });
+  test('mealTargets tight: the meal keeps its minimum kcal and all the protein asked for', () => {
+    const [m] = mealTargets({ cal: 200, p: 55, c: 30, f: 5 }, ['dinner']).meals;
+    near(m.cal, 350, 2); assert.equal(m.p, 55); assert.ok(m.c > 0 && m.f > 0);
+  });
+  test('mealTargets: protein is never cut — if it needs more than the calories, the calories rise', () => {
+    const [m] = mealTargets({ cal: 400, p: 150, c: 0, f: 0 }, ['dinner']).meals;
+    assert.deepEqual(plain(m), { slot: 'dinner', cal: 600, p: 150, c: 0, f: 0 });
   });
   test('mealTargets tight / over: each meal gets its minimum, never 0', () => {
     assert.equal(mealTargets({ cal: 200, p: 55, c: 30, f: 5 }, ['dinner']).mode, 'tight');
     const over = mealTargets({ cal: -300, p: -10, c: -50, f: -20 }, ['dinner', 'night']);
     assert.equal(over.mode, 'over');
-    assert.deepEqual(plain(over.meals.map(m => m.cal)), [350, 150]);
+    over.meals.forEach((m, i) => near(m.cal, [350, 150][i], 2));
     assert.ok(over.meals.every(m => m.p > 0 && m.c > 0 && m.f > 0));
   });
   test('looksUnderLogged: after 17:00, ≤ 1 meal, < 30 % eaten', () => {
@@ -188,7 +275,36 @@ describe('meal suggestions: parsing and correction', () => {
   });
 });
 
+describe('weight re-estimates', () => {
+  const align = (parsed, n) => plain(fn('alignEstimates')(parsed, n));
+  test('matched by index; a missing item is NaN (→ null in JSON) and keeps the others', () => {
+    const r = align({ estimates: [{ index: 1, geo: 'g1', weight: 160, method: 'plain' }, { index: 2, weight: 120, method: 'deepfry_breaded' },
+      { index: 4, weight: 50, method: 'stirfry' }] }, 4);
+    assert.deepEqual(r.weights, [160, 120, null, 50]);
+    assert.deepEqual(r.methods, ['plain', 'deepfry_breaded', '', 'stirfry']);
+    assert.equal(r.geo[0], 'g1');
+  });
+  test('out-of-range and duplicate indexes are ignored (first answer wins); old array format still read', () => {
+    const r = align({ estimates: [{ index: 0, weight: 1 }, { index: 3, weight: 9 }, { index: 1, weight: 100 }, { index: 1, weight: 999 }] }, 2);
+    assert.deepEqual(r.weights, [100, null]);
+    assert.deepEqual(align({ weights: [10, 20], methods: ['plain', 'panfry'] }, 2).weights, [10, 20]);
+  });
+  test('a partial answer still votes for the items it covers', () => {
+    const al = fn('alignEstimates');
+    const sets = [al({ estimates: [{ index: 1, weight: 120, method: 'plain' }, { index: 2, weight: 120, method: 'plain' }, { index: 4, weight: 120, method: 'plain' }] }, 4),
+      al({ estimates: [{ index: 1, weight: 120, method: 'plain' }, { index: 2, weight: 120, method: 'plain' }, { index: 4, weight: 120, method: 'plain' }] }, 4)];
+    const out = fn('combinePrecise')([1, 2, 3, 4].map(n => rawItem({ name: `i${n}`, method: 'panfry' })),
+      { weightSets: sets.map(s => s.weights), methodSets: sets.map(s => s.methods) });
+    assert.deepEqual(plain(out.map(i => i.weight)), [120, 120, 100, 120]);
+    assert.deepEqual(plain(out.map(i => i.src.methodVotes.length)), [3, 3, 1, 3]);
+  });
+});
+
 describe('prompts', () => {
+  test('the package rule asks for inPackage, and the schema has it', () => {
+    assert.match(fn('buildPrecisePrompt')({ lang: 'zh', imageCount: 1, note: '' }).system, /inPackage = true only on the items inside that package/);
+    assert.ok(fn('PRECISE_SCHEMA').properties.items.items.required.includes('inPackage'));
+  });
   test('shared guides appear in every prompt that needs them', () => {
     const [PG, MG, PUB] = ['PORTION_GUIDE', 'METHOD_GUIDE', 'PUBLISHED_GUIDE'].map(fn);
     const precise = fn('buildPrecisePrompt')({ lang: 'zh', imageCount: 2, note: '', refs: [] }).system;
@@ -209,6 +325,7 @@ describe('prompts', () => {
     const p = fn('buildWeightPrompt')([{ name: '白飯', weight: 160 }, { name: '炸排骨', weight: 120 }], '', []);
     assert.match(p.user, /1\. 白飯\n2\. 炸排骨/);
     assert.doesNotMatch(p.user, /160/);
+    assert.match(p.system, /"geo" first/);
   });
 });
 
