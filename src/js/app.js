@@ -1230,7 +1230,7 @@ function votedOil(votes, info, ctx) {
 }
 /** [low, typical, high] g of oil per 100 g served for a method and food type (suggestions, prompt notes). */
 function cookOil(method, foodType, name = '') {
-  const o = oilFor(subMethod(COOK_METHODS[method] ? method : 'plain', { name, foodType }), {});
+  const o = oilFor(subMethod(COOK_METHODS[method] ? method : 'plain', { name, foodType }), { name });
   return [o.lo, o.mid, o.hi];
 }
 

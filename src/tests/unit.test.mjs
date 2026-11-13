@@ -61,6 +61,10 @@ describe('cooking oil', () => {
     assert.deepEqual(plain(cookOil('panfry', 'meat')), [1.4, 4.2, 5.2]);
     assert.deepEqual(plain(cookOil('deepfry_breaded', 'meat')), [4.8, 13, 21.8]);
   });
+  test('named foods use their individual row (deep-fried eggplant 16.9 in the suggestion oil note)', () => {
+    assert.equal(cookOil('deepfry_plain', 'veg', '茄子')[1], 16.9);
+    assert.match(fn('buildOilRateNote')(), /eggplant \+16\.9 g/);
+  });
   test('plain adds nothing, unknown method = plain', () => {
     assert.deepEqual(plain(cookOil('plain', 'meat')), [0, 0, 0]);
     assert.deepEqual(plain(cookOil('boiled???', 'meat')), [0, 0, 0]);
