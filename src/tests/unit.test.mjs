@@ -37,39 +37,48 @@ describe('food table lookup', () => {
     assert.equal(findFood('不存在的食物'), null);
     assert.equal(findFood(''), null);
   });
-  test('every row has a source name and oilIncluded flag', () => {
+  test('every row has a source name and the fat-ledger flags', () => {
     for (const f of fn('FOOD_TABLE')) {
       assert.ok(f.srcName, `${f.key} has no srcName`);
-      assert.equal(typeof f.oilIncluded, 'boolean', `${f.key} oilIncluded`);
+      assert.equal(typeof f.asCooked, 'boolean', `${f.key} asCooked`);
+      assert.ok(['none', 'stirfry', 'panfry', 'deepfry'].includes(f.rowMethod), `${f.key} rowMethod`);
+      assert.ok(f.group, `${f.key} group`);
+      if (f.pairKey) assert.ok(fn('findFood')(f.pairKey), `${f.key} pairKey ${f.pairKey}`);
+      if (!f.asCooked) assert.equal(f.rowMethod, 'none', `${f.key}: a plain base has no oil method`);
+    }
+  });
+  test('TFND code format: 6-digit average rows and 8-digit samples both accepted', () => {
+    for (const f of fn('FOOD_TABLE').filter(r => r.src === 'TFND')) {
+      assert.match(f.srcName.split(' ').pop(), /^[A-Z][0-9]{5}([0-9]{2})?$/, f.key);
     }
   });
 });
 
 describe('cooking oil', () => {
   const cookOil = fn('cookOil');
-  test('byType values with ±25 % range', () => {
-    assert.deepEqual(plain(cookOil('stirfry', 'veg')), [3.5, 4.6, 5.8]);
-    assert.deepEqual(plain(cookOil('panfry', 'meat')), [8.2, 10.9, 13.6]);
+  test('measured medians (八訂 表 13 / 表 14): stir-fried veg 4.3, lean pan-fry 4.2, breaded 13.0', () => {
+    assert.deepEqual(plain(cookOil('stirfry', 'veg')), [0.9, 4.3, 7.4]);
+    assert.deepEqual(plain(cookOil('panfry', 'meat')), [1.4, 4.2, 5.2]);
+    assert.deepEqual(plain(cookOil('deepfry_breaded', 'meat')), [4.8, 13, 21.8]);
   });
-  test('starch, other and unknown types fall back to mixed (9.3), never 0', () => {
-    for (const type of ['starch', 'other', 'nonsense']) assert.equal(cookOil('stirfry', type)[1], 9.3);
-  });
-  test('fixed ranges for deep frying, plain adds nothing, unknown method = plain', () => {
-    assert.deepEqual(plain(cookOil('deepfry_breaded', 'meat')), [10, 15, 20]);
+  test('plain adds nothing, unknown method = plain', () => {
     assert.deepEqual(plain(cookOil('plain', 'meat')), [0, 0, 0]);
     assert.deepEqual(plain(cookOil('boiled???', 'meat')), [0, 0, 0]);
   });
-  test('votedOil averages the typical values, widest range', () => {
-    assert.deepEqual(plain(fn('votedOil')(['plain', 'plain', 'panfry'], 'meat')), [0, 3.6, 13.6]);
+  test('votedOil averages the centres, widest range', () => {
+    const o = fn('votedOil')(['plain', 'plain', 'panfry'], { name: '雞胸', foodType: 'meat' }, {});
+    assert.equal(o.mid, 1.4); assert.equal(o.lo, 0); assert.equal(o.hi, 5.2);
   });
   test('majorityMethod: most votes, tie goes to the main answer', () => {
     assert.equal(fn('majorityMethod')(['panfry', 'plain', 'plain']), 'plain');
     assert.equal(fn('majorityMethod')(['panfry', 'plain']), 'panfry');
   });
-  test('nutrientsAt: served weight includes the oil (mass is conserved)', () => {
-    const n = fn('nutrientsAt')({ p: 26, c: 10, f: 5 }, 15, 115);
-    near(n.p, 26, 1e-9); near(n.f, 20, 1e-9);
+  test('nutrientsAt: the oil is a share of the served weight (both 八訂 tables are per 100 g as served)', () => {
+    const n = fn('nutrientsAt')({ p: 26, c: 10, f: 5 }, 14, 150);
+    near(n.f, 150 * 14 / 100 + 5 * (150 - 21) / 100, 1e-9);
     near(n.cal, fn('kcalFromMacros')(n.p, n.c, n.f), 1e-9);
+    // 100 g of stir-fried cabbage carries 5.8 g of oil (八訂 06333)
+    near(fn('nutrientsAt')({ p: 0, c: 0, f: 0 }, 5.8, 100).f, 5.8, 1e-9);
   });
 });
 
@@ -94,23 +103,23 @@ describe('combinePrecise', () => {
       near(a.p, 20, 1e-9);
     }
   });
-  test('oil-included table rows get no extra oil', () => {
-    const [a] = combine([rawItem({ foodKey: '高麗菜（炒）', method: 'stirfry', foodType: 'veg' })]);
-    assert.equal(a.src.oilG, 0);
-    assert.equal(a.src.oilIncluded, true);
+  test('an oil-included table row keeps its measured fat (split into food + cooking oil), no extra oil', () => {
+    const [a] = combine([rawItem({ name: '炒高麗菜', foodKey: '高麗菜（炒）', method: 'stirfry', foodType: 'veg' })]);
+    near(a.f, 6.0, 0.15);
+    near(a.src.ledger.C, 5.8, 0.05);
   });
   test('split method votes add part of the oil', () => {
     const [a] = combine([rawItem({ method: 'panfry' })], { weightSets: [[100], [100]], methodSets: [['plain'], ['plain']] });
     assert.equal(a.src.method, 'plain');
     assert.equal(a.src.methodSplit, true);
-    near(a.src.oilG, 3.5, 0.1);
+    near(a.src.oilG, 1.4, 0.05);                       // ⅓ × panfry_lean 4.2
   });
-  test('votes overruling an oil-included row: the row is dropped, model composition + voted oil used', () => {
+  test('votes overruling an oil-included row: its plain pair is used instead (spec 3.3.2-7)', () => {
     const [a] = combine([rawItem({ name: '燙高麗菜', foodKey: '高麗菜（炒）', method: 'stirfry', foodType: 'veg', proteinPer100g: 1.3, carbsPer100g: 5, fatPer100g: 0.2 })],
       { weightSets: [[100], [100]], methodSets: [['plain'], ['plain']] });
-    assert.equal(a.src.kind, 'model');
+    assert.equal(a.src.key, '高麗菜（燙）');
     assert.equal(a.src.method, 'plain');
-    assert.ok(a.f / a.weight * 100 < 6, `fat ${a.f} g per 100 g should be below the stir-fried row's 6 g`);
+    near(a.f, 0.2, 1e-9);
   });
   test('an oil-included row the main answer itself called plain is kept (百頁豆腐, 水餃)', () => {
     for (const key of ['百頁豆腐', '水餃（高麗菜，熟）']) {
@@ -330,7 +339,8 @@ describe('prompts', () => {
   test('prompt versions', () => {
     assert.equal(fn('CONFIG').precise.promptVersion >= 11, true);
     assert.equal(fn('CONFIG').gemini.promptVersion >= 6, true);
-    assert.equal(fn('CONFIG').suggest.promptVersion, 4);
+    assert.equal(fn('CONFIG').suggest.promptVersion, 5);
+    assert.equal(fn('CONFIG').precise.promptVersion, 13);
   });
   test('the package rule asks for inPackage, and the schema has it', () => {
     assert.match(fn('buildPrecisePrompt')({ lang: 'zh', imageCount: 1, note: '' }).system, /inPackage = true only on the items inside that package/);
@@ -413,8 +423,9 @@ describe('suggestion prompt', () => {
     assert.doesNotMatch(system, /browned or seared|surface/);
     assert.ok(system.includes(fn('SUGGEST_METHOD_GUIDE')));
     assert.ok(system.includes(fn('buildOilRateNote')()));
-    const CM = fn('COOK_METHODS');
-    for (const g of [CM.stirfry.byType.veg, CM.panfry.byType.meat, CM.deepfry_breaded.oil[1]]) assert.match(fn('buildOilRateNote')(), new RegExp(`\\+${g} g`));
+    for (const [m, type] of [['stirfry', 'veg'], ['panfry', 'meat'], ['deepfry_breaded', 'meat']]) {
+      assert.match(fn('buildOilRateNote')(), new RegExp(`\\+${fn('cookOil')(m, type)[1]} g`));
+    }
   });
   test('rules are numbered 1, 2, 3 … in order', () => {
     const numbers = [...build().system.matchAll(/^(\d+[a-z]?)\. /gm)].map(m => m[1]);

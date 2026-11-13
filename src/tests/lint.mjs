@@ -19,7 +19,7 @@ try { ({ ESLint } = require('eslint')); globals = require('globals'); } catch {
 }
 
 const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const FILES = ['js/i18n.js', 'js/foods.js', 'js/app.js', 'js/photos.js'];
+const FILES = ['js/i18n.js', 'js/foods.js', 'js/fat.js', 'js/app.js', 'js/photos.js'];
 const parts = FILES.map(f => ({ f, text: readFileSync(path.join(SRC, f), 'utf8') }));
 const bundle = parts.map(p => p.text).join('\n');
 

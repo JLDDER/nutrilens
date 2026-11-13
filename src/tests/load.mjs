@@ -13,7 +13,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 
 const JS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'js');
-const FILES = ['i18n.js', 'foods.js', 'app.js', 'photos.js'];
+const FILES = ['i18n.js', 'foods.js', 'fat.js', 'app.js', 'photos.js'];
 
 function memoryStorage(initial = {}) {
   const data = new Map(Object.entries(initial));

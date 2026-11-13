@@ -12,7 +12,7 @@ import { loadApp } from './load.mjs';
 const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = f => readFileSync(path.join(SRC, f), 'utf8');
 const html = read('index.html');
-const JS_FILES = ['js/app.js', 'js/photos.js', 'js/i18n.js', 'js/foods.js'];
+const JS_FILES = ['js/app.js', 'js/photos.js', 'js/i18n.js', 'js/foods.js', 'js/fat.js'];
 const js = Object.fromEntries(JS_FILES.map(f => [f, read(f)]));
 const allJs = Object.values(js).join('\n');
 /** The scripts without comments, so examples written in comments (data-action="name") are not taken as uses. */

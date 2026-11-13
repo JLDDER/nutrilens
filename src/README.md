@@ -11,6 +11,7 @@ Each user brings their own Gemini API key (stored only in their browser).
 | `css/app.css` | Plain CSS that Tailwind utilities do not cover |
 | `js/i18n.js` | UI strings (zh / en), one key per line |
 | `js/foods.js` | Cooked-food composition table for precise mode (generated; every row cites its source) |
+| `js/fat.js` | Fat ledger for meals without a label: measured cooking oil (八訂 表 13 / 14), the note, context, dishes, toppings, soup oil (pure functions) |
 | `js/app.js` | Application script, 12 numbered sections |
 | `js/photos.js` | Meal photos (IndexedDB), photo viewer and share images; loaded after `app.js` and registers its own actions |
 | `images/` | Key-guide screenshots |
@@ -38,8 +39,8 @@ All tests live in `tests/` and are not part of the built site. Run them from `sr
 
 | Command | What it checks |
 |---|---|
-| `node --test "tests/*.test.mjs"` | Unit tests of the pure logic (nutrition, food table, oil, `combinePrecise`, suggestions, prompts, Gemini fallback and search retry with a fake `fetch`) and static checks (unique ids, button types, zh/en keys, `data-action` handlers, `#id` lookups, line length). Node 18+, no install. |
-| `node tests/lint.mjs` | ESLint over the four scripts concatenated (they share one global scope). Needs `npm i eslint globals` somewhere and `NODE_PATH` pointing at that `node_modules`. |
+| `node --test "tests/*.test.mjs"` | Unit tests of the pure logic (nutrition, food table, oil, fat ledger in `fat.test.mjs`, `combinePrecise`, suggestions, prompts, Gemini fallback and search retry with a fake `fetch`) and static checks (unique ids, button types, zh/en keys, `data-action` handlers, `#id` lookups, line length). Node 18+, no install. |
+| `node tests/lint.mjs` | ESLint over the five scripts concatenated (they share one global scope). Needs `npm i eslint globals` somewhere and `NODE_PATH` pointing at that `node_modules`. |
 | `node build.mjs && node tests/e2e/smoke.mjs` | The built page in Chromium with Gemini replaced by fixed answers: analysis, saving, suggestions, no page errors. Needs Playwright (`npm i playwright`, `npx playwright install chromium`). |
 
 `tests/load.mjs` loads the scripts into a Node `vm` the way the browser does; any top-level name is available
@@ -47,8 +48,8 @@ as `app.get('name')`. Objects from the vm are another realm: compare them after 
 
 ## Analysis modes
 
-- **Precise (default)** — prompt v12, 3 requests. The model identifies foods, cooking method and portion
-  (from container, area and thickness); composition comes from `js/foods.js` (294 as-served foods:
+- **Precise (default)** — prompt v13, 3 requests. The model identifies foods, cooking method and portion
+  (from container, area and thickness); composition comes from `js/foods.js` (307 as-served foods and toppings:
   衛福部 TFND and 日本食品標準成分表 八訂) when the food and method match exactly, otherwise from the model;
   oil is added from measured absorption rates only when the value excludes it; the weight is the median of
   the main estimate and two Flash-Lite re-estimates, and the kcal range covers all three; a total kcal printed on a
@@ -57,6 +58,16 @@ as `app.get('name')`. Objects from the vm are another realm: compare them after 
   outside 0.5–1.8 is ignored as a misread.
 - The re-estimates answer one numbered object per item with a short geometry note first (`WEIGHT_SCHEMA`,
   `alignEstimates`), so a skipped item only loses its own vote.
+- **Fat ledger (precise v13, `js/fat.js`, spec 《NutriLens_脂肪帳本規格》 v9.2)** — every gram of fat is filed as food (A),
+  topping (B), cooking oil (C) or soup / sauce (D) and shown as one line under the total, with a plausible fat range.
+  Cooking oil is the measured uptake per 100 g AS SERVED from 日本食品標準成分表 八訂 表 13 (C column) / 表 14, computed
+  from the food numbers (`OIL_STATS`), with individual rows (deep-fried eggplant 16.9, tonkatsu 14.0, stir-fried
+  cabbage 5.8 …) before method medians; `nutrientsAt` now takes the oil as a share of the served weight. The model
+  judges the method from the photo only; the note's cooking words, 沒放油 / 少油 / 乾煎 and the meal's context
+  (home / store / unknown, per item) are applied by the program. Dishes fried before braising and oil-heavy dishes
+  follow `DISH_RULES`; usual hidden toppings (乾麵拌油, 麻醬, 肉燥, 早餐店美乃滋…) are added as items (`TOPPING_RULES`, grams
+  are assumptions listed in the spec); floating soup oil comes from `soupOil` and the bowl's diameter. Table rows are
+  re-checked against the final method (`asCooked`, `rowMethod`, `pairKey`, `prefried` in `js/foods.js`).
 - **Standard** — prompt v7, 1 request; the model estimates everything.
 - Both modes share `DRINK_GUIDE`: measured total sugar of 700 ml cups (衛福部 / TFND, National Taiwan University),
   which does not scale with the sweetness level. The user's references and note are sent inside
@@ -69,10 +80,10 @@ as `app.get('name')`. Objects from the vm are another realm: compare them after 
   taken as served, no oil added. The main request (and suggestions) offer Google Search as a tool; a model or
   key that cannot use it (free keys often answer 429 "quota exceeded") gets the request again without it,
   and search is not offered again for 12 hours (`nutrilens_search_off_until_v1`, `run.searchOff`).
-- The two re-estimates also name each item's cooking method (`METHOD_GUIDE`); the oil is the average over the
-  three votes, so a split vote adds part of the oil (shown as 做法判斷不一) instead of all or none. When the main
-  answer picked an oil-included table row (炒, 炸) but the votes say plain, the row is dropped for the model's
-  oil-free composition plus the voted oil.
+- The two re-estimates also name each item's cooking method (`METHOD_GUIDE`) and the photo cues (`oilSheen`,
+  `separatedOil`, `soupOil`); the oil is the average over the votes, so a split vote adds part of the oil (shown as
+  做法判斷不一) instead of all or none. When the final method disagrees with an oil-included table row (炒, 炸), its
+  plain pair (`pairKey`) is used instead.
 - Both modes and the weight re-estimates share `PORTION_GUIDE`: scale (the user's references first, then
   typical sizes), volume, bulk density and the edible share of bone-in cuts, with sources in the code. Broth of
   noodle soups and one-person hot pots counts 75 % unless the note says how much was drunk (shown as 預設喝 75% 湯).

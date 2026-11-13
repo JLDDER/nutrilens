@@ -85,7 +85,7 @@ const it = (name, fn) => tests.push({ name, fn });
 it('precise analysis: three requests, table values, result editor shows the items', async browser => {
   const page = await freshPage(browser);
   const calls = await analyse(page, (body, model) => (body.generationConfig.responseSchema.properties.items
-    ? { reasoning: 'r', name: '便當', packageKcal: 0, items: [item({ name: '白飯', foodKey: '白飯', foodType: 'starch', weight: 200 }), item({ name: '雞腿' })] }
+    ? { reasoning: 'r', name: '便當', packageKcal: 0, items: [item({ name: '白飯', foodKey: '白飯', foodType: 'starch', weight: 200 }), item({ name: '去皮雞腿' })] }
     : { estimates: [{ index: 1, geo: '', weight: 200, method: 'plain' }, { index: 2, geo: '', weight: 100, method: 'plain' }] }));
   if (calls.length !== 3) throw new Error(`expected 3 Gemini calls, got ${calls.length}`);
   if (calls.some(c => JSON.stringify(c.body).includes('TEST-KEY'))) throw new Error('API key leaked into the body');
@@ -94,6 +94,9 @@ it('precise analysis: three requests, table values, result editor shows the item
   const [cal, p] = await totals(page);
   // 白飯 200 g from the table (3.1 / 41 / 0.3) + 100 g at 20 / 0 / 5  →  P 26.2, C 82, F 5.6 → 483 kcal
   if (Math.abs(cal - 483) > 2 || Math.abs(p - 26) > 1) throw new Error(`totals ${cal} kcal / P ${p}`);
+  // Fat ledger: where the fat comes from and its range (js/fat.js)
+  const ledger = await page.locator('#resFatLedger').innerText();
+  if (!/脂肪 6 g/.test(ledger) || !/可能範圍/.test(ledger)) throw new Error(`fat ledger: ${ledger}`);
   return page;
 });
 
