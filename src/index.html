@@ -15,10 +15,11 @@
 
   <!-- Apply the saved theme before first paint to avoid a light flash. The key must match STORAGE_KEYS.theme. -->
   <script>
-    try {
-      var th = localStorage.getItem('nutrilens_theme_v1') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      document.documentElement.classList.toggle('dark', th === 'dark');
-    } catch (e) {}
+    // Storage may be blocked (the Claude artifact frame): then the device's setting decides.
+    var th = null;
+    try { th = localStorage.getItem('nutrilens_theme_v1'); } catch (e) {}
+    try { th = th || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) {}
+    document.documentElement.classList.toggle('dark', th === 'dark');
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />

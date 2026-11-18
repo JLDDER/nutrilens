@@ -77,9 +77,13 @@ it('records come from the cloud; analysis runs on Claude; the saved meal goes ba
   const calls = await page.evaluate(() => window.__fake.calls);
   if (calls.length !== 3) throw new Error(`expected 3 Claude calls, got ${calls.length}`);
   if (calls.some(c => c.opts.cache !== false || c.opts.images !== 1 || c.opts.modelTier !== 'default')) throw new Error(JSON.stringify(calls.map(c => c.opts)));
+  const meta = await page.evaluate(() => analysisMetaText(state.analysis));
+  if (/undefined|tok|（建議）/.test(meta) || !/Claude 預設/.test(meta)) throw new Error(`meta: ${meta}`);
   await page.click('[data-action="save-meal"]');
-  await page.waitForFunction(() => [...window.__fake.docs.keys()].some(k => k.includes('nutrilens_meals_v1@')
-    && window.__fake.docs.get(k).v.includes('去皮雞腿')), null, { timeout: 10000 });
+  await page.waitForFunction(() => [...window.__fake.docs].some(([k, b]) => k.includes('nutrilens_meals_v1@')
+    && JSON.stringify(b.items || {}).includes('去皮雞腿')), null, { timeout: 10000 });
+  // The first-version month document was rewritten as half-month documents and removed.
+  if (await page.evaluate(() => window.__fake.docs.has('data/users/u1/nutrilens_meals_v1@2026-01'))) throw new Error('old meal document kept');
   // The meal's top view goes to the cloud photo collection, and its id to the synced list.
   await page.waitForFunction(() => [...window.__fake.docs].some(([k, b]) => k.startsWith('data/users/u1/photos/items/')
     && String(b.src).startsWith('data:image/jpeg')), null, { timeout: 10000 });

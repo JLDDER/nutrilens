@@ -57,9 +57,17 @@ const photoStore = {
  * record), so photos of deleted or expired meals are removed without reading the collection.
  */
 const cloudPhotos = {
-  timer: null, running: false, again: false, pending: new Map(),          // pending: photos from a backup file, until they are sent
+  timer: null, running: false, again: false, booted: false,
+  pending: new Map(),            // photos not (yet) in IndexedDB: from a backup file, or when this browser cannot store them
+  goneSince: new Map(),          // photo id → when its meal disappeared; deleted only after the undo time has passed
   col: () => (IS_CLAUDE ? cloud.photoCol : null),
-  ids() { const v = store.get(STORAGE_KEYS.photoCloud, []); return Array.isArray(v) ? v.filter(x => typeof x === 'string') : []; },
+  /** Ids of the photos in the cloud (STORAGE_KEYS.photoCloud is { id: change time }, negative once removed). */
+  ids() { return Object.entries(JSON.parse(mergeStampMap(store.str(STORAGE_KEYS.photoCloud), null))).filter(([, ts]) => ts > 0).map(([id]) => id); },
+  mark(id, present) {
+    const map = JSON.parse(mergeStampMap(store.str(STORAGE_KEYS.photoCloud), null)), ts = cloud.clock();
+    map[id] = present ? ts : -ts;
+    store.setStr(STORAGE_KEYS.photoCloud, JSON.stringify(map));
+  },
   /** A JPEG data URL at most `px` on its long side. */
   shrink: (src, px, quality) => new Promise((resolve, reject) => {
     const img = new Image();
@@ -91,20 +99,33 @@ const cloudPhotos = {
       const wanted = new Map(db.meals().filter(m => m.photoId && !m.demo && m.date >= cutoff).map(m => [m.photoId, m.date]));
       const have = new Set(this.ids());
       for (const [id, date] of wanted) {
+        this.goneSince.delete(id);
         if (have.has(id)) continue;
-        const stored = await photoStore.get(id).then(r => r?.images || []).catch(() => []);
-        const images = stored.length ? stored : cloudPhotos.pending.get(id) || [];
-        if (!images.length) continue;                                  // not on this device: another device sends it
-        let src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.7);
-        if (src.length > 200_000) src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.45);
-        await col.doc(id).set({ date, src });
-        have.add(id); store.set(STORAGE_KEYS.photoCloud, [...have]); cloudPhotos.pending.delete(id);
+        try {                                                          // one bad photo must not stop the others
+          const stored = await photoStore.get(id).then(r => r?.images || []).catch(() => []);
+          const images = stored.length ? stored : cloudPhotos.pending.get(id) || [];
+          if (!images.length) continue;                                // not on this device: another device sends it
+          let src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.7);
+          if (src.length > 200_000) src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.45);
+          await col.doc(id).set({ date, src });
+          have.add(id); this.mark(id, true);
+        } catch (err) { console.warn('[NutriLens] cloud photo skipped', id, err); }
+        cloudPhotos.pending.delete(id);
       }
+      // A meal just deleted may come back with "Undo": its photo is deleted only once the undo time is over.
+      const wait = CONFIG.ui.undoToastMs + 3000, now = Date.now();
+      let later = false;
       for (const id of [...have]) {
         if (wanted.has(id)) continue;
-        await col.doc(id).delete();
-        have.delete(id); store.set(STORAGE_KEYS.photoCloud, [...have]);
+        if (!this.goneSince.has(id)) this.goneSince.set(id, this.booted ? now : 0);
+        if (now - this.goneSince.get(id) < wait) { later = true; continue; }
+        try {
+          await col.doc(id).delete();
+          have.delete(id); this.mark(id, false); this.goneSince.delete(id);
+        } catch (err) { console.warn('[NutriLens] cloud photo not deleted', id, err); }
       }
+      this.booted = true;
+      if (later) { clearTimeout(this.timer); this.timer = setTimeout(() => this.sync(), wait); }
     } catch (err) { console.warn('[NutriLens] cloud photos', err); } finally {
       this.running = false;
       if (this.again) { this.again = false; this.sync(); }
@@ -136,8 +157,9 @@ const photos = {
   async saveForJob(job, images = job.images) {
     if (!images.length) return;
     try {
-      await photoStore.put({ id: job.id, date: job.date, savedAt: Date.now(), images: [...images] });
       photoCache.set(job.id, [...images]);
+      if (IS_CLAUDE) cloudPhotos.pending.set(job.id, [...images]);   // the cloud copy does not depend on IndexedDB
+      await photoStore.put({ id: job.id, date: job.date, savedAt: Date.now(), images: [...images] });
       navigator.storage?.persist?.().catch(() => {});              // ask the browser not to evict the data
     } catch (err) { console.warn('[NutriLens] photos not saved', err); }
   },
@@ -172,7 +194,9 @@ const photos = {
     const out = [];
     for (const id of new Set(ids.filter(Boolean))) {
       const rec = await photoStore.get(id).catch(() => null);
-      if (rec?.images?.length) out.push({ id, date: rec.date, images: rec.images });
+      if (rec?.images?.length) { out.push({ id, date: rec.date, images: rec.images }); continue; }
+      const fromCloud = IS_CLAUDE ? await cloudPhotos.fetch(id) : [];   // the Claude build: also the photos only in the cloud
+      if (fromCloud.length) out.push({ id, date: db.meals().find(m => m.photoId === id)?.date || todayStr(), images: fromCloud });
     }
     return out;
   },
@@ -197,8 +221,12 @@ const photos = {
     clearTimeout(cloudPhotos.timer); cloudPhotos.timer = setTimeout(() => cloudPhotos.sync(), 1000);
   },
 
-  /** "Delete all data". */
-  clear() { photoCache.clear(); return photoStore.clear().catch(() => {}); },
+  /** "Delete all data" (not undoable: the cloud photos go at once). */
+  clear() {
+    photoCache.clear();
+    if (IS_CLAUDE) { cloudPhotos.ids().forEach(id => cloudPhotos.goneSince.set(id, 0)); photos.scheduleCloudSync(); }
+    return photoStore.clear().catch(() => {});
+  },
 
   /** Photo section of the data modal: retention choice and how much is stored. */
   async renderSettings() {
@@ -207,8 +235,8 @@ const photos = {
     $('#photoForeverWarn').classList.toggle('hidden', select.value !== 'forever');
     try {
       const [count, estimate] = await Promise.all([photoStore.count(), navigator.storage?.estimate?.().catch(() => null)]);
-      $('#photoUsage').textContent = estimate?.usage
-        ? t('photoUsage', { n: count, mb: Math.max(0.1, estimate.usage / 1048576).toFixed(1) }) : t('photoCount', { n: count });
+      $('#photoUsage').textContent = IS_CLAUDE ? t('photoCloudCount', { n: cloudPhotos.ids().length })   // what survives is the cloud copy
+        : estimate?.usage ? t('photoUsage', { n: count, mb: Math.max(0.1, estimate.usage / 1048576).toFixed(1) }) : t('photoCount', { n: count });
     } catch { $('#photoUsage').textContent = t('photoUnavailable'); }
   },
   onRetentionChange(el) {
@@ -459,7 +487,8 @@ async function buildShareImage() {
     // A meal image is shown whole; a long day image fills the width and scrolls.
     preview.classList.toggle('max-h-[55vh]', share.kind === 'meal'); preview.classList.toggle('w-auto', share.kind === 'meal');
     preview.classList.toggle('mx-auto', share.kind === 'meal'); preview.classList.toggle('w-full', share.kind !== 'meal');
-    $('[data-action="share-send"]').classList.toggle('hidden', !canShareFiles(shareFile()));   // e.g. most desktop browsers
+    // Most desktop browsers cannot share files; the Claude artifact frame blocks Web Share even where the phone could.
+    $('[data-action="share-send"]').classList.toggle('hidden', IS_CLAUDE || !canShareFiles(shareFile()));
     shareButtons().forEach(b => { b.disabled = false; });
   } catch (err) {
     console.warn('[NutriLens] share image failed', err); toast(t('shareFailed'), 'error');
@@ -477,7 +506,7 @@ async function sendShare() {
   try { await navigator.share({ files: [shareFile()] }); }
   catch (err) { if (err.name !== 'AbortError') toast(t('shareFailed'), 'error'); }   // AbortError = the user closed the sheet
 }
-const saveShare = () => { if (share.blob) download(share.blob, shareFileName()); };
+const saveShare = () => { if (share.blob) download(share.blob, shareFileName()); };   // download tells the viewer if it fails
 
 /* ── P6. Wiring ─────────────────────────────────────────────────────── */
 Object.assign(ACTIONS, {

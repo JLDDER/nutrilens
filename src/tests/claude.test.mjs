@@ -98,48 +98,129 @@ describe('Claude build: AI calls', () => {
 });
 
 describe('Claude build: cloud records', () => {
-  test('meals are kept one document per month', async () => {
-    const meals = [{ id: 'a', date: '2026-10-30', name: 'x' }, { id: 'b', date: '2026-11-02', name: 'y' }, { id: 'c', date: '2026-11-03', name: 'z' }];
-    const { app } = claudeApp({ reply: () => ({}), storage: { nutrilens_meals_v1: JSON.stringify(meals) } });
-    const docs = plain(app.get('cloud').docsFor('nutrilens_meals_v1'));
-    assert.deepEqual(docs.map(d => d.id).sort(), ['nutrilens_meals_v1@2026-10', 'nutrilens_meals_v1@2026-11']);
-    assert.equal(JSON.parse(docs.find(d => d.id.endsWith('11')).body.v).length, 2);
+  const U = 'data/users/u1';
+  /** One shared cloud for several "devices" (each its own app with its own browser storage). */
+  function sharedCloud(initial = {}) {
+    const docs = new Map(Object.entries(initial));
+    const ref = path => ({
+      set: async body => { docs.set(path, JSON.parse(JSON.stringify(body))); },
+      get: async () => ({ exists: docs.has(path), data: () => docs.get(path) }),
+      delete: async () => { docs.delete(path); }
+    });
+    const db = {
+      doc: path => ({ ...ref(path), collection: sub => db.collection(`${path}/${sub}`) }),
+      collection: base => (mustBe(base, true, 'collection()'), {
+        doc: id => ref(`${base}/${id}`),
+        get: async () => ({ docs: [...docs].filter(([p]) => p.startsWith(base + '/') && !p.slice(base.length + 1).includes('/'))
+          .map(([p, b]) => ({ id: p.slice(base.length + 1), data: () => b })) })
+      })
+    };
+    let online = true;
+    const claude = { async use(n) { if (this !== claude) throw new TypeError('Illegal invocation'); return online ? { db, user: { id: async () => 'u1' } }[n] ?? null : null; } };
+    return { docs, claude, setOnline: v => { online = v; } };
+  }
+  const device = (cloudEnv, storage = {}) => loadApp({ storage, globals: { NUTRILENS_PROVIDER: 'claude', claude: cloudEnv.claude } });
+  const settle = () => new Promise(r => setTimeout(r, 30));
+  const meal = (id, date, name = id) => ({ id, date, time: '12:00', name, cal: 100, p: 1, c: 1, f: 1, items: [] });
+  const meals = app => plain(app.get('store').get('nutrilens_meals_v1', [])).map(m => m.id).sort();
+  const sync = async app => { await app.get('cloud').flush(); await settle(); };
+
+  test('meals are kept in month documents split by id, with a change time per meal', async () => {
+    const env = sharedCloud(), a = device(env);
+    await a.get('cloud').connect();
+    a.get('db').saveMeals([meal('x', '2026-10-30'), meal('y', '2026-11-02'), meal('z', '2026-11-20')]);
+    await sync(a);
+    const docOf = (date, id) => `${U}/${a.get('cloud').mealDoc(date, id)}`;
+    assert.match(docOf('2026-11-02', 'y'), /nutrilens_meals_v1@2026-11\.[0-7]$/);
+    const d = env.docs.get(docOf('2026-11-02', 'y'));
+    assert.equal(d.fmt, 2); assert.ok(d.items.y && d.mt.y > 0);
+    assert.ok(env.docs.get(docOf('2026-10-30', 'x')).items.x);
   });
 
-  test('a newer cloud copy replaces this browser, a newer local key is sent, photos and jobs are not', async () => {
-    const base = 'data/users/u1';
-    const { app, writes } = claudeApp({
-      reply: () => ({}),
-      storage: { nutrilens_goals_v1: '{"cal":1800}', nutrilens_weights_v1: '[{"date":"2026-11-01","kg":70}]', nutrilens_jobs_v1: '[1]',
-        nutrilens_cloud_ts: JSON.stringify({ nutrilens_goals_v1: 100, nutrilens_weights_v1: 900, nutrilens_jobs_v1: 900 }) },
-      cloudDocs: {
-        [`${base}/nutrilens_goals_v1`]: { key: 'nutrilens_goals_v1', v: '{"cal":2000}', ts: 500 },
-        [`${base}/nutrilens_meals_v1@2026-11`]: { key: 'nutrilens_meals_v1', v: '[{"id":"m","date":"2026-11-02"}]', ts: 500 },
-        [`${base}/nutrilens_weights_v1`]: { key: 'nutrilens_weights_v1', v: '[]', ts: 200 }
-      }
+  test('two devices open at once: neither erases the other\'s new meal', async () => {
+    const env = sharedCloud(), a = device(env), b = device(env);
+    await a.get('cloud').connect(); await b.get('cloud').connect();
+    a.get('db').addMeal(meal('fromA', '2026-11-18')); await sync(a);
+    b.get('db').addMeal(meal('fromB', '2026-11-18')); await sync(b);
+    await a.get('cloud').refresh(); await settle();
+    assert.deepEqual(meals(a), ['fromA', 'fromB']);
+    const inCloud = [...env.docs].filter(([k]) => k.includes('meals_v1@2026-11')).flatMap(([, d]) => Object.keys(d.items));
+    assert.deepEqual(inCloud.sort(), ['fromA', 'fromB']);
+  });
+
+  test('a meal deleted on one device does not come back from another that still has it', async () => {
+    const env = sharedCloud(), a = device(env);
+    await a.get('cloud').connect();
+    a.get('db').saveMeals([meal('m1', '2026-11-03'), meal('m2', '2026-11-03')]); await sync(a);
+    const b1 = device(env); await b1.get('cloud').connect(); await settle();
+    assert.deepEqual(meals(b1), ['m1', 'm2']);
+    const bStorage = b1.localStorage.dump();                      // device B keeps its browser storage
+    a.get('db').deleteMeal('m1'); await sync(a);
+    const b2 = device(env, bStorage); await b2.get('cloud').connect(); await sync(b2);
+    assert.deepEqual(meals(b2), ['m2']);
+    const a2 = device(env); await a2.get('cloud').connect();
+    assert.deepEqual(meals(a2), ['m2']);
+  });
+
+  test('"delete all" on one device is not undone by another device', async () => {
+    const env = sharedCloud(), a = device(env);
+    await a.get('cloud').connect();
+    a.get('db').saveMeals([meal('m1', '2026-11-03'), meal('m2', '2026-11-04')]); await sync(a);
+    const b1 = device(env); await b1.get('cloud').connect(); await settle();
+    const bStorage = b1.localStorage.dump();
+    a.get('db').saveMeals([]); await sync(a);
+    const b2 = device(env, bStorage); await b2.get('cloud').connect(); await sync(b2);
+    assert.deepEqual(meals(b2), []);
+  });
+
+  test('offline: changes are kept and sent once the cloud is reached; nothing the app seeds at start counts', async () => {
+    const env = sharedCloud(), a = device(env);
+    await a.get('cloud').connect();
+    a.get('store').set('nutrilens_goals_v1', { cal: 1777 }); a.get('db').saveMeals([meal('old', '2026-11-01')]); await sync(a);
+    env.setOnline(false);
+    const b = device(env);
+    assert.equal(await b.get('cloud').connect(), false);
+    b.get('cloud').quiet = true; b.get('store').set('nutrilens_goals_v1', { cal: 2058 }); b.get('cloud').quiet = false;   // a start-up default
+    b.get('db').addMeal(meal('offline', '2026-11-18'));
+    env.setOnline(true);
+    await b.get('cloud').connect(); await sync(b);
+    assert.deepEqual(meals(b), ['offline', 'old']);
+    assert.equal(b.get('store').get('nutrilens_goals_v1').cal, 1777);   // the default did not replace the real goals
+    const c = device(env); await c.get('cloud').connect();
+    assert.deepEqual(meals(c), ['offline', 'old']);
+  });
+
+  test('documents of the first cloud version are read, rewritten and removed', async () => {
+    const env = sharedCloud({
+      [`${U}/nutrilens_meals_v1@2026-11`]: { key: 'nutrilens_meals_v1', v: JSON.stringify([meal('m', '2026-11-02')]), ts: 5 },
+      [`${U}/nutrilens_goals_v1`]: { key: 'nutrilens_goals_v1', v: '{"cal":2000}', ts: 5 }
     });
-    const cloud = app.get('cloud'), store = app.get('store');
-    await cloud.start();
-    await new Promise(r => setTimeout(r, 20));
-    assert.equal(store.get('nutrilens_goals_v1').cal, 2000);
-    assert.equal(store.get('nutrilens_meals_v1')[0].id, 'm');
-    assert.equal(writes.length, 1);
-    assert.equal(writes[0].path, `${base}/nutrilens_weights_v1`);
-    store.set('nutrilens_jobs_v1', [2]);                             // never synced
-    store.set('nutrilens_favorites_v1', [{ id: 'f' }]);
-    await cloud.flush.call(Object.assign(cloud, { timer: null }));
-    assert.deepEqual(writes.map(w => w.path).slice(1), [`${base}/nutrilens_favorites_v1`]);
+    const a = device(env); await a.get('cloud').connect(); await settle();
+    assert.deepEqual(meals(a), ['m']);
+    assert.equal(a.get('store').get('nutrilens_goals_v1').cal, 2000);
+    assert.ok(!env.docs.has(`${U}/nutrilens_meals_v1@2026-11`));
+    assert.ok(env.docs.get(`${U}/${a.get('cloud').mealDoc('2026-11-02', 'm')}`).items.m);
+  });
+
+  test('the photo list is merged id by id and a removal sticks; the jobs queue never leaves the device', async () => {
+    const T = Date.now() - 60_000;
+    const env = sharedCloud({ [`${U}/nutrilens_photo_cloud_v1`]: { key: 'nutrilens_photo_cloud_v1', v: JSON.stringify({ ja: T, jc: T }), ts: T } });
+    const a = device(env, { nutrilens_photo_cloud_v1: JSON.stringify({ jb: T + 10, jc: -(T + 20) }) });
+    await a.get('cloud').connect(); await sync(a);
+    assert.deepEqual(JSON.parse(env.docs.get(`${U}/nutrilens_photo_cloud_v1`).v), { ja: T, jb: T + 10, jc: -(T + 20) });
+    const merge = a.get('mergeStampMap');
+    assert.equal(merge('["x"]', JSON.stringify({ x: -T })), JSON.stringify({ x: -T }));   // the first form (a list) still reads
+    a.get('store').set('nutrilens_jobs_v1', [1]); await sync(a);
+    assert.ok(![...env.docs.keys()].some(k => k.includes('jobs')));
   });
 
   test('a setting such as the model is written within a moment and read back by a fresh browser', async () => {
-    const { app, docs } = claudeApp({ reply: () => ({}) });
-    await app.get('cloud').start();
-    app.get('store').setStr('nutrilens_claude_model_v1', 'claude-opus-5-5');
+    const env = sharedCloud(), a = device(env);
+    await a.get('cloud').connect();
+    a.get('store').setStr('nutrilens_claude_model_v1', 'claude-opus-5-5');
     await new Promise(r => setTimeout(r, 450));
-    const saved = docs.get('data/users/u1/nutrilens_claude_model_v1');
-    assert.equal(saved?.v, 'claude-opus-5-5');
-    const fresh = claudeApp({ reply: () => ({}), cloudDocs: { 'data/users/u1/nutrilens_claude_model_v1': saved } });
-    await fresh.app.get('cloud').start();
-    assert.equal(fresh.app.get('db').model(), 'claude-opus-5-5');
+    assert.equal(env.docs.get(`${U}/nutrilens_claude_model_v1`)?.v, 'claude-opus-5-5');
+    const fresh = device(env); await fresh.get('cloud').connect();
+    assert.equal(fresh.get('db').model(), 'claude-opus-5-5');
   });
 });

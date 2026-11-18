@@ -99,7 +99,9 @@ const CONFIG = {
     defaultModel: 'tier:default',
     modelOptions: [['tier:default', 'claudeModelDefault'], ['claude-opus-5-5', 'Claude Opus 5.5'], ['claude-sonnet-5-5', 'Claude Sonnet 5.5']],
     /** The two re-estimates stay on the default tier whichever model the main analysis uses (the owner wants accuracy). */
-    weightModels: ['tier:default', 'tier:default']
+    weightModels: ['tier:default', 'tier:default'],
+    /** A running analysis past this many seconds gets a note that it is taking longer than usual. */
+    slowSeconds: 90
   },
   /** Precise mode: main analysis, then the weights re-estimated by two light models. */
   precise: {
@@ -291,17 +293,19 @@ const todayStr = () => fmtDate(new Date());
 const nowTime = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
 const icon = (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+/** Offers a file to the viewer. Resolves true when it was handed over (always on the plain site), false otherwise. */
 function download(blob, filename) {
   if (IS_CLAUDE) {                 // the artifact frame refuses downloads: the runtime's `downloads` asks the viewer to save
-    Promise.resolve(globalThis.claude?.use?.('downloads')).then(d => {
+    return Promise.resolve(globalThis.claude?.use?.('downloads')).then(d => {
       if (!d) throw { code: 'unavailable' };
       return d.save({ filename, data: blob });
-    }).catch(e => { if (e?.code !== 'declined') toast(t('downloadFail'), 'error'); });
-    return;
+    }).then(r => r?.status === 'saved' || r?.status === 'delivered')
+      .catch(e => { if (e?.code !== 'declined') toast(t('downloadFail'), 'error'); return false; });
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = filename; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return Promise.resolve(true);
 }
 
 /* ── 3. Persistence & migrations ────────────────────────────────────── */
@@ -323,8 +327,11 @@ const kv = (() => {
   });
   return {
     get: k => (mem.has(k) ? mem.get(k) : null),
-    set(k, v) { v = String(v); if (mem.get(k) === v) return; mem.set(k, v); mirror(() => localStorage.setItem(k, v)); cloud.touch(k); },
-    del(k) { if (!mem.has(k)) return; mem.delete(k); mirror(() => localStorage.removeItem(k)); cloud.touch(k); },
+    set(k, v) {
+      v = String(v); const before = mem.has(k) ? mem.get(k) : null; if (before === v) return;
+      mem.set(k, v); mirror(() => localStorage.setItem(k, v)); cloud.touch(k, before, v);
+    },
+    del(k) { if (!mem.has(k)) return; const before = mem.get(k); mem.delete(k); mirror(() => localStorage.removeItem(k)); cloud.touch(k, before, null); },
     load(k, v) {
       if (v === null) { mem.delete(k); mirror(() => localStorage.removeItem(k)); } else { mem.set(k, v); mirror(() => localStorage.setItem(k, v)); }
     }
@@ -341,128 +348,326 @@ const store = {
 };
 
 /**
- * Claude build only: the records kept in the viewer's private subtree of the artifact's database
- * (data/users/<id>/<doc>, readable by nobody else, the owner included), so they survive a cleared browser and
- * reach the viewer's other devices. One document per key, { key, v: the stored string (null = deleted), ts };
- * meals are split by month (<key>@YYYY-MM) to stay far below the 256 KiB document limit. Last change wins per key:
- * on load a key whose cloud copy is newer than this browser's replaces it, and newer local keys are sent.
+ * Claude build only: the records kept in the viewer's private collection data/users/<id> of the artifact's database
+ * (readable by nobody else, the owner included), so they survive a cleared browser and reach the viewer's other
+ * devices. Two devices may be open at once and either may have been offline, so nothing is ever replaced wholesale:
+ *  - meals: eight documents per month (<key>@YYYY-MM.0 … .7 by meal id, far below the 256 KiB limit) holding
+ *    { items: {id: meal}, mt: {id: changed}, del: {id: deleted} }. Each meal keeps its own change time and a deletion
+ *    leaves a tombstone, so merging any two copies keeps every meal's latest state and no deleted meal comes back;
+ *  - other keys: one document { key, v, ts }; the later change wins. The list of cloud photo ids is merged as a set.
+ * Every write reads the document first and merges (two open devices do not erase each other); a device that comes
+ * back to the foreground reads the cloud again. Change times never go below one already seen in the cloud, so a
+ * device whose clock is behind does not lose. Local changes not yet written are remembered (in this browser when it
+ * can store, in memory otherwise) and sent when the cloud is reached, retried every 30 s while it is not.
  * Not kept in the cloud: the job queue (holds photos), diagnostics, suggestion cache and Gemini-only settings.
- * Photos stay in this browser's IndexedDB.
  */
+const CLOUD_MEALS_FMT = 2;
+/**
+ * A set kept as { id: change time }, negative for a removed id, so a removal is not undone by a copy that still has
+ * the id. Merges two stored strings (old form: an array of ids) id by id, the later change winning; drops removals
+ * older than CLOUD_TOMBSTONE_DAYS. Returns the merged string.
+ */
+function mergeStampMap(a, b) {
+  const read = raw => {
+    let v; try { v = JSON.parse(raw || '{}'); } catch { v = {}; }
+    if (Array.isArray(v)) return Object.fromEntries(v.filter(x => typeof x === 'string').map(id => [id, 1]));
+    return v && typeof v === 'object' ? v : {};
+  };
+  const out = { ...read(a) }, cutoff = Date.now() - CLOUD_TOMBSTONE_DAYS * 864e5;
+  for (const [id, ts] of Object.entries(read(b))) if (Math.abs(Number(ts)) > Math.abs(Number(out[id]) || 0)) out[id] = Number(ts);
+  for (const [id, ts] of Object.entries(out)) if (!(Math.abs(ts) > 0) || (ts < 0 && -ts < cutoff)) delete out[id];
+  return JSON.stringify(Object.fromEntries(Object.entries(out).sort(([x], [y]) => x.localeCompare(y))));
+}
+const CLOUD_TOMBSTONE_DAYS = 400;
+const CLOUD_MEAL_BUCKETS = 8;
 const cloud = {
-  col: null, photoCol: null, dirty: new Set(), timer: null, writing: false, sent: new Map(), failed: false, why: '', lastOk: 0,
+  db: null, col: null, photoCol: null, timer: null, retryTimer: null, writing: false, failed: false, why: '', lastOk: 0,
+  quiet: false,                  // set while the app seeds its start-up defaults without knowing the cloud: not changes
+  where: new Map(),              // meal id → id of the cloud document that holds it (or its tombstone)
+  meta: null,
   skip: () => new Set([STORAGE_KEYS.jobs, STORAGE_KEYS.perfLog, STORAGE_KEYS.apiKey, STORAGE_KEYS.model,
     STORAGE_KEYS.suggestCache, STORAGE_KEYS.searchOff]),
-  syncs(key) { return key.startsWith('nutrilens_') && !this.skip().has(key); },
-  stamps() { try { return JSON.parse(localStorage.getItem('nutrilens_cloud_ts') || '{}') || {}; } catch { return {}; } },
-  stamp(key, ts) { try { localStorage.setItem('nutrilens_cloud_ts', JSON.stringify({ ...this.stamps(), [key]: ts })); } catch { /* none */ } },
-  /** The documents for one key's current value. */
-  docsFor(key) {
-    const raw = kv.get(key), ts = this.stamps()[key] || Date.now();
-    if (key !== STORAGE_KEYS.meals || raw === null) return [{ id: key, body: { key, v: raw, ts } }];
-    let meals; try { meals = JSON.parse(raw); } catch { meals = []; }
-    const months = new Map();
-    for (const m of Array.isArray(meals) ? meals : []) {
-      const ym = String(m?.date || '').slice(0, 7) || 'none';
-      if (!months.has(ym)) months.set(ym, []);
-      months.get(ym).push(m);
+  syncs(key) { return key.startsWith('nutrilens_') && !key.startsWith('nutrilens_cloud') && !this.skip().has(key); },
+
+  /** { keys: {key: ts}, meals: {id: ts}, dels: {id: ts}, pend: [key], pendMeals: [id], seen } */
+  m() {
+    if (!this.meta) {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem('nutrilens_cloud_meta_v2') || 'null'); } catch { /* not stored */ }
+      this.meta = { keys: {}, meals: {}, dels: {}, pend: [], pendMeals: [], seen: 0, ...(saved && typeof saved === 'object' ? saved : {}) };
     }
-    const docs = [...months].map(([ym, list]) => ({ id: `${key}@${ym}`, body: { key, v: JSON.stringify(list), ts } }));
-    for (const id of this.sent.keys()) {                         // a month that became empty is written empty
-      if (id.startsWith(key + '@') && !months.has(id.slice(key.length + 1))) docs.push({ id, body: { key, v: '[]', ts } });
-    }
-    return docs;
+    return this.meta;
   },
-  touch(key) {
-    if (!this.syncs(key)) return;
-    // Before the cloud copy has been read (or when it could not be), a change must not look newer than it: the demo
-    // records a fresh browser seeds would otherwise replace the real ones. Meals made meanwhile are merged on the next load.
-    if (!this.col) return;
-    this.stamp(key, Date.now()); this.dirty.add(key);
+  saveMeta() { try { localStorage.setItem('nutrilens_cloud_meta_v2', JSON.stringify(this.meta)); } catch { /* memory only */ } },
+  /** A change time: now, but never at or below a time already seen in the cloud. */
+  clock() { const m = this.m(), ts = Math.max(Date.now(), (m.seen || 0) + 1); m.seen = ts; return ts; },
+  see(ts) { const m = this.m(); if (Number(ts) > (m.seen || 0)) m.seen = Number(ts); },
+
+  /** kv calls this on every change. Meals are compared meal by meal; anything else is one change of the key. */
+  touch(key, before, after) {
+    if (!this.syncs(key) || this.quiet) return;
+    const m = this.m(), ts = this.clock();
+    if (key === STORAGE_KEYS.meals) {
+      const parse = raw => { try { const l = JSON.parse(raw || '[]'); return Array.isArray(l) ? l : []; } catch { return []; } };
+      const old = new Map(parse(before).filter(x => x?.id).map(x => [x.id, JSON.stringify(x)]));
+      const now = new Map(parse(after).filter(x => x?.id).map(x => [x.id, JSON.stringify(x)]));
+      for (const [id, s] of now) if (old.get(id) !== s) { m.meals[id] = ts; delete m.dels[id]; m.pendMeals.push(id); }
+      for (const id of old.keys()) if (!now.has(id)) { m.dels[id] = ts; delete m.meals[id]; m.pendMeals.push(id); }
+      m.pendMeals = [...new Set(m.pendMeals)];
+    } else {
+      m.keys[key] = ts; if (!m.pend.includes(key)) m.pend.push(key);
+    }
+    this.saveMeta();
     clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 300);   // short: the viewer may close the app right after
   },
-  /** Sends the changed documents one at a time (one write per document in flight). */
+
+  /** The meal document of a meal: its month, split into CLOUD_MEAL_BUCKETS by id (a heavy month of 6 meals a day with
+   *  long notes stays near 80 KB per document, far below the 256 KiB limit; about 100 documents a year). */
+  mealDoc(date, id) {
+    let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return `${STORAGE_KEYS.meals}@${String(date || '').slice(0, 7) || 'none'}.${h % CLOUD_MEAL_BUCKETS}`;
+  },
+  /** A meal document in the current shape (old shape: { v: list, ts }). */
+  readMealDoc(b) {
+    if (b?.fmt === CLOUD_MEALS_FMT) return { items: { ...(b.items || {}) }, mt: { ...(b.mt || {}) }, del: { ...(b.del || {}) } };
+    let list = []; try { list = JSON.parse(b?.v || '[]') || []; } catch { /* empty */ }
+    const ts = Number(b?.ts) || 0, items = {}, mt = {};
+    for (const x of Array.isArray(list) ? list : []) if (x?.id) { items[x.id] = x; mt[x.id] = ts; }
+    return { items, mt, del: {} };
+  },
+
+  /** Merges what the cloud documents hold into this browser. Returns whether anything shown changed. */
+  applyCloud(docs) {
+    const m = this.m(), byKey = new Map(), best = new Map();
+    for (const d of docs) {
+      const b = d.data(); if (!b || typeof b.key !== 'string' || !this.syncs(b.key)) continue;
+      this.see(b.ts);
+      if (b.key === STORAGE_KEYS.meals) {
+        const doc = this.readMealDoc(b);
+        const offer = (id, ts, meal) => {
+          this.see(ts); const cur = best.get(id);
+          if (!cur || ts > cur.ts || (ts === cur.ts && !meal)) best.set(id, { ts, meal, doc: d.id });
+          if (!this.where.has(id) || meal) this.where.set(id, d.id);
+        };
+        for (const [id, meal] of Object.entries(doc.items)) offer(id, Number(doc.mt[id]) || 0, meal);
+        for (const [id, ts] of Object.entries(doc.del)) offer(id, Number(ts) || 0, null);
+      } else byKey.set(b.key, b);
+    }
+    let changed = false;
+    // Meals: the newer of this browser's change and the cloud's, meal by meal.
+    const local = (() => { try { return JSON.parse(kv.get(STORAGE_KEYS.meals) || '[]') || []; } catch { return []; } })();
+    const result = new Map(), pend = new Set(m.pendMeals);
+    for (const x of local) if (x?.id) result.set(x.id, x);
+    for (const [id, c] of best) {
+      const mine = m.dels[id] ? { ts: m.dels[id], meal: null } : m.meals[id] ? { ts: m.meals[id], meal: result.get(id) } : null;
+      if (mine && mine.ts > c.ts) { pend.add(id); continue; }          // ours is newer: keep it and send it
+      if (mine && mine.ts === c.ts) continue;
+      if (c.meal) result.set(id, c.meal); else result.delete(id);
+      delete m.meals[id]; delete m.dels[id]; pend.delete(id);
+    }
+    for (const x of local) {                                         // here but never in the cloud: send it
+      if (x?.id && !best.has(x.id) && !x.demo) { if (!m.meals[x.id]) m.meals[x.id] = this.clock(); pend.add(x.id); }
+    }
+    m.pendMeals = [...pend];
+    const meals = [...result.values()].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+    const raw = JSON.stringify(meals);
+    if (raw !== (kv.get(STORAGE_KEYS.meals) || '[]') && (best.size || meals.length)) { kv.load(STORAGE_KEYS.meals, raw); changed = true; }
+    // Other keys: the later change wins; the photo list is merged id by id.
+    for (const [key, b] of byKey) {
+      const ts = Number(b.ts) || 0, mine = m.keys[key] || 0;
+      if (key === STORAGE_KEYS.photoCloud) {          // a map of photo id → change time (negative: removed), merged id by id
+        const merged = mergeStampMap(kv.get(key), b.v);
+        if (merged !== kv.get(key)) kv.load(key, merged);
+        if (merged !== mergeStampMap(b.v, null) && !m.pend.includes(key)) m.pend.push(key);
+        continue;
+      }
+      if (mine > ts) { if (!m.pend.includes(key)) m.pend.push(key); continue; }
+      if (mine === ts) continue;
+      const v = typeof b.v === 'string' ? b.v : null;
+      if (v !== kv.get(key)) { kv.load(key, v); changed = true; }
+      delete m.keys[key]; m.pend = m.pend.filter(k => k !== key);
+    }
+    for (const key of Object.values(STORAGE_KEYS)) {                 // here but never in the cloud: send it
+      if (this.syncs(key) && key !== STORAGE_KEYS.meals && !byKey.has(key) && kv.get(key) !== null && !m.pend.includes(key)) {
+        if (!m.keys[key]) m.keys[key] = this.clock();
+        m.pend.push(key);
+      }
+    }
+    this.saveMeta();
+    return changed;
+  },
+
+  /** Sends what changed here, one document at a time, each merged with the cloud's current copy. */
   async flush() {
-    if (!this.col || this.writing || !this.dirty.size) return;
+    const m = this.m();
+    if (!this.col || this.writing || (!m.pend.length && !m.pendMeals.length)) return;
     this.writing = true;
-    const keys = [...this.dirty]; this.dirty.clear();
+    let error = null;
     try {
-      for (const key of keys) {
-        for (const { id, body } of this.docsFor(key)) {
-          if (this.sent.get(id) === body.v) continue;
-          await this.col.doc(id).set(body);
-          this.sent.set(id, body.v);
-        }
+      // Meals, grouped by document: where each meal lives now, plus where the cloud last had it.
+      let local; try { local = JSON.parse(kv.get(STORAGE_KEYS.meals) || '[]') || []; } catch { local = []; }
+      const byId = new Map(local.filter(x => x?.id).map(x => [x.id, x]));
+      const groups = new Map();
+      const add = (doc, id) => { if (!groups.has(doc)) groups.set(doc, new Set()); groups.get(doc).add(id); };
+      for (const id of m.pendMeals) {
+        const meal = byId.get(id);
+        if (meal?.demo) continue;
+        if (meal) add(this.mealDoc(meal.date, id), id);
+        const was = this.where.get(id);
+        if (was && (!meal || was !== this.mealDoc(meal.date, id))) add(was, id);
+        if (!meal && !was) add(this.mealDoc(todayStr(), id), id);    // a tombstone needs a home
       }
-      this.failed = false; this.lastOk = Date.now(); this.why = '';
-    } catch (e) {
-      this.why = String(e?.code || e?.message || e).slice(0, 60);
-      keys.forEach(k => this.dirty.add(k));
-      if (!this.failed) { this.failed = true; toast(t(e?.code === 'quota_exceeded' ? 'cloudFull' : 'cloudFail'), 'error'); }
-      clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 30_000);
+      const done = new Set();
+      for (const [docId, ids] of groups) {
+        try {
+          const ref = this.col.doc(docId), snap = await ref.get();
+          const cur = snap.exists ? this.readMealDoc(snap.data()) : { items: {}, mt: {}, del: {} };
+          for (const id of ids) {
+            const meal = byId.get(id), ts = meal ? m.meals[id] || this.clock() : m.dels[id] || this.clock();
+            const theirs = Math.max(Number(cur.mt[id]) || 0, Number(cur.del[id]) || 0);
+            if (theirs > ts) continue;                               // the cloud has a newer change: the next read brings it
+            if (meal && this.mealDoc(meal.date, id) === docId) { cur.items[id] = meal; cur.mt[id] = ts; delete cur.del[id]; this.where.set(id, docId); }
+            else if (meal) { delete cur.items[id]; delete cur.mt[id]; }   // moved to another month
+            else { delete cur.items[id]; delete cur.mt[id]; cur.del[id] = ts; this.where.set(id, docId); }
+          }
+          const cutoff = Date.now() - CLOUD_TOMBSTONE_DAYS * 864e5;
+          for (const [id, ts] of Object.entries(cur.del)) if (ts < cutoff) delete cur.del[id];
+          await ref.set({ key: STORAGE_KEYS.meals, fmt: CLOUD_MEALS_FMT, items: cur.items, mt: cur.mt, del: cur.del, ts: this.clock() });
+          ids.forEach(id => done.add(id));
+        } catch (e) { error ||= e; console.warn('[NutriLens] cloud meals', docId, e); }   // other documents still go
+      }
+      m.pendMeals = m.pendMeals.filter(id => !done.has(id) && !byId.get(id)?.demo);   // demo meals never go to the cloud
+      done.forEach(id => { delete m.meals[id]; delete m.dels[id]; });             // the cloud now holds this change
+      this.saveMeta();
+      // Other keys.
+      for (const key of [...m.pend]) {
+        try {
+          const ref = this.col.doc(key), snap = await ref.get(), cloudB = snap.exists ? snap.data() : null;
+          let v = kv.get(key), ts = m.keys[key] || this.clock();
+          if (key === STORAGE_KEYS.photoCloud) v = mergeStampMap(v, cloudB?.v);
+          else if (cloudB && Number(cloudB.ts) > ts) { m.pend = m.pend.filter(k => k !== key); continue; }   // newer there
+          ts = Math.max(ts, (Number(cloudB?.ts) || 0) + (key === STORAGE_KEYS.photoCloud ? 1 : 0));
+          await ref.set({ key, v, ts });
+          if (key === STORAGE_KEYS.photoCloud && v !== kv.get(key)) kv.load(key, v);
+          m.pend = m.pend.filter(k => k !== key); delete m.keys[key];
+        } catch (e) { error ||= e; console.warn('[NutriLens] cloud key', key, e); }
+        this.saveMeta();
+      }
     } finally { this.writing = false; }
-    if (this.dirty.size && !this.failed) this.flush();
+    if (error) {
+      this.why = String(error?.code || error?.message || error).slice(0, 60);
+      if (!this.failed) { this.failed = true; toast(t(error?.code === 'quota_exceeded' ? 'cloudFull' : 'cloudFail'), 'error'); }
+      clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 30_000);
+    } else {
+      this.failed = false; this.lastOk = Date.now(); this.why = '';
+      if (m.pend.length || m.pendMeals.length) { clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 300); }
+    }
   },
-  /** Meals: the cloud's list plus this browser's own (not demo) meals it does not have, so none made offline are lost. */
-  mergeMeals(cloudRaw) {
-    let cloudList, localList;
-    try { cloudList = JSON.parse(cloudRaw) || []; } catch { cloudList = []; }
-    try { localList = JSON.parse(kv.get(STORAGE_KEYS.meals) || '[]') || []; } catch { localList = []; }
-    const ids = new Set(cloudList.map(m => m?.id));
-    const extra = localList.filter(m => m && !m.demo && !ids.has(m.id));
-    return { v: JSON.stringify([...cloudList, ...extra]), extra: extra.length };
+
+  /** Reaches the viewer's cloud collection and merges it in. Resolves true when connected. */
+  async connect() {
+    if (!globalThis.claude?.use) { this.why = 'no-runtime'; return false; }
+    // Called on window.claude itself: use() is a method of the runtime and fails when detached from it.
+    const [db, user] = await Promise.all([globalThis.claude.use('db'), globalThis.claude.use('user')]);
+    if (!db || !user) { this.why = !db ? 'no-db' : 'no-user'; return false; }
+    const id = await user.id();
+    if (!id) { this.why = 'no-id'; return false; }
+    const col = db.collection(`data/users/${id}`);              // the viewer's own collection (3 segments: a collection path)
+    const snap = await col.get();
+    const changed = this.applyCloud(snap.docs);
+    // Documents of the first cloud version (one per month): their meals are now in the new documents once sent.
+    const old = snap.docs.filter(d => /@\d{4}-\d{2}$|@none$/.test(d.id) && d.data()?.key === STORAGE_KEYS.meals);
+    Object.assign(this, { db, col, photoCol: db.doc(`data/users/${id}/photos`).collection('items'), why: '' });
+    if (old.length) {
+      const m = this.m();
+      for (const d of old) for (const mid of Object.keys(this.readMealDoc(d.data()).items)) { m.pendMeals.push(mid); this.where.delete(mid); }
+      m.pendMeals = [...new Set(m.pendMeals)];
+      await this.flush();
+      if (!this.failed) for (const d of old) await col.doc(d.id).delete().catch(() => {});
+    } else this.flush();
+    return changed;
   },
-  /** Before the app starts: connect, take newer cloud keys, then send newer local ones. Gives up after 12 s: the
-   *  session then stays on this device only (a late answer is ignored), and the next load reads the cloud again. */
+
+  /** Before the app starts. Resolves 'ok', or 'offline' once the viewer chose to go on without the cloud. */
   async start() {
-    let late = false;
-    const work = (async () => {
-      if (!globalThis.claude?.use) { this.why = 'no-runtime'; return; }
-      // Called on window.claude itself: use() is a method of the runtime and fails when detached from it.
-      const [db, user] = await Promise.all([globalThis.claude.use('db'), globalThis.claude.use('user')]);
-      if (!db || !user) { this.why = !db ? 'no-db' : 'no-user'; return; }
-      const id = await user.id();
-      if (!id) { this.why = 'no-id'; return; }
-      const col = db.collection(`data/users/${id}`);          // the viewer's own collection (3 segments: a collection path)
-      const snap = await col.get();
-      if (late) return;
-      const byKey = new Map();
-      for (const d of snap.docs) {
-        const b = d.data(); if (!b || typeof b.key !== 'string' || !this.syncs(b.key)) continue;
-        if (!byKey.has(b.key)) byKey.set(b.key, []);
-        byKey.get(b.key).push({ id: d.id, ...b });
-      }
-      const local = this.stamps(), mergedKeys = [];
-      for (const [key, docs] of byKey) {
-        const ts = Math.max(...docs.map(d => Number(d.ts) || 0));
-        docs.forEach(d => this.sent.set(d.id, d.v));
-        if (ts <= (local[key] || 0)) continue;
-        let v = docs[0].v;
-        let keepLocal = false;
-        if (key === STORAGE_KEYS.meals) {
-          const all = docs.flatMap(d => { try { return JSON.parse(d.v) || []; } catch { return []; } });
-          const merged = this.mergeMeals(JSON.stringify(all));
-          v = merged.v; keepLocal = merged.extra > 0;
+    const loading = setTimeout(() => cloudOverlay.show('loading'), 400);
+    let ok = false;
+    try {
+      ok = await Promise.race([this.connect().then(() => true), new Promise(r => setTimeout(() => r(false), 12_000))]);
+      if (!ok && !this.why) this.why = 'timeout';
+    } catch (e) { this.why = String(e?.code || e?.message || e).slice(0, 60); console.warn('[NutriLens] cloud', e); }
+    clearTimeout(loading);
+    if (ok && this.col) { cloudOverlay.hide(); return 'ok'; }
+    this.col = null;                                            // a late answer must not count as connected
+    const choice = await cloudOverlay.ask();
+    if (choice === 'retry') return this.start();
+    this.retryLater();
+    return 'offline';
+  },
+  /** While offline: try again every 30 s; once connected, merge and redraw. */
+  retryLater() {
+    clearTimeout(this.retryTimer);
+    this.retryTimer = setTimeout(async () => {
+      try {
+        if (await Promise.race([this.connect().then(() => true), new Promise(r => setTimeout(() => r(false), 12_000))]) && this.col) {
+          renderAll(); toast(t('cloudBack')); return;
         }
-        kv.load(key, typeof v === 'string' ? v : null); this.stamp(key, ts);
-        if (keepLocal) mergedKeys.push(key);
-      }
-      this.col = col;
-      this.photoCol = db.doc(`data/users/${id}/photos`).collection('items');   // apart from the records: not read at start
-      for (const key of Object.values(STORAGE_KEYS)) {
-        if (!this.syncs(key) || kv.get(key) === null && !byKey.has(key)) continue;
-        const cloudTs = Math.max(0, ...(byKey.get(key) || []).map(d => Number(d.ts) || 0));
-        if (!byKey.has(key) || (local[key] || 0) > cloudTs) { this.stamp(key, Math.max(local[key] || 0, Date.now())); this.dirty.add(key); }
-      }
-      mergedKeys.forEach(k => { this.stamp(k, Date.now()); this.dirty.add(k); });
+      } catch (e) { this.why = String(e?.code || e?.message || e).slice(0, 60); }
+      this.col = null; this.retryLater();
+    }, 30_000);
+  },
+  /** Back in the foreground: another device may have changed something meanwhile. */
+  async refresh() {
+    if (!this.col || this.writing) return;
+    try {
+      const snap = await this.col.get();
+      if (this.applyCloud(snap.docs)) { renderAll(); if (typeof photos !== 'undefined') photos.scheduleCloudSync(); }
       this.flush();
-    })().catch(e => { this.why = String(e?.code || e?.message || e).slice(0, 60); console.warn('[NutriLens] cloud', e); });
-    await Promise.race([work, new Promise(r => setTimeout(r, 12_000))]);
-    if (!this.col) { late = true; this.why ||= 'timeout'; toast(t('cloudOffline'), 'error'); }
+    } catch (e) { console.warn('[NutriLens] cloud refresh', e); }
+  }
+};
+
+/** The full-screen notice while the cloud records load, and the choice when they cannot be reached. */
+const cloudOverlay = {
+  el: null,
+  ensure() {
+    if (this.el) return this.el;
+    this.el = document.createElement('div');
+    this.el.className = 'fixed inset-0 z-[80] bg-white dark:bg-[#121214] flex items-center justify-center p-6 text-center';
+    document.body.append(this.el);
+    return this.el;
+  },
+  show(kind) {
+    this.ensure().innerHTML = kind === 'loading'
+      ? `<div class="space-y-3 text-slate-600 dark:text-slate-300">${icon('loader', 'animate-spin text-2xl text-emerald-600')}
+          <p class="text-sm">${t('cloudLoading')}</p></div>` : '';
+  },
+  hide() { this.el?.remove(); this.el = null; },
+  ask() {
+    let persistent = false;
+    try { localStorage.setItem('nutrilens_probe', '1'); localStorage.removeItem('nutrilens_probe'); persistent = true; } catch { /* memory only */ }
+    this.ensure().innerHTML = `<div class="max-w-sm space-y-4">
+      ${icon('circle-alert', 'text-3xl text-amber-500')}
+      <h2 class="text-lg font-bold">${t('cloudDownTitle')}</h2>
+      <p class="text-sm text-slate-600 dark:text-slate-300">${t('cloudDownBody')}</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400">${t(persistent ? 'cloudDownLocal' : 'cloudDownMemory')}</p>
+      <div class="space-y-2">
+        <button type="button" data-cloud="retry" class="btn btn-primary w-full py-3">${t('cloudRetry')}</button>
+        <button type="button" data-cloud="offline" class="btn btn-outline w-full py-3">${t('cloudGoOffline')}</button>
+      </div></div>`;
+    return new Promise(resolve => {
+      this.el.addEventListener('click', e => {
+        const b = e.target.closest('[data-cloud]'); if (!b) return;
+        if (b.dataset.cloud === 'retry') this.show('loading'); else this.hide();
+        resolve(b.dataset.cloud);
+      }, { once: false });
+    });
   }
 };
 if (IS_CLAUDE) {
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') cloud.flush(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') cloud.flush(); else cloud.refresh();
+  });
   window.addEventListener('pagehide', () => cloud.flush());
 }
 
@@ -748,7 +953,7 @@ function per100gToAbsolute(apiItem) {
 /** Builds the Meal to store from the analysis being edited (portion already applied). */
 function mealFromAnalysis(analysis, { portion, name, date, time, reasoning }) {
   const items = analysis.items.map(it => roundItem({ name: it.name, weight: Math.round(effectiveWeight(it, portion)), ...itemNutrients(it, portion) }));
-  return { id: uid(), date, time, name, angleCount: analysis.angleCount, reasoning, ...roundedTotals(items), items,
+  return { id: uid(), date, time, name, angleCount: analysis.angleCount, reasoning: String(reasoning || '').slice(0, 1000), ...roundedTotals(items), items,
     ...(analysis.photoId ? { photoId: analysis.photoId } : {}), ...(analysis.source ? { source: analysis.source } : {}) };
 }
 
@@ -1102,8 +1307,9 @@ const dataPartToBlob = ({ mime_type: type, data }) => {
  */
 const claudeAI = {
   sampleP: null,
-  sample() {
-    this.sampleP ??= globalThis.claude?.use ? Promise.resolve(globalThis.claude.use('sample')).catch(() => null) : Promise.resolve(null);
+  sample() {                       // a null answer is not kept: the runtime may only have been slow to start
+    this.sampleP ??= (globalThis.claude?.use ? Promise.resolve(globalThis.claude.use('sample')).catch(() => null) : Promise.resolve(null))
+      .then(f => { if (!f) this.sampleP = null; return f; });
     return this.sampleP;
   },
   validModel: id => (CONFIG.claude.modelOptions.some(([v]) => v === id) ? id : CONFIG.claude.defaultModel),
@@ -1112,17 +1318,19 @@ const claudeAI = {
     if (id.startsWith('tier:')) return { modelTier: id.slice(5) };
     return { model: id, modelTier: /opus/.test(id) ? 'complex' : 'default' };
   },
-  label(id) {
+  /** The name shown in the model list (`short`: without "(recommended)", for result notes). */
+  label(id, short = false) {
     const opt = CONFIG.claude.modelOptions.find(([v]) => v === id);
-    if (opt) return opt[1].startsWith('Claude') ? opt[1] : t(opt[1]);
-    return id.startsWith('tier:') ? `Claude (${id.slice(5)})` : id;
+    if (opt) return opt[1].startsWith('Claude') ? opt[1] : t(short ? 'claudeModelDefaultShort' : opt[1]);
+    return id.startsWith('tier:') ? t('claudeTier', { tier: t(`claudeTier_${id.slice(5)}`) }) : id;
   },
   /** One rejected `sample` call as an Error the app can show; a cancel becomes an AbortError like fetch's. */
   error(e) {
     if (e?.code === 'cancelled') return new DOMException('Aborted', 'AbortError');
     const key = { rate_limited: 'claudeRateLimited', not_granted: 'claudeNotGranted', sampling_disabled: 'claudeDisabled',
-      session_expired: 'claudeSignIn', image_rejected: 'claudeImage', images_unavailable: 'claudeImage', refused: 'claudeRefused' }[e?.code];
-    return Object.assign(new Error(key ? t(key) : String(e?.message || e || t('emptyResult'))), { status: 'claude', code: e?.code });
+      session_expired: 'claudeSignIn', image_rejected: 'claudeImage', images_unavailable: 'claudeImage', refused: 'claudeRefused',
+      invalid_json: 'emptyResult', empty_completion: 'emptyResult', upstream_error: 'claudeBusy' }[e?.code];
+    return Object.assign(new Error(key ? t(key) : t('claudeOther', { code: String(e?.code || 'error') })), { status: 'claude', code: e?.code });
   },
   async generate({ model, parts, system, signal, run, task = NUTRITION_TASK }) {
     const startedAt = Date.now();
@@ -1140,13 +1348,14 @@ const claudeAI = {
       run?.attempts.push({ error: `${e?.code || 'error'}: ${String(e?.message || '').slice(0, 80)}`, ms: Date.now() - startedAt });
       throw err;
     }
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');   // cancelled while the answer was on its way
     const used = res.modelApplied || `tier:${res.modelTierApplied}`;
     run?.attempts.push({ status: 'ok', ms: Date.now() - startedAt, used, truncated: res.truncated });
     if (res.truncated) throw Object.assign(new Error(t('emptyResult')), { status: 'claude' });
     const result = task.parse({ candidates: [{ content: { parts: [{ text: extractJsonText(res.text) }] } }] });
     if (run) Object.assign(run, { used, chars: res.text.length }, task.summarize(result));
-    result.meta = { ms: Date.now() - startedAt, attempts: 1, model: used };
-    result.modelUsed = this.label(used);
+    result.meta = { ms: Date.now() - startedAt, attempts: 1, model: used, claude: true };
+    result.modelUsed = this.label(used, true);
     console.info('[NutriLens] Claude', used, result.meta);
     return result;
   }
@@ -1799,13 +2008,14 @@ function scaleToPackage(items, packageKcal) {
 }
 
 /** Precise pipeline: main analysis (with fallback), then two light weight re-estimates in parallel. */
-async function analyzePrecise({ key, model, job, signal, rec, backups }) {
+async function analyzePrecise({ key, model, job, signal, rec, backups, onStage }) {
   const prompt = buildPrecisePrompt({ lang: job.lang, imageCount: job.images.length, note: job.note, refs: job.refs || [] });
   const images = job.images.map(dataUrlToPart);
   const main = await gemini.generateWithFallback({
     key, model, parts: [{ text: prompt.user }, ...images], system: prompt.system, signal, rec, task: PRECISE_TASK, backups
   });
 
+  onStage?.(2);                                     // the portions are checked next
   const wp = buildWeightPrompt(main.rawItems, job.note, job.refs || []);
   const started = Date.now();
   // The re-estimates look at the photos; a description alone has nothing more for them to measure.
@@ -2678,7 +2888,8 @@ const analysisBadgeText = a => (a.isDemo ? t('badgeDemo') : t('badgeAi'));
 function analysisMetaText(a) {
   if (a.isDemo || !a.meta) return '';
   const parts = [a.angleCount ? t('badge', { n: a.angleCount }) : t('badgeText'), a.refCount ? t('badgeRefs', { n: a.refCount }) : '', a.modelUsed,
-    t('badgeMeta', { s: (a.meta.ms / 1000).toFixed(1), th: a.meta.thoughts, in: a.meta.prompt })];
+    a.meta.claude ? t('badgeSeconds', { s: Math.round((a.totalMs || a.meta.ms) / 1000) })   // Claude reports no token counts
+      : t('badgeMeta', { s: (a.meta.ms / 1000).toFixed(1), th: a.meta.thoughts, in: a.meta.prompt })];
   if (a.meta.attempts > 1) parts.push(t('badgeRetries', { n: a.meta.attempts - 1 }));
   return parts.filter(Boolean).join(' · ');
 }
@@ -2772,15 +2983,20 @@ const jobFailedView = j => ({
     <div class="text-xs text-slate-500 mono">${esc(j.date)} ${esc(j.time)}</div>`,
   actions: jobButton('job-retry', j.id, 'jobRetry', 'btn-primary') + jobButton('job-dismiss', j.id, 'jobDismiss')
 });
+/** Claude build, precise mode: which of the two steps is running. */
+const jobStageKey = j => (IS_CLAUDE && j.mode === 'precise' ? (j.stage === 2 ? 'claudeStage2' : 'claudeStage1') : 'jobRunning');
 const JOB_VIEWS = {
   running: j => ({
     body: `
       <div class="flex items-center gap-1.5 text-sm font-medium">
         ${icon('loader', 'animate-spin text-emerald-600')}
-        <span>${t('jobRunning')}</span>
+        <span>${t(jobStageKey(j))}</span>
         <span class="mono text-slate-500" data-elapsed="${esc(j.id)}">${elapsedSeconds(j)}s</span>
       </div>
-      <div class="text-xs text-slate-500 mt-0.5">${t('jobKeepOpen')}</div>`,
+      <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${IS_CLAUDE
+        ? t('claudeKeepOpen', { range: t(/opus/.test(j.model || '') ? 'claudeTimeOpus' : 'claudeTimeDefault') }) : t('jobKeepOpen')}</div>
+      <div class="${elapsedSeconds(j) > CONFIG.claude.slowSeconds && IS_CLAUDE ? '' : 'hidden'} text-xs text-amber-600 dark:text-amber-400 mt-0.5"
+        data-slow="${esc(j.id)}">${t('claudeSlow')}</div>`,
     actions: jobButton('job-cancel', j.id, 'jobCancel')
   }),
   done: j => ({
@@ -2788,7 +3004,7 @@ const JOB_VIEWS = {
       <div class="text-sm font-semibold">✓ ${esc(j.result.name)}</div>
       <div class="text-xs text-slate-500">
         ${roundedTotals(j.result.items).cal} kcal · ${esc(j.time)}${j.result.isDemo ? ` · ${t('demoBadge')}` : ''}
-      </div>`,
+      </div>${IS_CLAUDE ? `<div class="text-xs text-amber-600 dark:text-amber-400">${t('claudeUnsaved')}</div>` : ''}`,
     actions: jobButton('job-open', j.id, 'jobOpen', 'btn-primary') + jobButton('job-dismiss', j.id, 'jobDismiss')
   }),
   error: jobFailedView,
@@ -2816,6 +3032,12 @@ function tickJobTimers() {
     const job = state.jobs.find(j => j.id === el.dataset.elapsed);
     if (job) el.textContent = elapsedSeconds(job) + 's';
   });
+  if (IS_CLAUDE) {
+    $$('[data-slow]').forEach(el => {
+      const job = state.jobs.find(j => j.id === el.dataset.slow);
+      if (job) el.classList.toggle('hidden', elapsedSeconds(job) <= CONFIG.claude.slowSeconds);
+    });
+  }
 }
 
 /** Key status: an amber dot on the ⋯ button when no key is set, plus a word in the menu. */
@@ -2960,7 +3182,7 @@ function submitAnalysis() {
   state.jobs.push(job);
   photos.saveForJob(job, state.keptImages.filter(Boolean));
   $('#mealNoteInput').value = ''; clearAllImages(); mealTime.reset();
-  persistJobs(); renderJobs(); toast(t('jobQueued'));
+  persistJobs(); renderJobs(); if (!IS_CLAUDE) toast(t('jobQueued'));   // the Claude build's card says it already
   runJob(job);
 }
 
@@ -2995,12 +3217,12 @@ const abortableDelay = (ms, signal) => new Promise((resolve, reject) => {
   signal.addEventListener('abort', () => { clearTimeout(id); reject(new DOMException('Aborted', 'AbortError')); }, { once: true });
 });
 
-async function analyzeJob(job, { apiKey, model, signal, rec, mode = 'standard', backups }) {
+async function analyzeJob(job, { apiKey, model, signal, rec, mode = 'standard', backups, onStage }) {
   if (!apiKey) {
     await abortableDelay(650, signal);
     return demoAnalysis(job.note, Math.max(1, job.images.length));
   }
-  if (mode === 'precise') return analyzePrecise({ key: apiKey, model, job, signal, rec, backups });
+  if (mode === 'precise') return analyzePrecise({ key: apiKey, model, job, signal, rec, backups, onStage });
   const prompt = buildNutritionPrompt({ lang: job.lang, imageCount: job.images.length, note: job.note, refs: job.refs || [] });
   const parts = [{ text: prompt.user }, ...job.images.map(dataUrlToPart)];
   return gemini.generateWithFallback({ key: apiKey, model, parts, system: prompt.system, signal, rec, backups });
@@ -3021,11 +3243,11 @@ async function runJob(job) {
   const timeout = armTimeout(() => ctrl.abort('TIMEOUT'), jobTimeoutMs(mode));
 
   try {
-    const result = await analyzeJob(job, { apiKey, model, signal: ctrl.signal, rec, mode });
+    const result = await analyzeJob(job, { apiKey, model, signal: ctrl.signal, rec, mode, onStage: n => { job.stage = n; renderJobs(); } });
     job.result = {
       name: String(result.name || '').slice(0, 120), reasoning: String(result.reasoning || ''), angleCount: job.images.length,
       refCount: job.refs?.length || 0,
-      modelUsed: result.modelUsed, meta: result.meta, isDemo: !!result.isDemo, precise: !!result.precise,
+      modelUsed: result.modelUsed, meta: result.meta, isDemo: !!result.isDemo, precise: !!result.precise, totalMs: Date.now() - startedAt,
       items: result.items.map(({ name, weight, cal, p, c, f, src, range }) => ({ name, weight, cal, p, c, f, ...(src ? { src, range } : {}) }))
     };
     Object.assign(job, { status: 'done', finishedAt: Date.now() });
@@ -3062,7 +3284,7 @@ function openJobResult(id, el) {
   if (current?.dirty && current.jobId !== id && el) return confirmTwice(el, 'discardEdits', () => openJobResult(id));
   const r = job.result;
   state.analysis = {
-    name: r.name, reasoning: r.reasoning, angleCount: r.angleCount, refCount: r.refCount || 0, modelUsed: r.modelUsed, meta: r.meta,
+    name: r.name, reasoning: r.reasoning, angleCount: r.angleCount, refCount: r.refCount || 0, modelUsed: r.modelUsed, meta: r.meta, totalMs: r.totalMs,
     isDemo: r.isDemo, precise: !!r.precise,
     jobId: job.id, date: job.date, time: job.time, dirty: false, items: r.items.map(toEditableItem),
     photoId: (job.imageInfo?.length || job.images.length) ? job.id : undefined,     // photos were kept under the job id
@@ -3518,13 +3740,13 @@ function seedDemo({ withProfile = false } = {}) {
   if (withProfile) { db.saveCalcProfile(DEMO_CALC); db.resetGoals(DEMO_GOALS); }
 }
 /** First visit gets demo data; later visits only backfill missing goals. */
-function initData() {
+function initData({ unknownUser = false } = {}) {
   restoreJobs();
   runMigrations().forEach(n => setTimeout(() => toast(t(n.key, n.vars)), 900));
   const firstVisit = !store.has(STORAGE_KEYS.weights) && !store.has(STORAGE_KEYS.meals);
-  const isNewUser = firstVisit && store.str(STORAGE_KEYS.cleared) !== 'true';
+  const isNewUser = firstVisit && store.str(STORAGE_KEYS.cleared) !== 'true' && !unknownUser;
   // Existing users (any stored data) never see the onboarding; new users get demo data plus the welcome screen.
-  if (!store.has(STORAGE_KEYS.onboarding)) onboarding.save({ status: isNewUser ? 'new' : 'done', step: 0 });
+  if (!store.has(STORAGE_KEYS.onboarding) && !unknownUser) onboarding.save({ status: isNewUser ? 'new' : 'done', step: 0 });
   if (isNewUser) seedDemo({ withProfile: true });
   else if (!store.has(STORAGE_KEYS.goals)) db.resetGoals(goalsFromMacros(computeMacros(db.calcProfile())), db.firstRecordedDate());
   // The current goals may have been changed by a version without goal history (e.g. the site was
@@ -3554,14 +3776,16 @@ function exportCSV() {
   const cell = v => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
   const rows = [['Date', 'Time', 'Meal', 'Angles', 'Calories(kcal)', 'Protein(g)', 'Carbs(g)', 'Fat(g)', 'Items'],
     ...db.meals().map(m => [m.date, m.time, m.name, m.angleCount, m.cal, m.p, m.c, m.f, m.items.map(i => `${i.name}(${Math.round(i.weight)}g)`).join('; ')])];
-  download(new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' }), `NutriLens_${todayStr()}.csv`);
-  toast(t('csvDone'));
+  download(new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' }), `NutriLens_${todayStr()}.csv`)
+    .then(ok => { if (ok) toast(t('csvDone')); });
 }
 /** Claude build: whether the records reach the cloud copy, with the reason when they do not. */
 function renderCloudStatus() {
   const el = $('#cloudStatus'); if (!el || !IS_CLAUDE) return;
   el.classList.remove('hidden');
-  el.textContent = cloud.col && !cloud.failed ? t('cloudOn') : t('cloudOff', { why: cloud.why || '?' });
+  const why = { 'no-db': 'cloudWhyNoDb', 'no-user': 'cloudWhyNoDb', 'no-id': 'cloudWhyNoDb', timeout: 'cloudWhyTimeout',
+    'no-runtime': 'cloudWhyNoRuntime' }[cloud.why];
+  el.textContent = cloud.col && !cloud.failed ? t('cloudOn') : t('cloudOff', { why: why ? t(why) : t('cloudWhyOther', { code: cloud.why || '?' }) });
 }
 /** "Last backup: 10/20" under the backup buttons. */
 function renderBackupStatus() {
@@ -3580,11 +3804,12 @@ async function exportJSON() {
     favorites: db.favs(), scaleRefs: db.scaleRefs(), scaleRefsOn: db.scaleRefsOn(), suggestPrefs: suggestPrefs(), exportedAt: new Date().toISOString(),
     photos: await photos.exportFor(meals.filter(m => !m.demo).map(m => m.photoId))
   };
-  const save = () => {
-    download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `NutriLens_Backup_${todayStr()}.json`);
-    store.setStr(STORAGE_KEYS.lastBackup, todayStr());
-    toast(t('backupDone')); renderBanner(); renderBackupStatus();
-  };
+  const save = () => download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `NutriLens_Backup_${todayStr()}.json`)
+    .then(ok => {                  // only a file that was really handed over counts as a backup
+      if (!ok) return;
+      store.setStr(STORAGE_KEYS.lastBackup, todayStr());
+      toast(t('backupDone')); renderBanner(); renderBackupStatus();
+    });
   // Reading many photos can outlast the tap's permission to download (iOS allows about a second): then ask for a second tap.
   if (Date.now() - started < 800) save();
   else toast(t('backupReady'), 'success', { label: t('backupSave'), run: save });
@@ -3633,7 +3858,7 @@ async function copyDiagnostics() {
   const records = perfLog.all(); if (!records.length) return toast(t('logEmpty'), 'error');
   const text = JSON.stringify([...records].reverse(), null, 2);     // newest first: survives a truncated paste
   try { await navigator.clipboard.writeText(text); toast(t('logCopied', { n: records.length })); }
-  catch { download(new Blob([text], { type: 'application/json' }), `NutriLens_diag_${todayStr()}.json`); toast(t('logDownloaded')); }
+  catch { download(new Blob([text], { type: 'application/json' }), `NutriLens_diag_${todayStr()}.json`).then(ok => ok && toast(t('logDownloaded'))); }
 }
 
 /* 10.9 API settings */
@@ -3749,7 +3974,7 @@ const BANNER_STATES = [
   // No key: analysis results are only the demo engine's.
   () => !db.apiKey() && { text: 'bannerNoKey', actions: [['open-modal', 'bannerSetKey', 'btn-primary', 'apiModal']] },
   // Real records exist but have not been backed up for a while (they live only on this device).
-  () => { const r = backupReminder(); return r && { text: r.never ? 'bannerBackupNever' : 'bannerBackup', vars: r,
+  () => { const r = !(IS_CLAUDE && cloud.col) && backupReminder(); return r && { text: r.never ? 'bannerBackupNever' : 'bannerBackup', vars: r,
     actions: [['export-json', 'bannerBackupNow', 'btn-primary'], ['snooze-backup', 'bannerLater', 'btn-soft']] }; },
   // The weight moved enough since the goals were calculated that they no longer fit.
   () => { const r = recalcReminder(); return r && { text: 'bannerRecalc', vars: r,
@@ -4196,7 +4421,7 @@ function renderValidation() {
             ${VAL_RUNS.map(n => `<option value="${n}" ${n === 3 ? 'selected' : ''}>${n}</option>`).join('')}
           </select></label>
       </div>
-      <p class="text-xs text-slate-500">${t('valModelNote', { m: db.model() })}</p>
+      <p class="text-xs text-slate-500">${t('valModelNote', { m: IS_CLAUDE ? claudeAI.label(db.model(), true) : db.model() })}</p>
       <p id="valCost" class="text-xs text-slate-500"></p>
       ${running
         ? `<div class="flex items-center gap-2 text-sm">${icon('loader', 'animate-spin text-emerald-600')}
@@ -4228,7 +4453,8 @@ function renderValidation() {
 function updateValidationCost() {
   const el = $('#valCost'); if (!el) return;
   const runs = Number($('#valRuns')?.value || 3), std = $('#valStd')?.checked, pre = $('#valPre')?.checked;
-  el.textContent = t('valCost', { main: runs * ((std ? 1 : 0) + (pre ? 1 : 0)), lite: pre ? runs * 2 : 0 });
+  el.textContent = t(IS_CLAUDE ? 'claudeValCost' : 'valCost', { main: runs * ((std ? 1 : 0) + (pre ? 1 : 0)), lite: pre ? runs * 2 : 0,
+    n: runs * ((std ? 1 : 0) + (pre ? 3 : 0)) });
 }
 function openValidation() { modal.close(); renderValidation(); modal.open('validateModal'); }
 async function onValidationPhoto(el) {
@@ -4662,9 +4888,16 @@ function bindEvents() {
 let appReady = null;
 const appBooted = new Promise(r => { appReady = r; });
 window.addEventListener('DOMContentLoaded', async () => {
-  if (IS_CLAUDE) await cloud.start();       // the records come from the viewer's cloud copy before anything renders
+  let offline = false;
+  if (IS_CLAUDE) {                          // the records come from the viewer's cloud copy before anything renders
+    offline = (await cloud.start()) === 'offline';
+    lang = store.str(STORAGE_KEYS.lang, 'zh') === 'en' ? 'en' : 'zh';   // the language may have come from the cloud
+  }
   renderStaticTemplates();
-  initData();
+  // Offline without knowing the cloud: start-up defaults are not changes, and nobody is greeted as a new user.
+  cloud.quiet = offline;
+  initData({ unknownUser: offline });
+  cloud.quiet = false;
   $('#selectedDate').value = todayStr();
   mealTime.reset();
   bindEvents();
