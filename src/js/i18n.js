@@ -1093,6 +1093,8 @@ const I18N_CLAUDE = {
     downloadFail: '無法下載檔案。',
     cloudFail: '雲端同步失敗，紀錄暫時只存在這台裝置；之後會自動再試。',
     cloudOffline: '無法連上雲端紀錄，這次的變更只會存在這台裝置；下次開啟時會再同步。',
+    cloudOn: '雲端同步：已連線，紀錄會存在你的 Claude 帳號。',
+    cloudOff: '雲端同步：未連線（{why}），紀錄只存在這台裝置。',
     cloudFull: '雲端空間已滿，新的紀錄暫時只存在這台裝置。',
     claudeModelHint: '主分析用這個模型；兩次份量重估固定用 Claude 預設。Opus 較準但較慢、用量較多；選的模型無法使用時會自動改用同級模型。'
   },
@@ -1110,6 +1112,8 @@ const I18N_CLAUDE = {
     downloadFail: 'The file could not be downloaded.',
     cloudFail: 'Cloud sync failed; records are on this device only for now. It will retry.',
     cloudOffline: 'Cloud records cannot be reached; changes this time stay on this device and sync next time.',
+    cloudOn: 'Cloud sync: connected; records are kept in your Claude account.',
+    cloudOff: 'Cloud sync: not connected ({why}); records are on this device only.',
     cloudFull: 'Cloud storage is full; new records are on this device only for now.',
     claudeModelHint: 'The main analysis uses this model; the two portion re-estimates always use Claude default. Opus is more accurate but slower and uses more of your limit; an unavailable model falls back to its tier.'
   }

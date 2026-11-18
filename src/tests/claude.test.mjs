@@ -22,8 +22,8 @@ function claudeApp({ reply, storage = {}, cloudDocs = {} } = {}) {
       get: async () => ({ docs: [...docs].filter(([p]) => p.startsWith(base + '/')).map(([p, b]) => ({ id: p.slice(base.length + 1), data: () => b })) })
     })
   };
-  const use = async name => ({ sample, db, user: { id: async () => 'u1' } }[name] ?? null);
-  const app = loadApp({ storage, globals: { NUTRILENS_PROVIDER: 'claude', claude: { use } } });
+  const claude = { async use(name) { if (this !== claude) throw new TypeError('Illegal invocation'); return { sample, db, user: { id: async () => 'u1' } }[name] ?? null; } };
+  const app = loadApp({ storage, globals: { NUTRILENS_PROVIDER: 'claude', claude } });
   return { app, calls, docs, writes };
 }
 

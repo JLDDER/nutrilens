@@ -349,7 +349,7 @@ const store = {
  * Photos stay in this browser's IndexedDB.
  */
 const cloud = {
-  col: null, dirty: new Set(), timer: null, writing: false, sent: new Map(), failed: false,
+  col: null, dirty: new Set(), timer: null, writing: false, sent: new Map(), failed: false, why: '', lastOk: 0,
   skip: () => new Set([STORAGE_KEYS.jobs, STORAGE_KEYS.perfLog, STORAGE_KEYS.apiKey, STORAGE_KEYS.model,
     STORAGE_KEYS.suggestCache, STORAGE_KEYS.searchOff]),
   syncs(key) { return key.startsWith('nutrilens_') && !this.skip().has(key); },
@@ -393,8 +393,9 @@ const cloud = {
           this.sent.set(id, body.v);
         }
       }
-      this.failed = false;
+      this.failed = false; this.lastOk = Date.now(); this.why = '';
     } catch (e) {
+      this.why = String(e?.code || e?.message || e).slice(0, 60);
       keys.forEach(k => this.dirty.add(k));
       if (!this.failed) { this.failed = true; toast(t(e?.code === 'quota_exceeded' ? 'cloudFull' : 'cloudFail'), 'error'); }
       clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 30_000);
@@ -415,11 +416,12 @@ const cloud = {
   async start() {
     let late = false;
     const work = (async () => {
-      const use = globalThis.claude?.use;
-      if (!use) return;
-      const [db, user] = await Promise.all([use('db'), use('user')]);
-      const id = db && user ? await user.id() : null;
-      if (!id) return;
+      if (!globalThis.claude?.use) { this.why = 'no-runtime'; return; }
+      // Called on window.claude itself: use() is a method of the runtime and fails when detached from it.
+      const [db, user] = await Promise.all([globalThis.claude.use('db'), globalThis.claude.use('user')]);
+      if (!db || !user) { this.why = !db ? 'no-db' : 'no-user'; return; }
+      const id = await user.id();
+      if (!id) { this.why = 'no-id'; return; }
       const col = db.collection(`data/users/${id}/kv`);
       const snap = await col.get();
       if (late) return;
@@ -452,9 +454,9 @@ const cloud = {
       }
       mergedKeys.forEach(k => { this.stamp(k, Date.now()); this.dirty.add(k); });
       this.flush();
-    })().catch(() => {});
+    })().catch(e => { this.why = String(e?.code || e?.message || e).slice(0, 60); console.warn('[NutriLens] cloud', e); });
     await Promise.race([work, new Promise(r => setTimeout(r, 12_000))]);
-    if (!this.col) { late = true; toast(t('cloudOffline'), 'error'); }
+    if (!this.col) { late = true; this.why ||= 'timeout'; toast(t('cloudOffline'), 'error'); }
   }
 };
 if (IS_CLAUDE) document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') cloud.flush(); });
@@ -3546,8 +3548,15 @@ function exportCSV() {
   download(new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' }), `NutriLens_${todayStr()}.csv`);
   toast(t('csvDone'));
 }
+/** Claude build: whether the records reach the cloud copy, with the reason when they do not. */
+function renderCloudStatus() {
+  const el = $('#cloudStatus'); if (!el || !IS_CLAUDE) return;
+  el.classList.remove('hidden');
+  el.textContent = cloud.col && !cloud.failed ? t('cloudOn') : t('cloudOff', { why: cloud.why || '?' });
+}
 /** "Last backup: 10/20" under the backup buttons. */
 function renderBackupStatus() {
+  renderCloudStatus();
   const el = $('#backupStatus'); if (!el) return;
   const last = store.str(STORAGE_KEYS.lastBackup);
   if (!DATE_RE.test(last)) { el.textContent = t('backupNever'); return; }

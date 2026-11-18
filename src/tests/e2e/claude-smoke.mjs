@@ -46,7 +46,8 @@ function installFake(cloudDocs) {
   const db = { collection: base => ({ doc: id => ref(`${base}/${id}`),
     get: async () => ({ docs: [...docs].filter(([p]) => p.startsWith(base + '/')).map(([p, b]) => ({ id: p.slice(base.length + 1), data: () => b })) }) }) };
   const caps = { sample, db, user: { id: async () => 'u1' }, downloads: { save: async r => { fake.saves.push(r.filename); return { status: 'saved' }; } } };
-  window.claude = { use: name => new Promise(r => setTimeout(() => r(caps[name] ?? null), 30)) };
+  // Like the real runtime, use() only works as a method of window.claude.
+  window.claude = { use(name) { if (this !== window.claude) throw new TypeError('Illegal invocation'); return new Promise(r => setTimeout(() => r(caps[name] ?? null), 30)); } };
 }
 
 const KV = 'data/users/u1/kv';
