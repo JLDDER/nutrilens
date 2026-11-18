@@ -3572,14 +3572,22 @@ function renderBackupStatus() {
   const n = daysBetween(last, todayStr());
   el.textContent = n === 0 ? t('backupToday') : t('backupLast', { d: last.slice(5).replace('-', '/'), n });
 }
-function exportJSON() {
+/** The backup file: every record, plus the photos of logged meals still on this device ({ id, date, images }). */
+async function exportJSON() {
+  const started = Date.now(), meals = db.meals();
   const data = {
-    goals: db.goals(), goalHistory: db.goalHistory(), calcProfile: db.calcProfile(), weights: db.weights(), meals: db.meals(),
-    favorites: db.favs(), scaleRefs: db.scaleRefs(), scaleRefsOn: db.scaleRefsOn(), suggestPrefs: suggestPrefs(), exportedAt: new Date().toISOString()
+    goals: db.goals(), goalHistory: db.goalHistory(), calcProfile: db.calcProfile(), weights: db.weights(), meals,
+    favorites: db.favs(), scaleRefs: db.scaleRefs(), scaleRefsOn: db.scaleRefsOn(), suggestPrefs: suggestPrefs(), exportedAt: new Date().toISOString(),
+    photos: await photos.exportFor(meals.filter(m => !m.demo).map(m => m.photoId))
   };
-  download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `NutriLens_Backup_${todayStr()}.json`);
-  store.setStr(STORAGE_KEYS.lastBackup, todayStr());
-  toast(t('backupDone')); renderBanner(); renderBackupStatus();
+  const save = () => {
+    download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `NutriLens_Backup_${todayStr()}.json`);
+    store.setStr(STORAGE_KEYS.lastBackup, todayStr());
+    toast(t('backupDone')); renderBanner(); renderBackupStatus();
+  };
+  // Reading many photos can outlast the tap's permission to download (iOS allows about a second): then ask for a second tap.
+  if (Date.now() - started < 800) save();
+  else toast(t('backupReady'), 'success', { label: t('backupSave'), run: save });
 }
 /** Restores a backup made by exportJSON. Each section is optional and sanitized. */
 function importJSON(file, onDone = null) {
@@ -3614,6 +3622,7 @@ function importJSON(file, onDone = null) {
         db.saveMeals(legacy ? linkMealsToFavoritesByName(meals, db.favs()) : meals);
       }
       if (pendingGoals) db.resetGoals(pendingGoals, db.firstRecordedDate());
+      if (Array.isArray(d.photos)) photos.importList(d.photos);     // backups since 2026-11-18 carry the meal photos
       store.setStr(STORAGE_KEYS.lastBackup, todayStr());           // what is stored now is also in that file
       modal.close(); toast(t('importOk')); renderAll(); onDone?.();
     } catch { toast(t('importBad'), 'error'); }

@@ -153,6 +153,27 @@ it('saving the analysis adds a meal to today', async browser => {
   return page;
 });
 
+it('backup carries the meal photos, and restoring it in an empty browser brings them back', async browser => {
+  const page = await freshPage(browser);
+  await analyse(page, body => (body.generationConfig.responseSchema.properties.items
+    ? { reasoning: 'r', name: '雞胸', packageKcal: 0, items: [item({ name: '雞胸' })] } : { estimates: [{ index: 1, geo: '', weight: 100, method: 'plain' }] }));
+  await page.click('[data-action="save-meal"]');
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('nutrilens_meals_v1') || '[]').some(m => m.name === '雞胸' && m.photoId));
+  const [download] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => exportJSON())]);
+  const file = path.join(OUT, 'backup.json');
+  await download.saveAs(file);
+  const backup = JSON.parse(readFileSync(file, 'utf8'));
+  const meal = backup.meals.find(m => m.name === '雞胸');
+  if (!backup.photos?.some(p => p.id === meal.photoId && p.images[0].startsWith('data:image/'))) throw new Error('no photo in the backup');
+  const fresh = await freshPage(browser, { nutrilens_meals_v1: '[]', nutrilens_cleared_flag_v1: 'true' });
+  await fresh.goto(BASE);
+  await fresh.evaluate(() => indexedDB.deleteDatabase('nutrilens_photos'));
+  await fresh.setInputFiles('#importFile', file);
+  await fresh.waitForFunction(id => photoStore.get(id).then(r => !!r?.images?.length), meal.photoId, { timeout: 10000 });
+  await page.close();
+  return fresh;
+});
+
 it('meal suggestions: request, nutrients computed by the app, no log button', async browser => {
   const page = await freshPage(browser);
   const food = over => ({ name: '雞胸', portion: '1 片', grams: 150, published: false, foodKey: '', method: 'plain', foodType: 'meat',

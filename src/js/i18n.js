@@ -136,7 +136,7 @@ const I18N = {
     photoUsage: '已保存 {n} 餐的照片（網站資料共約 {mb} MB）。',
     photoCount: '已保存 {n} 餐的照片。',
     photoUnavailable: '這個瀏覽器無法保存照片（例如無痕模式）。',
-    photoSafariHint: '照片只存在這台裝置，不會上傳，也不在 JSON 備份內。iPhone 建議「加入主畫面」使用，以免 Safari 久未開啟時清除資料。',
+    photoSafariHint: '照片只存在這台裝置，不會上傳；JSON 備份會一併包含照片（檔案會比較大）。iPhone 建議「加入主畫面」使用，以免 Safari 久未開啟時清除資料。',
     shareMeal: '分享這餐',
     shareDay: '分享這天的紀錄',
     shareMealHeading: '分享這餐',
@@ -158,6 +158,8 @@ const I18N = {
     weightDelete: '刪除這天的體重',
     weightDeleted: '已刪除 {d} 的體重',
     backupDone: '已下載備份檔，請存到雲端硬碟或傳給自己保管',
+    backupReady: '含照片的備份已準備好。',
+    backupSave: '儲存',
     backupLast: '上次備份：{d}（{n} 天前）',
     backupNever: '還沒有備份過',
     backupToday: '今天已備份',
@@ -668,7 +670,7 @@ const I18N = {
     photoUsage: 'Photos of {n} meals stored (site data about {mb} MB).',
     photoCount: 'Photos of {n} meals stored.',
     photoUnavailable: 'This browser cannot store photos (e.g. private mode).',
-    photoSafariHint: 'Photos stay on this device: never uploaded, not in the JSON backup. On iPhone, add the app to the Home Screen so Safari does not clear its data after a long break.',
+    photoSafariHint: 'Photos stay on this device and are never uploaded; the JSON backup includes them (a larger file). On iPhone, add the app to the Home Screen so Safari does not clear its data after a long break.',
     shareMeal: 'Share this meal',
     shareDay: 'Share this day',
     shareMealHeading: 'Share this meal',
@@ -690,6 +692,8 @@ const I18N = {
     weightDelete: 'Delete this day\'s weight',
     weightDeleted: 'Weight for {d} deleted',
     backupDone: 'Backup downloaded — keep it in cloud storage or send it to yourself',
+    backupReady: 'Backup with photos is ready.',
+    backupSave: 'Save',
     backupLast: 'Last backup: {d} ({n} days ago)',
     backupNever: 'Never backed up',
     backupToday: 'Backed up today',
@@ -1123,14 +1127,14 @@ const I18N_CLAUDE_REPLACE = {
     apiModalTitle: 'AI 模型', menuApiKey: 'AI 模型', apiModalDesc: '用你自己的 Claude 帳號分析，不需要金鑰。',
     suggestNoKey: '這個頁面要在 Claude 裡開啟才能產生建議。', keySet: 'Claude', bannerNoKey: '',
     obPrivacy: '紀錄和每餐的俯視照存在你的 Claude 帳號的私人空間（只有你看得到）；分析時照片會送給 Claude。',
-    photoSafariHint: '每餐的俯視照會縮小後存在你的 Claude 帳號（只有你看得到），換裝置或重開也看得到；側拍與營養標示照只用在分析。照片不在 JSON 備份內。',
+    photoSafariHint: '每餐的俯視照會縮小後存在你的 Claude 帳號（只有你看得到），換裝置或重開也看得到；側拍與營養標示照只用在分析。JSON 備份會一併包含這台裝置上的照片。',
     quotaExceeded: 'Claude 使用量已達上限或請求太頻繁，請稍後再按「重試」。', overloaded: 'Claude 暫時忙碌，請稍後再按「重試」。'
   },
   en: {
     apiModalTitle: 'AI model', menuApiKey: 'AI model', apiModalDesc: 'Analysis uses your own Claude account; no key is needed.',
     suggestNoKey: 'Open this page inside Claude to get suggestions.', keySet: 'Claude', bannerNoKey: '',
     obPrivacy: 'Records and each meal\'s top-view photo are kept in a private space of your Claude account (only you can see them); photos are sent to Claude for analysis.',
-    photoSafariHint: 'Each meal\'s top-view photo is kept, reduced, in your Claude account (only you can see it), so it shows on other devices and after reopening; side and label photos are only used for the analysis. Photos are not in the JSON backup.',
+    photoSafariHint: 'Each meal\'s top-view photo is kept, reduced, in your Claude account (only you can see it), so it shows on other devices and after reopening; side and label photos are only used for the analysis. The JSON backup includes the photos on this device.',
     quotaExceeded: 'Claude usage limit reached or too many requests. Press Retry later.', overloaded: 'Claude is busy. Press Retry in a moment.'
   }
 };

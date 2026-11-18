@@ -57,7 +57,7 @@ const photoStore = {
  * record), so photos of deleted or expired meals are removed without reading the collection.
  */
 const cloudPhotos = {
-  timer: null, running: false,
+  timer: null, running: false, again: false, pending: new Map(),          // pending: photos from a backup file, until they are sent
   col: () => (IS_CLAUDE ? cloud.photoCol : null),
   ids() { const v = store.get(STORAGE_KEYS.photoCloud, []); return Array.isArray(v) ? v.filter(x => typeof x === 'string') : []; },
   /** A JPEG data URL at most `px` on its long side. */
@@ -83,7 +83,8 @@ const cloudPhotos = {
   },
   /** Uploads the photos of logged meals not yet in the cloud and deletes those no longer wanted. One write at a time. */
   async sync() {
-    const col = this.col(); if (!col || this.running) return;
+    const col = this.col(); if (!col) return;
+    if (this.running) { this.again = true; return; }
     this.running = true;
     try {
       const cutoff = photoRetention() === 'days' ? shiftDate(todayStr(), -CONFIG.photos.retentionDays) : '';
@@ -91,19 +92,23 @@ const cloudPhotos = {
       const have = new Set(this.ids());
       for (const [id, date] of wanted) {
         if (have.has(id)) continue;
-        const images = await photoStore.get(id).then(r => r?.images || []).catch(() => []);
+        const stored = await photoStore.get(id).then(r => r?.images || []).catch(() => []);
+        const images = stored.length ? stored : cloudPhotos.pending.get(id) || [];
         if (!images.length) continue;                                  // not on this device: another device sends it
         let src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.7);
         if (src.length > 200_000) src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.45);
         await col.doc(id).set({ date, src });
-        have.add(id); store.set(STORAGE_KEYS.photoCloud, [...have]);
+        have.add(id); store.set(STORAGE_KEYS.photoCloud, [...have]); cloudPhotos.pending.delete(id);
       }
       for (const id of [...have]) {
         if (wanted.has(id)) continue;
         await col.doc(id).delete();
         have.delete(id); store.set(STORAGE_KEYS.photoCloud, [...have]);
       }
-    } catch (err) { console.warn('[NutriLens] cloud photos', err); } finally { this.running = false; }
+    } catch (err) { console.warn('[NutriLens] cloud photos', err); } finally {
+      this.running = false;
+      if (this.again) { this.again = false; this.sync(); }
+    }
   }
 };
 
@@ -160,6 +165,30 @@ const photos = {
       ids.forEach(id => photoCache.delete(id));
       renderAll();
     } catch { /* IndexedDB unavailable: nothing to prune */ }
+  },
+
+  /** For the backup file: the stored photos of these ids (missing ones are skipped). */
+  async exportFor(ids) {
+    const out = [];
+    for (const id of new Set(ids.filter(Boolean))) {
+      const rec = await photoStore.get(id).catch(() => null);
+      if (rec?.images?.length) out.push({ id, date: rec.date, images: rec.images });
+    }
+    return out;
+  },
+
+  /** From a backup file: photos are kept on this device; the Claude build also sends each logged meal's top view to
+   *  the cloud, from the file itself when this browser cannot store it. Anything malformed is skipped. */
+  async importList(list) {
+    const ok = p => typeof p?.id === 'string' && /^[\w-]{1,40}$/.test(p.id) && Array.isArray(p.images)
+      && p.images.length && p.images.every(src => typeof src === 'string' && src.startsWith('data:image/') && src.length < 4_000_000);
+    for (const p of list.filter(ok)) {
+      const rec = { id: p.id, date: DATE_RE.test(p.date) ? p.date : todayStr(), savedAt: Date.now(), images: p.images.slice(0, 3) };
+      photoCache.set(rec.id, rec.images);
+      if (IS_CLAUDE) cloudPhotos.pending.set(rec.id, rec.images);
+      await photoStore.put(rec).catch(() => {});
+    }
+    renderAll(); photos.scheduleCloudSync();
   },
 
   /** Claude build: after meals change, bring the cloud photos in line (a burst of changes makes one pass). */

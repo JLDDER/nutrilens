@@ -106,6 +106,22 @@ it('reopened with empty browser storage: the photo comes from the cloud; deletin
   return page;
 });
 
+it('a backup with photos is imported: the records and each meal\'s top view reach the cloud', async browser => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'zh-TW' });
+  page.on('pageerror', e => { page.errors = [...(page.errors || []), String(e)]; });
+  await page.addInitScript(installFake, { [`${KV}/nutrilens_onboarding_v1`]: { key: 'nutrilens_onboarding_v1', v: '{"status":"done"}', ts: 1 } });
+  await page.goto(BASE);
+  await page.waitForTimeout(800);
+  const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+  const src = 'data:image/jpeg;base64,' + PHOTO.toString('base64');
+  const backup = { meals: [{ id: 'm9', date: today, time: '12:00', name: '舊照片的一餐', angleCount: 2, cal: 500, p: 30, c: 50, f: 20, items: [], photoId: 'old1' }],
+    photos: [{ id: 'old1', date: today, images: [src, src] }] };
+  await page.setInputFiles('#importFile', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
+  await page.waitForFunction(() => String(window.__fake.docs.get('data/users/u1/photos/items/old1')?.src || '').startsWith('data:image/jpeg'), null, { timeout: 10000 });
+  await page.waitForFunction(() => document.querySelector('[data-photo-thumb="old1"] img')?.src.startsWith('data:image'), null, { timeout: 10000 });
+  return page;
+});
+
 it('settings: no key field, Opus can be chosen and is used for the main analysis', async browser => {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'zh-TW' });
   page.on('pageerror', e => { page.errors = [...(page.errors || []), String(e)]; });
