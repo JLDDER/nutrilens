@@ -17,9 +17,11 @@ function claudeApp({ reply, storage = {}, cloudDocs = {} } = {}) {
   const sample = async (prompt, opts) => { calls.push({ prompt, opts }); return reply(prompt, opts, calls.length); };
   const docRef = path => (mustBe(path, false, 'doc()'), {
     set: async body => { writes.push({ path, body }); docs.set(path, body); },
+    delete: async () => { writes.push({ path, deleted: true }); docs.delete(path); },
     get: async () => ({ exists: docs.has(path), data: () => docs.get(path) })
   });
   const db = {
+    doc: path => ({ ...docRef(path), collection: sub => db.collection(`${path}/${sub}`) }),
     collection: base => (mustBe(base, true, 'collection()'), {
       doc: id => docRef(`${base}/${id}`),
       get: async () => ({ docs: [...docs].filter(([p]) => p.startsWith(base + '/')).map(([p, b]) => ({ id: p.slice(base.length + 1), data: () => b })) })

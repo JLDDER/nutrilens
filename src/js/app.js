@@ -55,6 +55,7 @@ const STORAGE_KEYS = {
   analysisMode: 'nutrilens_analysis_mode_v1', // 'standard' | 'precise'
   validation: 'nutrilens_validation_v1',     // accuracy-test results (no photos)
   photoRetention: 'nutrilens_photo_retention_v1', // 'days' (delete after CONFIG.photos.retentionDays) | 'forever'
+  photoCloud: 'nutrilens_photo_cloud_v1',     // Claude build: ids of meal photos kept in the cloud (one small top view each)
   lastBackup: 'nutrilens_last_backup_v1',    // YYYY-MM-DD of the last JSON backup (or restore)
   reminders: 'nutrilens_reminders_v1',       // { backupSnoozedUntil, recalcSnoozedAt }: "Later" on the reminder banners
   scaleRefs: 'nutrilens_scale_refs_v1',      // [{ id, name, size }]: objects the user measured, ticked in photos for scale
@@ -115,7 +116,7 @@ const CONFIG = {
    *  print stays legible (1.5 g vs 15 g, 每份 vs 每 100 公克), and kept on the device at maxDim like the others. */
   image: { maxDim: 768, jpegQuality: 0.8, labelSlot: 2, labelMaxDim: 1280, labelJpegQuality: 0.85 },
   /** Meal photos are kept in IndexedDB; by default those older than retentionDays are deleted at startup. */
-  photos: { dbName: 'nutrilens_photos', retentionDays: 90 },
+  photos: { dbName: 'nutrilens_photos', retentionDays: 90, cloudPx: 512 },
   /** Share images: 1080 px wide; maxPixels keeps long day images under mobile canvas limits. */
   share: { maxPixels: 16_000_000, maxItems: 6, jpegQuality: 0.9 },
   jobs: { maxStored: 6 },
@@ -349,7 +350,7 @@ const store = {
  * Photos stay in this browser's IndexedDB.
  */
 const cloud = {
-  col: null, dirty: new Set(), timer: null, writing: false, sent: new Map(), failed: false, why: '', lastOk: 0,
+  col: null, photoCol: null, dirty: new Set(), timer: null, writing: false, sent: new Map(), failed: false, why: '', lastOk: 0,
   skip: () => new Set([STORAGE_KEYS.jobs, STORAGE_KEYS.perfLog, STORAGE_KEYS.apiKey, STORAGE_KEYS.model,
     STORAGE_KEYS.suggestCache, STORAGE_KEYS.searchOff]),
   syncs(key) { return key.startsWith('nutrilens_') && !this.skip().has(key); },
@@ -447,6 +448,7 @@ const cloud = {
         if (keepLocal) mergedKeys.push(key);
       }
       this.col = col;
+      this.photoCol = db.doc(`data/users/${id}/photos`).collection('items');   // apart from the records: not read at start
       for (const key of Object.values(STORAGE_KEYS)) {
         if (!this.syncs(key) || kv.get(key) === null && !byKey.has(key)) continue;
         const cloudTs = Math.max(0, ...(byKey.get(key) || []).map(d => Number(d.ts) || 0));
@@ -506,7 +508,11 @@ const isValidWeightEntry = w => DATE_RE.test(w?.date) && Number.isFinite(num(w?.
 /** Repository: the only place that knows how each collection is stored. */
 const db = {
   meals: () => store.get(STORAGE_KEYS.meals, []).map(sanitizeMeal),
-  saveMeals: list => store.set(STORAGE_KEYS.meals, list),
+  saveMeals(list) {
+    const ok = store.set(STORAGE_KEYS.meals, list);
+    if (IS_CLAUDE && typeof photos !== 'undefined') photos.scheduleCloudSync();   // the cloud keeps the photos of logged meals
+    return ok;
+  },
   addMeal(meal) { const all = db.meals(); all.push(meal); return db.saveMeals(all); },
   updateMeal: meal => db.saveMeals(db.meals().map(m => (m.id === meal.id ? meal : m))),
   deleteMeal: id => db.saveMeals(db.meals().filter(m => m.id !== id)),
@@ -4643,6 +4649,9 @@ function bindEvents() {
 }
 
 /* ── 12. Boot ───────────────────────────────────────────────────────── */
+/** Resolves when the boot below has finished; photos.js waits for it before touching photos (it needs the meals). */
+let appReady = null;
+const appBooted = new Promise(r => { appReady = r; });
 window.addEventListener('DOMContentLoaded', async () => {
   if (IS_CLAUDE) await cloud.start();       // the records come from the viewer's cloud copy before anything renders
   renderStaticTemplates();
@@ -4658,4 +4667,5 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (ob.status === 'new') openOnboarding('welcome');
   else if (ob.status === 'setup') openOnboarding(ob.step || 1);   // resume after leaving for AI Studio or a reload
   setInterval(clockTick, 1000);
+  appReady();
 });

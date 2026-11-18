@@ -1122,13 +1122,15 @@ const I18N_CLAUDE_REPLACE = {
   zh: {
     apiModalTitle: 'AI 模型', menuApiKey: 'AI 模型', apiModalDesc: '用你自己的 Claude 帳號分析，不需要金鑰。',
     suggestNoKey: '這個頁面要在 Claude 裡開啟才能產生建議。', keySet: 'Claude', bannerNoKey: '',
-    obPrivacy: '紀錄存在你的 Claude 帳號的私人空間（只有你看得到），照片只存在這台裝置，分析時送給 Claude。',
+    obPrivacy: '紀錄和每餐的俯視照存在你的 Claude 帳號的私人空間（只有你看得到）；分析時照片會送給 Claude。',
+    photoSafariHint: '每餐的俯視照會縮小後存在你的 Claude 帳號（只有你看得到），換裝置或重開也看得到；側拍與營養標示照只用在分析。照片不在 JSON 備份內。',
     quotaExceeded: 'Claude 使用量已達上限或請求太頻繁，請稍後再按「重試」。', overloaded: 'Claude 暫時忙碌，請稍後再按「重試」。'
   },
   en: {
     apiModalTitle: 'AI model', menuApiKey: 'AI model', apiModalDesc: 'Analysis uses your own Claude account; no key is needed.',
     suggestNoKey: 'Open this page inside Claude to get suggestions.', keySet: 'Claude', bannerNoKey: '',
-    obPrivacy: 'Records are kept in a private space of your Claude account (only you can see them); photos stay on this device and are sent to Claude for analysis.',
+    obPrivacy: 'Records and each meal\'s top-view photo are kept in a private space of your Claude account (only you can see them); photos are sent to Claude for analysis.',
+    photoSafariHint: 'Each meal\'s top-view photo is kept, reduced, in your Claude account (only you can see it), so it shows on other devices and after reopening; side and label photos are only used for the analysis. Photos are not in the JSON backup.',
     quotaExceeded: 'Claude usage limit reached or too many requests. Press Retry later.', overloaded: 'Claude is busy. Press Retry in a moment.'
   }
 };

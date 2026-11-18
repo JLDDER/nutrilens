@@ -42,9 +42,10 @@ function installFake(cloudDocs) {
   const mustBe = (p, odd) => { if (p.split('/').length % 2 !== (odd ? 1 : 0)) throw new TypeError('db: bad segment count in ' + p); };
   const ref = p => (mustBe(p, false), {
     set: async body => { fake.writes.push(p); docs.set(p, JSON.parse(JSON.stringify(body))); },
+    delete: async () => { fake.writes.push('-' + p); docs.delete(p); },
     get: async () => ({ exists: docs.has(p), data: () => docs.get(p) })
   });
-  const db = { collection: base => (mustBe(base, true), { doc: id => ref(`${base}/${id}`),
+  const db = { doc: p => ({ ...ref(p), collection: sub => db.collection(`${p}/${sub}`) }), collection: base => (mustBe(base, true), { doc: id => ref(`${base}/${id}`),
     get: async () => ({ docs: [...docs].filter(([p]) => p.startsWith(base + '/')).map(([p, b]) => ({ id: p.slice(base.length + 1), data: () => b })) }) }) };
   const caps = { sample, db, user: { id: async () => 'u1' }, downloads: { save: async r => { fake.saves.push(r.filename); return { status: 'saved' }; } } };
   // Like the real runtime, use() only works as a method of window.claude.
@@ -79,6 +80,29 @@ it('records come from the cloud; analysis runs on Claude; the saved meal goes ba
   await page.click('[data-action="save-meal"]');
   await page.waitForFunction(() => [...window.__fake.docs.keys()].some(k => k.includes('nutrilens_meals_v1@')
     && window.__fake.docs.get(k).v.includes('去皮雞腿')), null, { timeout: 10000 });
+  // The meal's top view goes to the cloud photo collection, and its id to the synced list.
+  await page.waitForFunction(() => [...window.__fake.docs].some(([k, b]) => k.startsWith('data/users/u1/photos/items/')
+    && String(b.src).startsWith('data:image/jpeg')), null, { timeout: 10000 });
+  return page;
+});
+
+it('reopened with empty browser storage: the photo comes from the cloud; deleting the meal deletes it there', async browser => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'zh-TW' });
+  page.on('pageerror', e => { page.errors = [...(page.errors || []), String(e)]; });
+  const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+  const src = 'data:image/jpeg;base64,' + PHOTO.toString('base64');
+  await page.addInitScript(installFake, {
+    [`${KV}/nutrilens_onboarding_v1`]: { key: 'nutrilens_onboarding_v1', v: '{"status":"done"}', ts: 1 },
+    [`${KV}/nutrilens_goal_history_v1`]: { key: 'nutrilens_goal_history_v1', v: '[{"from":"2026-01-01","cal":2000,"p":120,"c":200,"f":60}]', ts: 1 },
+    [`${KV}/nutrilens_meals_v1@${today.slice(0, 7)}`]: { key: 'nutrilens_meals_v1', ts: 1,
+      v: JSON.stringify([{ id: 'm1', date: today, time: '07:00', name: '有照片的一餐', angleCount: 1, cal: 300, p: 20, c: 30, f: 10, items: [], photoId: 'job1' }]) },
+    [`${KV}/nutrilens_photo_cloud_v1`]: { key: 'nutrilens_photo_cloud_v1', v: '["job1"]', ts: 1 },
+    'data/users/u1/photos/items/job1': { date: today, src }
+  });
+  await page.goto(BASE);
+  await page.waitForFunction(() => document.querySelector('[data-photo-thumb="job1"] img')?.src.startsWith('data:image'), null, { timeout: 15000 });
+  await page.evaluate(() => deleteMeal('m1'));
+  await page.waitForFunction(() => !window.__fake.docs.has('data/users/u1/photos/items/job1'), null, { timeout: 10000 });
   return page;
 });
 

@@ -49,12 +49,76 @@ const photoStore = {
   clear: () => photoStore.run('readwrite', s => s.clear())
 };
 
+/**
+ * Claude build: the artifact's browser storage may be emptied when the app is reopened, so each logged meal's top
+ * view is also kept in the viewer's private cloud collection data/users/<id>/photos/items/<photoId>, shrunk to
+ * CONFIG.photos.cloudPx (about 40 KB; documents may hold 256 KiB, the whole database 100 MB). Side views and labels
+ * are only needed for the analysis. The ids kept there are listed in STORAGE_KEYS.photoCloud (synced like any
+ * record), so photos of deleted or expired meals are removed without reading the collection.
+ */
+const cloudPhotos = {
+  timer: null, running: false,
+  col: () => (IS_CLAUDE ? cloud.photoCol : null),
+  ids() { const v = store.get(STORAGE_KEYS.photoCloud, []); return Array.isArray(v) ? v.filter(x => typeof x === 'string') : []; },
+  /** A JPEG data URL at most `px` on its long side. */
+  shrink: (src, px, quality) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, px / Math.max(img.width, img.height));
+      const c = Object.assign(document.createElement('canvas'), { width: Math.round(img.width * k), height: Math.round(img.height * k) });
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject; img.src = src;
+  }),
+  async fetch(id) {
+    const col = this.col(); if (!col) return [];
+    try {
+      const snap = await col.doc(id).get();
+      const src = snap.exists ? snap.data()?.src : '';
+      if (typeof src !== 'string' || !src.startsWith('data:image/')) return [];
+      photoStore.put({ id, date: snap.data().date || todayStr(), savedAt: Date.now(), images: [src] }).catch(() => {});
+      return [src];
+    } catch { return []; }
+  },
+  /** Uploads the photos of logged meals not yet in the cloud and deletes those no longer wanted. One write at a time. */
+  async sync() {
+    const col = this.col(); if (!col || this.running) return;
+    this.running = true;
+    try {
+      const cutoff = photoRetention() === 'days' ? shiftDate(todayStr(), -CONFIG.photos.retentionDays) : '';
+      const wanted = new Map(db.meals().filter(m => m.photoId && !m.demo && m.date >= cutoff).map(m => [m.photoId, m.date]));
+      const have = new Set(this.ids());
+      for (const [id, date] of wanted) {
+        if (have.has(id)) continue;
+        const images = await photoStore.get(id).then(r => r?.images || []).catch(() => []);
+        if (!images.length) continue;                                  // not on this device: another device sends it
+        let src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.7);
+        if (src.length > 200_000) src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.45);
+        await col.doc(id).set({ date, src });
+        have.add(id); store.set(STORAGE_KEYS.photoCloud, [...have]);
+      }
+      for (const id of [...have]) {
+        if (wanted.has(id)) continue;
+        await col.doc(id).delete();
+        have.delete(id); store.set(STORAGE_KEYS.photoCloud, [...have]);
+      }
+    } catch (err) { console.warn('[NutriLens] cloud photos', err); } finally { this.running = false; }
+  }
+};
+
 /** Loaded photos by id ([] = known to be missing), so re-renders never hit IndexedDB again. */
 const photoCache = new Map();
 async function loadPhotos(id) {
   if (!id) return [];
   if (!photoCache.has(id)) {
-    try { photoCache.set(id, (await photoStore.get(id))?.images || []); } catch { return []; }
+    let images = [];
+    try { images = (await photoStore.get(id))?.images || []; } catch { if (!IS_CLAUDE) return []; }
+    if (!images.length && IS_CLAUDE) {
+      if (!cloud.photoCol) return [];                                  // not connected yet: try again on the next render
+      images = await cloudPhotos.fetch(id);
+    }
+    photoCache.set(id, images);
   }
   return photoCache.get(id);
 }
@@ -98,6 +162,12 @@ const photos = {
     } catch { /* IndexedDB unavailable: nothing to prune */ }
   },
 
+  /** Claude build: after meals change, bring the cloud photos in line (a burst of changes makes one pass). */
+  scheduleCloudSync() {
+    if (!IS_CLAUDE) return;
+    clearTimeout(cloudPhotos.timer); cloudPhotos.timer = setTimeout(() => cloudPhotos.sync(), 1000);
+  },
+
   /** "Delete all data". */
   clear() { photoCache.clear(); return photoStore.clear().catch(() => {}); },
 
@@ -115,6 +185,7 @@ const photos = {
   onRetentionChange(el) {
     store.setStr(STORAGE_KEYS.photoRetention, el.value === 'forever' ? 'forever' : 'days');
     (el.value === 'forever' ? Promise.resolve() : photos.prune()).then(photos.renderSettings);
+    photos.scheduleCloudSync();
   }
 };
 
@@ -399,7 +470,7 @@ Object.assign(CHANGE_HANDLERS, {
 document.addEventListener('keydown', e => {
   if (modal.isOpen('photoModal') && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) stepPhoto(e.key === 'ArrowLeft' ? -1 : 1);
 });
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   // Swipe left / right between angles, swipe down to close. Ignored while zoomed, where a swipe pans the image.
   const scroller = $('#photoScroller');
   scroller.addEventListener('touchstart', e => {
@@ -412,5 +483,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (Math.abs(dx) > SWIPE_MIN_PX && Math.abs(dx) > Math.abs(dy)) stepPhoto(dx < 0 ? 1 : -1);
     else if (dy > SWIPE_MIN_PX * 2) modal.close();
   }, { passive: true });
-  photos.prune();                                                 // after app.js's boot (listeners run in order)
+  await appBooted;                     // pruning needs the meals, which the Claude build reads from the cloud first
+  await photos.prune();
+  photos.scheduleCloudSync();
 });
