@@ -15,10 +15,11 @@
 
   <!-- Apply the saved theme before first paint to avoid a light flash. The key must match STORAGE_KEYS.theme. -->
   <script>
-    try {
-      var th = localStorage.getItem('nutrilens_theme_v1') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      document.documentElement.classList.toggle('dark', th === 'dark');
-    } catch (e) {}
+    // Storage may be blocked (the Claude artifact frame): then the device's setting decides.
+    var th = null;
+    try { th = localStorage.getItem('nutrilens_theme_v1'); } catch (e) {}
+    try { th = th || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) {}
+    document.documentElement.classList.toggle('dark', th === 'dark');
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -26,7 +27,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 
-  <style>*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com*/*,:after,:before{border:0 solid #e5e7eb;box-sizing:border-box}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-tap-highlight-color:transparent}body{line-height:inherit;margin:0}hr{border-top-width:1px;color:inherit;height:0}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-size:1em;font-variation-settings:normal}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{border-collapse:collapse;border-color:inherit;text-indent:0}button,input,optgroup,select,textarea{color:inherit;font-family:inherit;font-feature-settings:inherit;font-size:100%;font-variation-settings:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{color:#9ca3af;opacity:1}input::placeholder,textarea::placeholder{color:#9ca3af;opacity:1}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{height:auto;max-width:100%}[hidden]:where(:not([hidden=until-found])){display:none}.container{width:100%}@media (min-width:640px){.container{max-width:640px}}@media (min-width:768px){.container{max-width:768px}}@media (min-width:1024px){.container{max-width:1024px}}@media (min-width:1280px){.container{max-width:1280px}}@media (min-width:1536px){.container{max-width:1536px}}.card{border-radius:1rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:1.25rem;--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow);transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1)}.card:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(22 22 24/var(--tw-bg-opacity,1))}.panel{border-radius:.75rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.panel:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.field{border-radius:.5rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));font-size:.875rem;line-height:1.25rem;padding:.375rem .625rem;--tw-text-opacity:1;color:rgb(30 41 59/var(--tw-text-opacity,1))}.field:focus{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1));outline:2px solid transparent;outline-offset:2px}.field:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}.btn{align-items:center;border-radius:.5rem;display:inline-flex;font-size:.875rem;font-weight:500;gap:.375rem;justify-content:center;line-height:1.25rem;padding:.5rem .75rem;transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1)}.btn:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.btn:disabled{opacity:.6;pointer-events:none}.btn-primary{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.btn-primary:hover{--tw-bg-opacity:1;background-color:rgb(4 120 87/var(--tw-bg-opacity,1))}.btn-outline{border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.btn-outline:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.btn-outline:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.btn-outline:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.btn-soft{border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.btn-soft:hover{--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1))}.btn-soft:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.btn-soft:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.btn-danger{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.btn-danger:hover{--tw-bg-opacity:1;background-color:rgb(190 18 60/var(--tw-bg-opacity,1))}.icon-btn{align-items:center;border-radius:.5rem;border-width:1px;display:inline-flex;height:2.25rem;justify-content:center;width:2.25rem;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1)}.icon-btn:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.icon-btn:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.icon-btn:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.icon-btn:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.modal{align-items:center;background-color:rgba(2,6,23,.7);display:none;inset:0;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:.75rem;position:fixed;z-index:50;--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}@media (min-width:640px){.modal{padding:1rem}}.modal.\!open,.modal.open{display:flex}.modal-panel{margin-bottom:auto;margin-top:auto;max-height:94vh;width:100%}.modal-panel>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(1rem*var(--tw-space-y-reverse));margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)))}.modal-panel{border-radius:1rem;border-width:1px;overflow-y:auto;overscroll-behavior:contain;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:1.25rem;--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1));--tw-shadow:0 25px 50px -12px rgba(0,0,0,.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.modal-panel:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(22 22 24/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}@media (min-width:640px){.modal-panel{padding:1.5rem}}.tab-btn{border-radius:.75rem;font-size:.875rem;font-weight:500;line-height:1.25rem;padding:.5rem 1rem;--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1));transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1)}.tab-btn:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.tab-btn:is(.dark *){--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.tab-btn:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.tab-btn[aria-selected=true]{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1));font-weight:700;--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.tab-btn[aria-selected=true]:hover{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.tab-btn[aria-selected=true]:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.range-btn{border-radius:.375rem;font-size:.75rem;font-weight:500;line-height:1rem;padding:.125rem .5rem;--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1));transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1)}.range-btn:hover{background-color:rgba(226,232,240,.6)}.range-btn:is(.dark *){--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.range-btn:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.menu-item{align-items:center;display:flex;font-size:.875rem;gap:.75rem;line-height:1.25rem;padding:.625rem 1rem;text-align:left;width:100%}.menu-item:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.menu-item:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.range-btn[aria-pressed=true]{--tw-bg-opacity:1;background-color:rgb(209 250 229/var(--tw-bg-opacity,1));font-weight:600;--tw-text-opacity:1;color:rgb(6 95 70/var(--tw-text-opacity,1))}.range-btn[aria-pressed=true]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(2 44 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(110 231 183/var(--tw-text-opacity,1))}.sr-only{height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px;clip:rect(0,0,0,0);border-width:0;white-space:nowrap}.pointer-events-none{pointer-events:none}.pointer-events-auto{pointer-events:auto}.visible{visibility:visible}.invisible{visibility:hidden}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0}.inset-x-4{left:1rem;right:1rem}.-bottom-5{bottom:-1.25rem}.-top-5{top:-1.25rem}.bottom-0{bottom:0}.left-2{left:.5rem}.right-0{right:0}.right-1\.5{right:.375rem}.right-2{right:.5rem}.right-2\.5{right:.625rem}.top-1\.5{top:.375rem}.top-1\/2{top:50%}.top-2{top:.5rem}.top-3{top:.75rem}.z-10{z-index:10}.z-30{z-index:30}.z-40{z-index:40}.z-50{z-index:50}.z-\[55\]{z-index:55}.z-\[58\]{z-index:58}.z-\[60\]{z-index:60}.col-span-2{grid-column:span 2/span 2}.col-span-3{grid-column:span 3/span 3}.m-auto{margin:auto}.-mx-5{margin-left:-1.25rem;margin-right:-1.25rem}.mx-auto{margin-left:auto;margin-right:auto}.my-1{margin-bottom:.25rem;margin-top:.25rem}.my-auto{margin-bottom:auto;margin-top:auto}.-mb-5{margin-bottom:-1.25rem}.-mt-1{margin-top:-.25rem}.mb-1\.5{margin-bottom:.375rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.ml-1{margin-left:.25rem}.ml-1\.5{margin-left:.375rem}.ml-2{margin-left:.5rem}.ml-auto{margin-left:auto}.mr-0\.5{margin-right:.125rem}.mr-1{margin-right:.25rem}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-1\.5{margin-top:.375rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-5{margin-top:1.25rem}.block{display:block}.inline{display:inline}.flex{display:flex}.inline-flex{display:inline-flex}.table{display:table}.grid{display:grid}.contents{display:contents}.hidden{display:none}.h-1\.5{height:.375rem}.h-10{height:2.5rem}.h-11{height:2.75rem}.h-12{height:3rem}.h-14{height:3.5rem}.h-2{height:.5rem}.h-2\.5{height:.625rem}.h-20{height:5rem}.h-24{height:6rem}.h-32{height:8rem}.h-36{height:9rem}.h-4{height:1rem}.h-48{height:12rem}.h-7{height:1.75rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-auto{height:auto}.h-full{height:100%}.max-h-\[55vh\]{max-height:55vh}.max-h-\[90vh\]{max-height:90vh}.max-h-\[94vh\]{max-height:94vh}.max-h-full{max-height:100%}.min-h-0{min-height:0}.min-h-\[1\.25rem\]{min-height:1.25rem}.min-h-full{min-height:100%}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-11{width:2.75rem}.w-12{width:3rem}.w-14{width:3.5rem}.w-16{width:4rem}.w-2{width:.5rem}.w-2\.5{width:.625rem}.w-24{width:6rem}.w-3{width:.75rem}.w-32{width:8rem}.w-4{width:1rem}.w-6{width:1.5rem}.w-64{width:16rem}.w-7{width:1.75rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-\[7\.5rem\]{width:7.5rem}.w-auto{width:auto}.w-full{width:100%}.min-w-0{min-width:0}.max-w-2xl{max-width:42rem}.max-w-3xl{max-width:48rem}.max-w-5xl{max-width:64rem}.max-w-\[640px\]{max-width:640px}.max-w-full{max-width:100%}.max-w-lg{max-width:32rem}.max-w-md{max-width:28rem}.flex-1{flex:1 1 0%}.shrink{flex-shrink:1}.shrink-0{flex-shrink:0}.basis-40{flex-basis:10rem}.-translate-y-1\/2{--tw-translate-y:-50%;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite}@keyframes spin{to{transform:rotate(1turn)}}.animate-spin{animation:spin 1s linear infinite}.cursor-pointer{cursor:pointer}.cursor-zoom-in{cursor:zoom-in}.select-none{-webkit-user-select:none;-moz-user-select:none;user-select:none}.resize{resize:both}.scroll-mt-4{scroll-margin-top:1rem}.list-disc{list-style-type:disc}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid-cols-6{grid-template-columns:repeat(6,minmax(0,1fr))}.grid-cols-\[1fr_auto\]{grid-template-columns:1fr auto}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.items-baseline{align-items:baseline}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:.125rem}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-2\.5{gap:.625rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-5{gap:1.25rem}.gap-x-2{-moz-column-gap:.5rem;column-gap:.5rem}.gap-x-3{-moz-column-gap:.75rem;column-gap:.75rem}.gap-x-4{-moz-column-gap:1rem;column-gap:1rem}.gap-x-6{-moz-column-gap:1.5rem;column-gap:1.5rem}.gap-y-0\.5{row-gap:.125rem}.gap-y-1{row-gap:.25rem}.gap-y-2{row-gap:.5rem}.gap-y-3{row-gap:.75rem}.space-y-0\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(.125rem*var(--tw-space-y-reverse));margin-top:calc(.125rem*(1 - var(--tw-space-y-reverse)))}.space-y-1>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(.25rem*var(--tw-space-y-reverse));margin-top:calc(.25rem*(1 - var(--tw-space-y-reverse)))}.space-y-1\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(.375rem*var(--tw-space-y-reverse));margin-top:calc(.375rem*(1 - var(--tw-space-y-reverse)))}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(.5rem*var(--tw-space-y-reverse));margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)))}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(.75rem*var(--tw-space-y-reverse));margin-top:calc(.75rem*(1 - var(--tw-space-y-reverse)))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(1rem*var(--tw-space-y-reverse));margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)))}.space-y-5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(1.25rem*var(--tw-space-y-reverse));margin-top:calc(1.25rem*(1 - var(--tw-space-y-reverse)))}.overflow-auto{overflow:auto}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.overscroll-contain{overscroll-behavior:contain}.truncate{overflow:hidden;text-overflow:ellipsis}.truncate,.whitespace-nowrap{white-space:nowrap}.whitespace-pre-line{white-space:pre-line}.break-words{overflow-wrap:break-word}.rounded{border-radius:.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-md{border-radius:.375rem}.rounded-xl{border-radius:.75rem}.rounded-t-2xl{border-top-left-radius:1rem;border-top-right-radius:1rem}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-dashed{border-style:dashed}.\!border-emerald-400{--tw-border-opacity:1!important;border-color:rgb(52 211 153/var(--tw-border-opacity,1))!important}.border-amber-100{--tw-border-opacity:1;border-color:rgb(254 243 199/var(--tw-border-opacity,1))}.border-amber-200{--tw-border-opacity:1;border-color:rgb(253 230 138/var(--tw-border-opacity,1))}.border-amber-200\/60{border-color:hsla(48,97%,77%,.6)}.border-emerald-100{--tw-border-opacity:1;border-color:rgb(209 250 229/var(--tw-border-opacity,1))}.border-emerald-200{--tw-border-opacity:1;border-color:rgb(167 243 208/var(--tw-border-opacity,1))}.border-emerald-200\/60{border-color:rgba(167,243,208,.6)}.border-emerald-200\/80{border-color:rgba(167,243,208,.8)}.border-emerald-400{--tw-border-opacity:1;border-color:rgb(52 211 153/var(--tw-border-opacity,1))}.border-emerald-600{--tw-border-opacity:1;border-color:rgb(5 150 105/var(--tw-border-opacity,1))}.border-sky-200{--tw-border-opacity:1;border-color:rgb(186 230 253/var(--tw-border-opacity,1))}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1))}.border-slate-200\/70{border-color:rgba(226,232,240,.7)}.border-slate-200\/80{border-color:rgba(226,232,240,.8)}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1))}.border-transparent{border-color:transparent}.\!bg-black{--tw-bg-opacity:1!important;background-color:rgb(0 0 0/var(--tw-bg-opacity,1))!important}.bg-amber-100{--tw-bg-opacity:1;background-color:rgb(254 243 199/var(--tw-bg-opacity,1))}.bg-amber-50{--tw-bg-opacity:1;background-color:rgb(255 251 235/var(--tw-bg-opacity,1))}.bg-amber-500{--tw-bg-opacity:1;background-color:rgb(245 158 11/var(--tw-bg-opacity,1))}.bg-black\/50{background-color:rgba(0,0,0,.5)}.bg-emerald-100{--tw-bg-opacity:1;background-color:rgb(209 250 229/var(--tw-bg-opacity,1))}.bg-emerald-200\/70{background-color:rgba(167,243,208,.7)}.bg-emerald-400{--tw-bg-opacity:1;background-color:rgb(52 211 153/var(--tw-bg-opacity,1))}.bg-emerald-50{--tw-bg-opacity:1;background-color:rgb(236 253 245/var(--tw-bg-opacity,1))}.bg-emerald-50\/50{background-color:rgba(236,253,245,.5)}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.bg-indigo-100{--tw-bg-opacity:1;background-color:rgb(224 231 255/var(--tw-bg-opacity,1))}.bg-purple-100{--tw-bg-opacity:1;background-color:rgb(243 232 255/var(--tw-bg-opacity,1))}.bg-rose-50{--tw-bg-opacity:1;background-color:rgb(255 241 242/var(--tw-bg-opacity,1))}.bg-rose-500{--tw-bg-opacity:1;background-color:rgb(244 63 94/var(--tw-bg-opacity,1))}.bg-rose-600{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1))}.bg-sky-100{--tw-bg-opacity:1;background-color:rgb(224 242 254/var(--tw-bg-opacity,1))}.bg-sky-50{--tw-bg-opacity:1;background-color:rgb(240 249 255/var(--tw-bg-opacity,1))}.bg-sky-500{--tw-bg-opacity:1;background-color:rgb(14 165 233/var(--tw-bg-opacity,1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.bg-slate-200{--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1))}.bg-slate-300{--tw-bg-opacity:1;background-color:rgb(203 213 225/var(--tw-bg-opacity,1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.bg-slate-50\/60{background-color:rgba(248,250,252,.6)}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42/var(--tw-bg-opacity,1))}.bg-slate-900\/70{background-color:rgba(15,23,42,.7)}.bg-slate-950\/60{background-color:rgba(2,6,23,.6)}.bg-slate-950\/70{background-color:rgba(2,6,23,.7)}.bg-transparent{background-color:transparent}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1))}.bg-white\/90{background-color:hsla(0,0%,100%,.9)}.bg-white\/95{background-color:hsla(0,0%,100%,.95)}.bg-gradient-to-tr{background-image:linear-gradient(to top right,var(--tw-gradient-stops))}.from-emerald-600{--tw-gradient-from:#059669 var(--tw-gradient-from-position);--tw-gradient-to:rgba(5,150,105,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.to-teal-500{--tw-gradient-to:#14b8a6 var(--tw-gradient-to-position)}.object-contain{-o-object-fit:contain;object-fit:contain}.object-cover{-o-object-fit:cover;object-fit:cover}.\!p-0{padding:0!important}.p-0\.5{padding:.125rem}.p-2{padding:.5rem}.p-2\.5{padding:.625rem}.p-3{padding:.75rem}.p-3\.5{padding:.875rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.px-1{padding-left:.25rem;padding-right:.25rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-2\.5{padding-left:.625rem;padding-right:.625rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-3\.5{padding-left:.875rem;padding-right:.875rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-0\.5{padding-bottom:.125rem;padding-top:.125rem}.py-1{padding-bottom:.25rem;padding-top:.25rem}.py-1\.5{padding-bottom:.375rem;padding-top:.375rem}.py-12{padding-bottom:3rem;padding-top:3rem}.py-16{padding-bottom:4rem;padding-top:4rem}.py-2{padding-bottom:.5rem;padding-top:.5rem}.py-2\.5{padding-bottom:.625rem;padding-top:.625rem}.py-3{padding-bottom:.75rem;padding-top:.75rem}.py-6{padding-bottom:1.5rem;padding-top:1.5rem}.\!pb-0{padding-bottom:0!important}.pb-1{padding-bottom:.25rem}.pb-16{padding-bottom:4rem}.pb-3{padding-bottom:.75rem}.pb-\[env\(safe-area-inset-bottom\)\]{padding-bottom:env(safe-area-inset-bottom)}.pl-1{padding-left:.25rem}.pl-3{padding-left:.75rem}.pl-5{padding-left:1.25rem}.pr-1{padding-right:.25rem}.pr-10{padding-right:2.5rem}.pr-2{padding-right:.5rem}.pr-8{padding-right:2rem}.pt-1{padding-top:.25rem}.pt-2{padding-top:.5rem}.pt-\[env\(safe-area-inset-top\)\]{padding-top:env(safe-area-inset-top)}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.text-2xl{font-size:1.5rem;line-height:2rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.font-normal{font-weight:400}.font-semibold{font-weight:600}.tabular-nums{--tw-numeric-spacing:tabular-nums;font-variant-numeric:var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction)}.leading-none{line-height:1}.leading-relaxed{line-height:1.625}.leading-tight{line-height:1.25}.tracking-tight{letter-spacing:-.025em}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36/var(--tw-text-opacity,1))}.text-amber-500{--tw-text-opacity:1;color:rgb(245 158 11/var(--tw-text-opacity,1))}.text-amber-600{--tw-text-opacity:1;color:rgb(217 119 6/var(--tw-text-opacity,1))}.text-amber-700{--tw-text-opacity:1;color:rgb(180 83 9/var(--tw-text-opacity,1))}.text-amber-800{--tw-text-opacity:1;color:rgb(146 64 14/var(--tw-text-opacity,1))}.text-amber-900{--tw-text-opacity:1;color:rgb(120 53 15/var(--tw-text-opacity,1))}.text-emerald-100{--tw-text-opacity:1;color:rgb(209 250 229/var(--tw-text-opacity,1))}.text-emerald-500{--tw-text-opacity:1;color:rgb(16 185 129/var(--tw-text-opacity,1))}.text-emerald-600{--tw-text-opacity:1;color:rgb(5 150 105/var(--tw-text-opacity,1))}.text-emerald-700{--tw-text-opacity:1;color:rgb(4 120 87/var(--tw-text-opacity,1))}.text-emerald-800{--tw-text-opacity:1;color:rgb(6 95 70/var(--tw-text-opacity,1))}.text-indigo-800{--tw-text-opacity:1;color:rgb(55 48 163/var(--tw-text-opacity,1))}.text-purple-800{--tw-text-opacity:1;color:rgb(107 33 168/var(--tw-text-opacity,1))}.text-rose-500{--tw-text-opacity:1;color:rgb(244 63 94/var(--tw-text-opacity,1))}.text-rose-600{--tw-text-opacity:1;color:rgb(225 29 72/var(--tw-text-opacity,1))}.text-rose-700{--tw-text-opacity:1;color:rgb(190 18 60/var(--tw-text-opacity,1))}.text-sky-500{--tw-text-opacity:1;color:rgb(14 165 233/var(--tw-text-opacity,1))}.text-sky-600{--tw-text-opacity:1;color:rgb(2 132 199/var(--tw-text-opacity,1))}.text-sky-700{--tw-text-opacity:1;color:rgb(3 105 161/var(--tw-text-opacity,1))}.text-sky-800{--tw-text-opacity:1;color:rgb(7 89 133/var(--tw-text-opacity,1))}.text-sky-900{--tw-text-opacity:1;color:rgb(12 74 110/var(--tw-text-opacity,1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59/var(--tw-text-opacity,1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.underline{text-decoration-line:underline}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.accent-emerald-600{accent-color:#059669}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgba(0,0,0,.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color)}.shadow-2xl,.shadow-lg{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color),0 4px 6px -4px var(--tw-shadow-color)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color)}.shadow-sm,.shadow-xl{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color),0 8px 10px -6px var(--tw-shadow-color)}.outline{outline-style:solid}.ring{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color)}.ring,.ring-2{box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)}.ring-2{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color)}.ring-amber-400{--tw-ring-opacity:1;--tw-ring-color:rgb(251 191 36/var(--tw-ring-opacity,1))}.ring-rose-300{--tw-ring-opacity:1;--tw-ring-color:rgb(253 164 175/var(--tw-ring-opacity,1))}.blur{--tw-blur:blur(8px)}.blur,.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur{--tw-backdrop-blur:blur(8px)}.backdrop-blur,.backdrop-blur-md{-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1)}.transition-all{transition-duration:.15s;transition-property:all;transition-timing-function:cubic-bezier(.4,0,.2,1)}.transition-opacity{transition-duration:.15s;transition-property:opacity;transition-timing-function:cubic-bezier(.4,0,.2,1)}.duration-300{transition-duration:.3s}.duration-500{transition-duration:.5s}.focus-within\:border-emerald-500:focus-within{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.hover\:border-emerald-400:hover{--tw-border-opacity:1;border-color:rgb(52 211 153/var(--tw-border-opacity,1))}.hover\:border-emerald-500:hover{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.hover\:bg-emerald-600:hover{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.hover\:bg-emerald-700:hover{--tw-bg-opacity:1;background-color:rgb(4 120 87/var(--tw-bg-opacity,1))}.hover\:bg-rose-50:hover{--tw-bg-opacity:1;background-color:rgb(255 241 242/var(--tw-bg-opacity,1))}.hover\:bg-rose-600:hover{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1))}.hover\:bg-rose-700:hover{--tw-bg-opacity:1;background-color:rgb(190 18 60/var(--tw-bg-opacity,1))}.hover\:bg-slate-100:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.hover\:bg-slate-200:hover{--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1))}.hover\:bg-slate-200\/60:hover{background-color:rgba(226,232,240,.6)}.hover\:bg-white\/10:hover{background-color:hsla(0,0%,100%,.1)}.hover\:text-amber-500:hover{--tw-text-opacity:1;color:rgb(245 158 11/var(--tw-text-opacity,1))}.hover\:text-emerald-600:hover{--tw-text-opacity:1;color:rgb(5 150 105/var(--tw-text-opacity,1))}.hover\:text-rose-500:hover{--tw-text-opacity:1;color:rgb(244 63 94/var(--tw-text-opacity,1))}.hover\:text-slate-900:hover{--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.hover\:underline:hover{text-decoration-line:underline}.hover\:opacity-80:hover{opacity:.8}.focus\:border-emerald-500:focus{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.disabled\:opacity-60:disabled{opacity:.6}.has-\[\:checked\]\:border-emerald-500:has(:checked){--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.has-\[\:checked\]\:bg-emerald-50:has(:checked){--tw-bg-opacity:1;background-color:rgb(236 253 245/var(--tw-bg-opacity,1))}.dark\:border-\[\#2d2f38\]:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1))}.dark\:border-amber-800\/50:is(.dark *){border-color:rgba(146,64,14,.5)}.dark\:border-amber-800\/60:is(.dark *){border-color:rgba(146,64,14,.6)}.dark\:border-emerald-700:is(.dark *){--tw-border-opacity:1;border-color:rgb(4 120 87/var(--tw-border-opacity,1))}.dark\:border-emerald-800\/50:is(.dark *){border-color:rgba(6,95,70,.5)}.dark\:border-emerald-800\/60:is(.dark *){border-color:rgba(6,95,70,.6)}.dark\:border-sky-800\/60:is(.dark *){border-color:rgba(7,89,133,.6)}.dark\:bg-\[\#0f0f0f\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(15 15 15/var(--tw-bg-opacity,1))}.dark\:bg-\[\#161618\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(22 22 24/var(--tw-bg-opacity,1))}.dark\:bg-\[\#161618\]\/90:is(.dark *){background-color:rgba(22,22,24,.9)}.dark\:bg-\[\#161618\]\/95:is(.dark *){background-color:rgba(22,22,24,.95)}.dark\:bg-\[\#1e1e22\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.dark\:bg-\[\#1e1e22\]\/50:is(.dark *){background-color:rgba(30,30,34,.5)}.dark\:bg-\[\#26272e\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(38 39 46/var(--tw-bg-opacity,1))}.dark\:bg-\[\#2d2f38\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.dark\:bg-amber-950\/40:is(.dark *){background-color:rgba(69,26,3,.4)}.dark\:bg-amber-950\/60:is(.dark *){background-color:rgba(69,26,3,.6)}.dark\:bg-amber-950\/70:is(.dark *){background-color:rgba(69,26,3,.7)}.dark\:bg-amber-950\/80:is(.dark *){background-color:rgba(69,26,3,.8)}.dark\:bg-emerald-600:is(.dark *){--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.dark\:bg-emerald-900\/60:is(.dark *){background-color:rgba(6,78,59,.6)}.dark\:bg-emerald-950:is(.dark *){--tw-bg-opacity:1;background-color:rgb(2 44 34/var(--tw-bg-opacity,1))}.dark\:bg-emerald-950\/20:is(.dark *){background-color:rgba(2,44,34,.2)}.dark\:bg-emerald-950\/60:is(.dark *){background-color:rgba(2,44,34,.6)}.dark\:bg-emerald-950\/70:is(.dark *){background-color:rgba(2,44,34,.7)}.dark\:bg-emerald-950\/80:is(.dark *){background-color:rgba(2,44,34,.8)}.dark\:bg-indigo-950\/80:is(.dark *){background-color:rgba(30,27,75,.8)}.dark\:bg-purple-950\/80:is(.dark *){background-color:rgba(59,7,100,.8)}.dark\:bg-rose-950\/60:is(.dark *){background-color:rgba(76,5,25,.6)}.dark\:bg-sky-950\/40:is(.dark *){background-color:rgba(8,47,73,.4)}.dark\:bg-sky-950\/60:is(.dark *){background-color:rgba(8,47,73,.6)}.dark\:bg-sky-950\/70:is(.dark *){background-color:rgba(8,47,73,.7)}.dark\:bg-sky-950\/80:is(.dark *){background-color:rgba(8,47,73,.8)}.dark\:bg-slate-600:is(.dark *){--tw-bg-opacity:1;background-color:rgb(71 85 105/var(--tw-bg-opacity,1))}.dark\:bg-slate-800:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 41 59/var(--tw-bg-opacity,1))}.dark\:text-\[\#2d2f38\]:is(.dark *){--tw-text-opacity:1;color:rgb(45 47 56/var(--tw-text-opacity,1))}.dark\:text-amber-200:is(.dark *){--tw-text-opacity:1;color:rgb(253 230 138/var(--tw-text-opacity,1))}.dark\:text-amber-300:is(.dark *){--tw-text-opacity:1;color:rgb(252 211 77/var(--tw-text-opacity,1))}.dark\:text-amber-400:is(.dark *){--tw-text-opacity:1;color:rgb(251 191 36/var(--tw-text-opacity,1))}.dark\:text-emerald-300:is(.dark *){--tw-text-opacity:1;color:rgb(110 231 183/var(--tw-text-opacity,1))}.dark\:text-emerald-400:is(.dark *){--tw-text-opacity:1;color:rgb(52 211 153/var(--tw-text-opacity,1))}.dark\:text-indigo-300:is(.dark *){--tw-text-opacity:1;color:rgb(165 180 252/var(--tw-text-opacity,1))}.dark\:text-purple-300:is(.dark *){--tw-text-opacity:1;color:rgb(216 180 254/var(--tw-text-opacity,1))}.dark\:text-rose-300:is(.dark *){--tw-text-opacity:1;color:rgb(253 164 175/var(--tw-text-opacity,1))}.dark\:text-rose-400:is(.dark *){--tw-text-opacity:1;color:rgb(251 113 133/var(--tw-text-opacity,1))}.dark\:text-sky-200:is(.dark *){--tw-text-opacity:1;color:rgb(186 230 253/var(--tw-text-opacity,1))}.dark\:text-sky-300:is(.dark *){--tw-text-opacity:1;color:rgb(125 211 252/var(--tw-text-opacity,1))}.dark\:text-sky-400:is(.dark *){--tw-text-opacity:1;color:rgb(56 189 248/var(--tw-text-opacity,1))}.dark\:text-slate-100:is(.dark *){--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}.dark\:text-slate-200:is(.dark *){--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.dark\:text-slate-300:is(.dark *){--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.dark\:text-slate-400:is(.dark *){--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.dark\:text-white:is(.dark *){--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.dark\:ring-amber-500:is(.dark *){--tw-ring-opacity:1;--tw-ring-color:rgb(245 158 11/var(--tw-ring-opacity,1))}.dark\:hover\:bg-\[\#1e1e22\]:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.dark\:hover\:bg-\[\#2d2f38\]:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.dark\:hover\:bg-rose-950\/40:hover:is(.dark *){background-color:rgba(76,5,25,.4)}.dark\:hover\:text-white:hover:is(.dark *){--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.dark\:has-\[\:checked\]\:bg-emerald-950\/40:has(:checked):is(.dark *){background-color:rgba(2,44,34,.4)}@media (min-width:440px){.min-\[440px\]\:block{display:block}}@media (min-width:640px){.sm\:sticky{position:sticky}.sm\:inset-x-auto{left:auto;right:auto}.sm\:-bottom-6{bottom:-1.5rem}.sm\:-top-6{top:-1.5rem}.sm\:right-5{right:1.25rem}.sm\:top-0{top:0}.sm\:top-5{top:1.25rem}.sm\:col-span-1{grid-column:span 1/span 1}.sm\:col-span-2{grid-column:span 2/span 2}.sm\:-mx-6{margin-left:-1.5rem;margin-right:-1.5rem}.sm\:mx-auto{margin-left:auto;margin-right:auto}.sm\:my-6{margin-bottom:1.5rem;margin-top:1.5rem}.sm\:-mb-6{margin-bottom:-1.5rem}.sm\:mt-6{margin-top:1.5rem}.sm\:h-40{height:10rem}.sm\:min-h-0{min-height:0}.sm\:w-auto{width:auto}.sm\:max-w-lg{max-width:32rem}.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.sm\:grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}.sm\:grid-cols-\[1fr_1fr_auto\]{grid-template-columns:1fr 1fr auto}.sm\:flex-row{flex-direction:row}.sm\:items-end{align-items:flex-end}.sm\:items-center{align-items:center}.sm\:rounded-2xl{border-radius:1rem}.sm\:p-4{padding:1rem}.sm\:p-5{padding:1.25rem}.sm\:p-6{padding:1.5rem}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem}.sm\:text-2xl{font-size:1.5rem;line-height:2rem}.sm\:text-lg{font-size:1.125rem;line-height:1.75rem}.sm\:text-sm{font-size:.875rem;line-height:1.25rem}}@media (min-width:768px){.md\:col-span-5{grid-column:span 5/span 5}.md\:col-span-7{grid-column:span 7/span 7}.md\:grid-cols-12{grid-template-columns:repeat(12,minmax(0,1fr))}}</style>
+  <style>*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com*/*,:after,:before{border:0 solid #e5e7eb;box-sizing:border-box}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-tap-highlight-color:transparent}body{line-height:inherit;margin:0}hr{border-top-width:1px;color:inherit;height:0}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-size:1em;font-variation-settings:normal}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{border-collapse:collapse;border-color:inherit;text-indent:0}button,input,optgroup,select,textarea{color:inherit;font-family:inherit;font-feature-settings:inherit;font-size:100%;font-variation-settings:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{color:#9ca3af;opacity:1}input::placeholder,textarea::placeholder{color:#9ca3af;opacity:1}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{height:auto;max-width:100%}[hidden]:where(:not([hidden=until-found])){display:none}.container{width:100%}@media (min-width:640px){.container{max-width:640px}}@media (min-width:768px){.container{max-width:768px}}@media (min-width:1024px){.container{max-width:1024px}}@media (min-width:1280px){.container{max-width:1280px}}@media (min-width:1536px){.container{max-width:1536px}}.card{border-radius:1rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:1.25rem;--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow);transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1)}.card:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(22 22 24/var(--tw-bg-opacity,1))}.panel{border-radius:.75rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.panel:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.field{border-radius:.5rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));font-size:.875rem;line-height:1.25rem;padding:.375rem .625rem;--tw-text-opacity:1;color:rgb(30 41 59/var(--tw-text-opacity,1))}.field:focus{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1));outline:2px solid transparent;outline-offset:2px}.field:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}.btn{align-items:center;border-radius:.5rem;display:inline-flex;font-size:.875rem;font-weight:500;gap:.375rem;justify-content:center;line-height:1.25rem;padding:.5rem .75rem;transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1)}.btn:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.btn:disabled{opacity:.6;pointer-events:none}.btn-primary{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.btn-primary:hover{--tw-bg-opacity:1;background-color:rgb(4 120 87/var(--tw-bg-opacity,1))}.btn-outline{border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.btn-outline:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.btn-outline:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.btn-outline:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.btn-soft{border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.btn-soft:hover{--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1))}.btn-soft:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.btn-soft:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.btn-danger{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.btn-danger:hover{--tw-bg-opacity:1;background-color:rgb(190 18 60/var(--tw-bg-opacity,1))}.icon-btn{align-items:center;border-radius:.5rem;border-width:1px;display:inline-flex;height:2.25rem;justify-content:center;width:2.25rem;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1)}.icon-btn:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.icon-btn:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.icon-btn:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.icon-btn:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.modal{align-items:center;background-color:rgba(2,6,23,.7);display:none;inset:0;justify-content:center;overflow-y:auto;overscroll-behavior:contain;padding:.75rem;position:fixed;z-index:50;--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}@media (min-width:640px){.modal{padding:1rem}}.modal.\!open,.modal.open{display:flex}.modal-panel{margin-bottom:auto;margin-top:auto;max-height:94vh;width:100%}.modal-panel>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(1rem*var(--tw-space-y-reverse));margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)))}.modal-panel{border-radius:1rem;border-width:1px;overflow-y:auto;overscroll-behavior:contain;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:1.25rem;--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1));--tw-shadow:0 25px 50px -12px rgba(0,0,0,.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.modal-panel:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(22 22 24/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}@media (min-width:640px){.modal-panel{padding:1.5rem}}.tab-btn{border-radius:.75rem;font-size:.875rem;font-weight:500;line-height:1.25rem;padding:.5rem 1rem;--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1));transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1)}.tab-btn:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.tab-btn:is(.dark *){--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.tab-btn:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.tab-btn[aria-selected=true]{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1));font-weight:700;--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.tab-btn[aria-selected=true]:hover{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.tab-btn[aria-selected=true]:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.range-btn{border-radius:.375rem;font-size:.75rem;font-weight:500;line-height:1rem;padding:.125rem .5rem;--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1));transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1)}.range-btn:hover{background-color:rgba(226,232,240,.6)}.range-btn:is(.dark *){--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.range-btn:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.menu-item{align-items:center;display:flex;font-size:.875rem;gap:.75rem;line-height:1.25rem;padding:.625rem 1rem;text-align:left;width:100%}.menu-item:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.menu-item:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.range-btn[aria-pressed=true]{--tw-bg-opacity:1;background-color:rgb(209 250 229/var(--tw-bg-opacity,1));font-weight:600;--tw-text-opacity:1;color:rgb(6 95 70/var(--tw-text-opacity,1))}.range-btn[aria-pressed=true]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(2 44 34/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(110 231 183/var(--tw-text-opacity,1))}.sr-only{height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px;clip:rect(0,0,0,0);border-width:0;white-space:nowrap}.pointer-events-none{pointer-events:none}.pointer-events-auto{pointer-events:auto}.visible{visibility:visible}.invisible{visibility:hidden}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0}.inset-x-4{left:1rem;right:1rem}.-bottom-5{bottom:-1.25rem}.-top-5{top:-1.25rem}.bottom-0{bottom:0}.left-2{left:.5rem}.right-0{right:0}.right-1\.5{right:.375rem}.right-2{right:.5rem}.right-2\.5{right:.625rem}.top-1\.5{top:.375rem}.top-1\/2{top:50%}.top-2{top:.5rem}.top-3{top:.75rem}.z-10{z-index:10}.z-30{z-index:30}.z-40{z-index:40}.z-50{z-index:50}.z-\[55\]{z-index:55}.z-\[58\]{z-index:58}.z-\[60\]{z-index:60}.z-\[80\]{z-index:80}.col-span-2{grid-column:span 2/span 2}.col-span-3{grid-column:span 3/span 3}.m-auto{margin:auto}.-mx-5{margin-left:-1.25rem;margin-right:-1.25rem}.mx-auto{margin-left:auto;margin-right:auto}.my-1{margin-bottom:.25rem;margin-top:.25rem}.my-auto{margin-bottom:auto;margin-top:auto}.-mb-5{margin-bottom:-1.25rem}.-mt-1{margin-top:-.25rem}.mb-1\.5{margin-bottom:.375rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.ml-1{margin-left:.25rem}.ml-1\.5{margin-left:.375rem}.ml-2{margin-left:.5rem}.ml-auto{margin-left:auto}.mr-0\.5{margin-right:.125rem}.mr-1{margin-right:.25rem}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-1\.5{margin-top:.375rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-5{margin-top:1.25rem}.block{display:block}.inline{display:inline}.flex{display:flex}.inline-flex{display:inline-flex}.table{display:table}.grid{display:grid}.contents{display:contents}.hidden{display:none}.h-1\.5{height:.375rem}.h-10{height:2.5rem}.h-11{height:2.75rem}.h-12{height:3rem}.h-14{height:3.5rem}.h-2{height:.5rem}.h-2\.5{height:.625rem}.h-20{height:5rem}.h-24{height:6rem}.h-32{height:8rem}.h-36{height:9rem}.h-4{height:1rem}.h-48{height:12rem}.h-7{height:1.75rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-auto{height:auto}.h-full{height:100%}.max-h-\[55vh\]{max-height:55vh}.max-h-\[90vh\]{max-height:90vh}.max-h-\[94vh\]{max-height:94vh}.max-h-full{max-height:100%}.min-h-0{min-height:0}.min-h-\[1\.25rem\]{min-height:1.25rem}.min-h-full{min-height:100%}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-11{width:2.75rem}.w-12{width:3rem}.w-14{width:3.5rem}.w-16{width:4rem}.w-2{width:.5rem}.w-2\.5{width:.625rem}.w-24{width:6rem}.w-3{width:.75rem}.w-32{width:8rem}.w-4{width:1rem}.w-6{width:1.5rem}.w-64{width:16rem}.w-7{width:1.75rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-\[7\.5rem\]{width:7.5rem}.w-auto{width:auto}.w-full{width:100%}.min-w-0{min-width:0}.max-w-2xl{max-width:42rem}.max-w-3xl{max-width:48rem}.max-w-5xl{max-width:64rem}.max-w-\[640px\]{max-width:640px}.max-w-full{max-width:100%}.max-w-lg{max-width:32rem}.max-w-md{max-width:28rem}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}.shrink{flex-shrink:1}.shrink-0{flex-shrink:0}.basis-40{flex-basis:10rem}.-translate-y-1\/2{--tw-translate-y:-50%;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite}@keyframes spin{to{transform:rotate(1turn)}}.animate-spin{animation:spin 1s linear infinite}.cursor-pointer{cursor:pointer}.cursor-zoom-in{cursor:zoom-in}.select-none{-webkit-user-select:none;-moz-user-select:none;user-select:none}.resize{resize:both}.scroll-mt-4{scroll-margin-top:1rem}.list-disc{list-style-type:disc}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid-cols-6{grid-template-columns:repeat(6,minmax(0,1fr))}.grid-cols-\[1fr_auto\]{grid-template-columns:1fr auto}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.items-baseline{align-items:baseline}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:.125rem}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-2\.5{gap:.625rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-5{gap:1.25rem}.gap-x-2{-moz-column-gap:.5rem;column-gap:.5rem}.gap-x-3{-moz-column-gap:.75rem;column-gap:.75rem}.gap-x-4{-moz-column-gap:1rem;column-gap:1rem}.gap-x-6{-moz-column-gap:1.5rem;column-gap:1.5rem}.gap-y-0\.5{row-gap:.125rem}.gap-y-1{row-gap:.25rem}.gap-y-2{row-gap:.5rem}.gap-y-3{row-gap:.75rem}.space-y-0\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(.125rem*var(--tw-space-y-reverse));margin-top:calc(.125rem*(1 - var(--tw-space-y-reverse)))}.space-y-1>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(.25rem*var(--tw-space-y-reverse));margin-top:calc(.25rem*(1 - var(--tw-space-y-reverse)))}.space-y-1\.5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(.375rem*var(--tw-space-y-reverse));margin-top:calc(.375rem*(1 - var(--tw-space-y-reverse)))}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(.5rem*var(--tw-space-y-reverse));margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)))}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(.75rem*var(--tw-space-y-reverse));margin-top:calc(.75rem*(1 - var(--tw-space-y-reverse)))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(1rem*var(--tw-space-y-reverse));margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)))}.space-y-5>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-bottom:calc(1.25rem*var(--tw-space-y-reverse));margin-top:calc(1.25rem*(1 - var(--tw-space-y-reverse)))}.overflow-auto{overflow:auto}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.overscroll-contain{overscroll-behavior:contain}.truncate{overflow:hidden;text-overflow:ellipsis}.truncate,.whitespace-nowrap{white-space:nowrap}.whitespace-pre-line{white-space:pre-line}.break-words{overflow-wrap:break-word}.rounded{border-radius:.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-md{border-radius:.375rem}.rounded-xl{border-radius:.75rem}.rounded-t-2xl{border-top-left-radius:1rem;border-top-right-radius:1rem}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-dashed{border-style:dashed}.\!border-emerald-400{--tw-border-opacity:1!important;border-color:rgb(52 211 153/var(--tw-border-opacity,1))!important}.border-amber-100{--tw-border-opacity:1;border-color:rgb(254 243 199/var(--tw-border-opacity,1))}.border-amber-200{--tw-border-opacity:1;border-color:rgb(253 230 138/var(--tw-border-opacity,1))}.border-amber-200\/60{border-color:hsla(48,97%,77%,.6)}.border-emerald-100{--tw-border-opacity:1;border-color:rgb(209 250 229/var(--tw-border-opacity,1))}.border-emerald-200{--tw-border-opacity:1;border-color:rgb(167 243 208/var(--tw-border-opacity,1))}.border-emerald-200\/60{border-color:rgba(167,243,208,.6)}.border-emerald-200\/80{border-color:rgba(167,243,208,.8)}.border-emerald-400{--tw-border-opacity:1;border-color:rgb(52 211 153/var(--tw-border-opacity,1))}.border-emerald-600{--tw-border-opacity:1;border-color:rgb(5 150 105/var(--tw-border-opacity,1))}.border-sky-200{--tw-border-opacity:1;border-color:rgb(186 230 253/var(--tw-border-opacity,1))}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1))}.border-slate-200\/70{border-color:rgba(226,232,240,.7)}.border-slate-200\/80{border-color:rgba(226,232,240,.8)}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1))}.border-transparent{border-color:transparent}.\!bg-black{--tw-bg-opacity:1!important;background-color:rgb(0 0 0/var(--tw-bg-opacity,1))!important}.bg-amber-100{--tw-bg-opacity:1;background-color:rgb(254 243 199/var(--tw-bg-opacity,1))}.bg-amber-50{--tw-bg-opacity:1;background-color:rgb(255 251 235/var(--tw-bg-opacity,1))}.bg-amber-500{--tw-bg-opacity:1;background-color:rgb(245 158 11/var(--tw-bg-opacity,1))}.bg-black\/50{background-color:rgba(0,0,0,.5)}.bg-emerald-100{--tw-bg-opacity:1;background-color:rgb(209 250 229/var(--tw-bg-opacity,1))}.bg-emerald-200\/70{background-color:rgba(167,243,208,.7)}.bg-emerald-400{--tw-bg-opacity:1;background-color:rgb(52 211 153/var(--tw-bg-opacity,1))}.bg-emerald-50{--tw-bg-opacity:1;background-color:rgb(236 253 245/var(--tw-bg-opacity,1))}.bg-emerald-50\/50{background-color:rgba(236,253,245,.5)}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.bg-indigo-100{--tw-bg-opacity:1;background-color:rgb(224 231 255/var(--tw-bg-opacity,1))}.bg-purple-100{--tw-bg-opacity:1;background-color:rgb(243 232 255/var(--tw-bg-opacity,1))}.bg-rose-50{--tw-bg-opacity:1;background-color:rgb(255 241 242/var(--tw-bg-opacity,1))}.bg-rose-500{--tw-bg-opacity:1;background-color:rgb(244 63 94/var(--tw-bg-opacity,1))}.bg-rose-600{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1))}.bg-sky-100{--tw-bg-opacity:1;background-color:rgb(224 242 254/var(--tw-bg-opacity,1))}.bg-sky-50{--tw-bg-opacity:1;background-color:rgb(240 249 255/var(--tw-bg-opacity,1))}.bg-sky-500{--tw-bg-opacity:1;background-color:rgb(14 165 233/var(--tw-bg-opacity,1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.bg-slate-200{--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1))}.bg-slate-300{--tw-bg-opacity:1;background-color:rgb(203 213 225/var(--tw-bg-opacity,1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.bg-slate-50\/60{background-color:rgba(248,250,252,.6)}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42/var(--tw-bg-opacity,1))}.bg-slate-900\/70{background-color:rgba(15,23,42,.7)}.bg-slate-950\/60{background-color:rgba(2,6,23,.6)}.bg-slate-950\/70{background-color:rgba(2,6,23,.7)}.bg-transparent{background-color:transparent}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1))}.bg-white\/90{background-color:hsla(0,0%,100%,.9)}.bg-white\/95{background-color:hsla(0,0%,100%,.95)}.bg-gradient-to-tr{background-image:linear-gradient(to top right,var(--tw-gradient-stops))}.from-emerald-600{--tw-gradient-from:#059669 var(--tw-gradient-from-position);--tw-gradient-to:rgba(5,150,105,0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}.to-teal-500{--tw-gradient-to:#14b8a6 var(--tw-gradient-to-position)}.object-contain{-o-object-fit:contain;object-fit:contain}.object-cover{-o-object-fit:cover;object-fit:cover}.\!p-0{padding:0!important}.p-0\.5{padding:.125rem}.p-2{padding:.5rem}.p-2\.5{padding:.625rem}.p-3{padding:.75rem}.p-3\.5{padding:.875rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-1{padding-left:.25rem;padding-right:.25rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-2\.5{padding-left:.625rem;padding-right:.625rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-3\.5{padding-left:.875rem;padding-right:.875rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-0\.5{padding-bottom:.125rem;padding-top:.125rem}.py-1{padding-bottom:.25rem;padding-top:.25rem}.py-1\.5{padding-bottom:.375rem;padding-top:.375rem}.py-12{padding-bottom:3rem;padding-top:3rem}.py-16{padding-bottom:4rem;padding-top:4rem}.py-2{padding-bottom:.5rem;padding-top:.5rem}.py-2\.5{padding-bottom:.625rem;padding-top:.625rem}.py-3{padding-bottom:.75rem;padding-top:.75rem}.py-6{padding-bottom:1.5rem;padding-top:1.5rem}.\!pb-0{padding-bottom:0!important}.pb-1{padding-bottom:.25rem}.pb-16{padding-bottom:4rem}.pb-3{padding-bottom:.75rem}.pb-\[env\(safe-area-inset-bottom\)\]{padding-bottom:env(safe-area-inset-bottom)}.pl-1{padding-left:.25rem}.pl-3{padding-left:.75rem}.pl-5{padding-left:1.25rem}.pr-1{padding-right:.25rem}.pr-10{padding-right:2.5rem}.pr-2{padding-right:.5rem}.pr-8{padding-right:2rem}.pt-1{padding-top:.25rem}.pt-2{padding-top:.5rem}.pt-\[env\(safe-area-inset-top\)\]{padding-top:env(safe-area-inset-top)}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.font-normal{font-weight:400}.font-semibold{font-weight:600}.tabular-nums{--tw-numeric-spacing:tabular-nums;font-variant-numeric:var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction)}.leading-none{line-height:1}.leading-relaxed{line-height:1.625}.leading-tight{line-height:1.25}.tracking-tight{letter-spacing:-.025em}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36/var(--tw-text-opacity,1))}.text-amber-500{--tw-text-opacity:1;color:rgb(245 158 11/var(--tw-text-opacity,1))}.text-amber-600{--tw-text-opacity:1;color:rgb(217 119 6/var(--tw-text-opacity,1))}.text-amber-700{--tw-text-opacity:1;color:rgb(180 83 9/var(--tw-text-opacity,1))}.text-amber-800{--tw-text-opacity:1;color:rgb(146 64 14/var(--tw-text-opacity,1))}.text-amber-900{--tw-text-opacity:1;color:rgb(120 53 15/var(--tw-text-opacity,1))}.text-emerald-100{--tw-text-opacity:1;color:rgb(209 250 229/var(--tw-text-opacity,1))}.text-emerald-500{--tw-text-opacity:1;color:rgb(16 185 129/var(--tw-text-opacity,1))}.text-emerald-600{--tw-text-opacity:1;color:rgb(5 150 105/var(--tw-text-opacity,1))}.text-emerald-700{--tw-text-opacity:1;color:rgb(4 120 87/var(--tw-text-opacity,1))}.text-emerald-800{--tw-text-opacity:1;color:rgb(6 95 70/var(--tw-text-opacity,1))}.text-indigo-800{--tw-text-opacity:1;color:rgb(55 48 163/var(--tw-text-opacity,1))}.text-purple-800{--tw-text-opacity:1;color:rgb(107 33 168/var(--tw-text-opacity,1))}.text-rose-500{--tw-text-opacity:1;color:rgb(244 63 94/var(--tw-text-opacity,1))}.text-rose-600{--tw-text-opacity:1;color:rgb(225 29 72/var(--tw-text-opacity,1))}.text-rose-700{--tw-text-opacity:1;color:rgb(190 18 60/var(--tw-text-opacity,1))}.text-sky-500{--tw-text-opacity:1;color:rgb(14 165 233/var(--tw-text-opacity,1))}.text-sky-600{--tw-text-opacity:1;color:rgb(2 132 199/var(--tw-text-opacity,1))}.text-sky-700{--tw-text-opacity:1;color:rgb(3 105 161/var(--tw-text-opacity,1))}.text-sky-800{--tw-text-opacity:1;color:rgb(7 89 133/var(--tw-text-opacity,1))}.text-sky-900{--tw-text-opacity:1;color:rgb(12 74 110/var(--tw-text-opacity,1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59/var(--tw-text-opacity,1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.underline{text-decoration-line:underline}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.accent-emerald-600{accent-color:#059669}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgba(0,0,0,.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color)}.shadow-2xl,.shadow-lg{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color),0 4px 6px -4px var(--tw-shadow-color)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color)}.shadow-sm,.shadow-xl{box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color),0 8px 10px -6px var(--tw-shadow-color)}.outline{outline-style:solid}.ring{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color)}.ring,.ring-2{box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000)}.ring-2{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color)}.ring-amber-400{--tw-ring-opacity:1;--tw-ring-color:rgb(251 191 36/var(--tw-ring-opacity,1))}.ring-rose-300{--tw-ring-opacity:1;--tw-ring-color:rgb(253 164 175/var(--tw-ring-opacity,1))}.blur{--tw-blur:blur(8px)}.blur,.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur{--tw-backdrop-blur:blur(8px)}.backdrop-blur,.backdrop-blur-md{-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-duration:.15s;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1)}.transition-all{transition-duration:.15s;transition-property:all;transition-timing-function:cubic-bezier(.4,0,.2,1)}.transition-opacity{transition-duration:.15s;transition-property:opacity;transition-timing-function:cubic-bezier(.4,0,.2,1)}.duration-300{transition-duration:.3s}.duration-500{transition-duration:.5s}.focus-within\:border-emerald-500:focus-within{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.hover\:border-emerald-400:hover{--tw-border-opacity:1;border-color:rgb(52 211 153/var(--tw-border-opacity,1))}.hover\:border-emerald-500:hover{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.hover\:bg-emerald-600:hover{--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.hover\:bg-emerald-700:hover{--tw-bg-opacity:1;background-color:rgb(4 120 87/var(--tw-bg-opacity,1))}.hover\:bg-rose-50:hover{--tw-bg-opacity:1;background-color:rgb(255 241 242/var(--tw-bg-opacity,1))}.hover\:bg-rose-600:hover{--tw-bg-opacity:1;background-color:rgb(225 29 72/var(--tw-bg-opacity,1))}.hover\:bg-rose-700:hover{--tw-bg-opacity:1;background-color:rgb(190 18 60/var(--tw-bg-opacity,1))}.hover\:bg-slate-100:hover{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1))}.hover\:bg-slate-200:hover{--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1))}.hover\:bg-slate-200\/60:hover{background-color:rgba(226,232,240,.6)}.hover\:bg-white\/10:hover{background-color:hsla(0,0%,100%,.1)}.hover\:text-amber-500:hover{--tw-text-opacity:1;color:rgb(245 158 11/var(--tw-text-opacity,1))}.hover\:text-emerald-600:hover{--tw-text-opacity:1;color:rgb(5 150 105/var(--tw-text-opacity,1))}.hover\:text-rose-500:hover{--tw-text-opacity:1;color:rgb(244 63 94/var(--tw-text-opacity,1))}.hover\:text-slate-900:hover{--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.hover\:underline:hover{text-decoration-line:underline}.hover\:opacity-80:hover{opacity:.8}.focus\:border-emerald-500:focus{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.disabled\:opacity-60:disabled{opacity:.6}.has-\[\:checked\]\:border-emerald-500:has(:checked){--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1))}.has-\[\:checked\]\:bg-emerald-50:has(:checked){--tw-bg-opacity:1;background-color:rgb(236 253 245/var(--tw-bg-opacity,1))}.dark\:border-\[\#2d2f38\]:is(.dark *){--tw-border-opacity:1;border-color:rgb(45 47 56/var(--tw-border-opacity,1))}.dark\:border-amber-800\/50:is(.dark *){border-color:rgba(146,64,14,.5)}.dark\:border-amber-800\/60:is(.dark *){border-color:rgba(146,64,14,.6)}.dark\:border-emerald-700:is(.dark *){--tw-border-opacity:1;border-color:rgb(4 120 87/var(--tw-border-opacity,1))}.dark\:border-emerald-800\/50:is(.dark *){border-color:rgba(6,95,70,.5)}.dark\:border-emerald-800\/60:is(.dark *){border-color:rgba(6,95,70,.6)}.dark\:border-sky-800\/60:is(.dark *){border-color:rgba(7,89,133,.6)}.dark\:bg-\[\#0f0f0f\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(15 15 15/var(--tw-bg-opacity,1))}.dark\:bg-\[\#121214\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(18 18 20/var(--tw-bg-opacity,1))}.dark\:bg-\[\#161618\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(22 22 24/var(--tw-bg-opacity,1))}.dark\:bg-\[\#161618\]\/90:is(.dark *){background-color:rgba(22,22,24,.9)}.dark\:bg-\[\#161618\]\/95:is(.dark *){background-color:rgba(22,22,24,.95)}.dark\:bg-\[\#1e1e22\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.dark\:bg-\[\#1e1e22\]\/50:is(.dark *){background-color:rgba(30,30,34,.5)}.dark\:bg-\[\#26272e\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(38 39 46/var(--tw-bg-opacity,1))}.dark\:bg-\[\#2d2f38\]:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.dark\:bg-amber-950\/40:is(.dark *){background-color:rgba(69,26,3,.4)}.dark\:bg-amber-950\/60:is(.dark *){background-color:rgba(69,26,3,.6)}.dark\:bg-amber-950\/70:is(.dark *){background-color:rgba(69,26,3,.7)}.dark\:bg-amber-950\/80:is(.dark *){background-color:rgba(69,26,3,.8)}.dark\:bg-emerald-600:is(.dark *){--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1))}.dark\:bg-emerald-900\/60:is(.dark *){background-color:rgba(6,78,59,.6)}.dark\:bg-emerald-950:is(.dark *){--tw-bg-opacity:1;background-color:rgb(2 44 34/var(--tw-bg-opacity,1))}.dark\:bg-emerald-950\/20:is(.dark *){background-color:rgba(2,44,34,.2)}.dark\:bg-emerald-950\/60:is(.dark *){background-color:rgba(2,44,34,.6)}.dark\:bg-emerald-950\/70:is(.dark *){background-color:rgba(2,44,34,.7)}.dark\:bg-emerald-950\/80:is(.dark *){background-color:rgba(2,44,34,.8)}.dark\:bg-indigo-950\/80:is(.dark *){background-color:rgba(30,27,75,.8)}.dark\:bg-purple-950\/80:is(.dark *){background-color:rgba(59,7,100,.8)}.dark\:bg-rose-950\/60:is(.dark *){background-color:rgba(76,5,25,.6)}.dark\:bg-sky-950\/40:is(.dark *){background-color:rgba(8,47,73,.4)}.dark\:bg-sky-950\/60:is(.dark *){background-color:rgba(8,47,73,.6)}.dark\:bg-sky-950\/70:is(.dark *){background-color:rgba(8,47,73,.7)}.dark\:bg-sky-950\/80:is(.dark *){background-color:rgba(8,47,73,.8)}.dark\:bg-slate-600:is(.dark *){--tw-bg-opacity:1;background-color:rgb(71 85 105/var(--tw-bg-opacity,1))}.dark\:bg-slate-800:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 41 59/var(--tw-bg-opacity,1))}.dark\:text-\[\#2d2f38\]:is(.dark *){--tw-text-opacity:1;color:rgb(45 47 56/var(--tw-text-opacity,1))}.dark\:text-amber-200:is(.dark *){--tw-text-opacity:1;color:rgb(253 230 138/var(--tw-text-opacity,1))}.dark\:text-amber-300:is(.dark *){--tw-text-opacity:1;color:rgb(252 211 77/var(--tw-text-opacity,1))}.dark\:text-amber-400:is(.dark *){--tw-text-opacity:1;color:rgb(251 191 36/var(--tw-text-opacity,1))}.dark\:text-emerald-300:is(.dark *){--tw-text-opacity:1;color:rgb(110 231 183/var(--tw-text-opacity,1))}.dark\:text-emerald-400:is(.dark *){--tw-text-opacity:1;color:rgb(52 211 153/var(--tw-text-opacity,1))}.dark\:text-indigo-300:is(.dark *){--tw-text-opacity:1;color:rgb(165 180 252/var(--tw-text-opacity,1))}.dark\:text-purple-300:is(.dark *){--tw-text-opacity:1;color:rgb(216 180 254/var(--tw-text-opacity,1))}.dark\:text-rose-300:is(.dark *){--tw-text-opacity:1;color:rgb(253 164 175/var(--tw-text-opacity,1))}.dark\:text-rose-400:is(.dark *){--tw-text-opacity:1;color:rgb(251 113 133/var(--tw-text-opacity,1))}.dark\:text-sky-200:is(.dark *){--tw-text-opacity:1;color:rgb(186 230 253/var(--tw-text-opacity,1))}.dark\:text-sky-300:is(.dark *){--tw-text-opacity:1;color:rgb(125 211 252/var(--tw-text-opacity,1))}.dark\:text-sky-400:is(.dark *){--tw-text-opacity:1;color:rgb(56 189 248/var(--tw-text-opacity,1))}.dark\:text-slate-100:is(.dark *){--tw-text-opacity:1;color:rgb(241 245 249/var(--tw-text-opacity,1))}.dark\:text-slate-200:is(.dark *){--tw-text-opacity:1;color:rgb(226 232 240/var(--tw-text-opacity,1))}.dark\:text-slate-300:is(.dark *){--tw-text-opacity:1;color:rgb(203 213 225/var(--tw-text-opacity,1))}.dark\:text-slate-400:is(.dark *){--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.dark\:text-white:is(.dark *){--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.dark\:ring-amber-500:is(.dark *){--tw-ring-opacity:1;--tw-ring-color:rgb(245 158 11/var(--tw-ring-opacity,1))}.dark\:hover\:bg-\[\#1e1e22\]:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(30 30 34/var(--tw-bg-opacity,1))}.dark\:hover\:bg-\[\#2d2f38\]:hover:is(.dark *){--tw-bg-opacity:1;background-color:rgb(45 47 56/var(--tw-bg-opacity,1))}.dark\:hover\:bg-rose-950\/40:hover:is(.dark *){background-color:rgba(76,5,25,.4)}.dark\:hover\:text-white:hover:is(.dark *){--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.dark\:has-\[\:checked\]\:bg-emerald-950\/40:has(:checked):is(.dark *){background-color:rgba(2,44,34,.4)}@media (min-width:440px){.min-\[440px\]\:block{display:block}}@media (min-width:640px){.sm\:sticky{position:sticky}.sm\:inset-x-auto{left:auto;right:auto}.sm\:-bottom-6{bottom:-1.5rem}.sm\:-top-6{top:-1.5rem}.sm\:right-5{right:1.25rem}.sm\:top-0{top:0}.sm\:top-5{top:1.25rem}.sm\:col-span-1{grid-column:span 1/span 1}.sm\:col-span-2{grid-column:span 2/span 2}.sm\:-mx-6{margin-left:-1.5rem;margin-right:-1.5rem}.sm\:mx-auto{margin-left:auto;margin-right:auto}.sm\:my-6{margin-bottom:1.5rem;margin-top:1.5rem}.sm\:-mb-6{margin-bottom:-1.5rem}.sm\:mt-6{margin-top:1.5rem}.sm\:h-40{height:10rem}.sm\:min-h-0{min-height:0}.sm\:w-auto{width:auto}.sm\:max-w-lg{max-width:32rem}.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.sm\:grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}.sm\:grid-cols-\[1fr_1fr_auto\]{grid-template-columns:1fr 1fr auto}.sm\:flex-row{flex-direction:row}.sm\:items-end{align-items:flex-end}.sm\:items-center{align-items:center}.sm\:rounded-2xl{border-radius:1rem}.sm\:p-4{padding:1rem}.sm\:p-5{padding:1.25rem}.sm\:p-6{padding:1.5rem}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem}.sm\:text-2xl{font-size:1.5rem;line-height:2rem}.sm\:text-lg{font-size:1.125rem;line-height:1.75rem}.sm\:text-sm{font-size:.875rem;line-height:1.25rem}}@media (min-width:768px){.md\:col-span-5{grid-column:span 5/span 5}.md\:col-span-7{grid-column:span 7/span 7}.md\:grid-cols-12{grid-template-columns:repeat(12,minmax(0,1fr))}}</style>
 
   <style>
 /* NutriLens AI — plain CSS that Tailwind utilities do not cover.
@@ -1659,6 +1660,7 @@ const I18N = {
     netBlocked: '無法連線到 Google API（Failed to fetch）。可能原因：① 預覽/沙箱環境擋住外部連線，請下載 HTML 後用瀏覽器直接開啟；② 網路、VPN 或廣告攔截器阻擋；③ 金鑰有網站（HTTP referrer）限制，file:// 開啟時會被拒絕。',
     confirmClearBtn: '再按一次確認清空（無法復原）',
     badgeMeta: '{s}s · 思考 {th} tok · 輸入 {in} tok',
+    badgeSeconds: '{s} 秒',
     badgeRetries: '重試 {n} 次',
     chartDaily: '每日晨起體重',
     chartMA: '7 日移動平均線 (MA)',
@@ -2193,6 +2195,7 @@ const I18N = {
     netBlocked: 'Cannot reach the Google API (Failed to fetch). Possible causes: (1) a preview/sandbox blocks external requests — download the HTML and open it directly in a browser; (2) network, VPN or ad-blocker; (3) the key has an HTTP-referrer restriction that rejects file:// pages.',
     confirmClearBtn: 'Click again to confirm (cannot be undone)',
     badgeMeta: '{s}s · thinking {th} tok · input {in} tok',
+    badgeSeconds: '{s} s',
     badgeRetries: 'retried {n}×',
     chartDaily: 'Daily Weight',
     chartMA: '7-Day MA',
@@ -2361,8 +2364,28 @@ const I18N = {
 const I18N_CLAUDE = {
   zh: {
     claudeModelDefault: 'Claude 預設（建議）',
+    claudeModelDefaultShort: 'Claude 預設',
+    claudeStage1: '辨識食物中（1/2）',
+    claudeStage2: '複核份量中（2/2）',
+    claudeKeepOpen: '請停留在這個畫面，回到對話或離開 Claude 會中斷。通常需要 {range}。',
+    claudeTimeDefault: '20–60 秒',
+    claudeTimeOpus: '1–2 分鐘',
+    claudeSlow: '比平常久。可以繼續等，或取消後重試。',
+    claudeUnsaved: '尚未記錄：按「檢視 / 編輯」再儲存',
+    claudeValCost: '這次會用掉約 {n} 次 Claude 分析，會算進你的 Claude 使用量。',
+    photoCloudCount: '雲端已保存 {n} 餐的俯視照。',
+    cloudWhyNoDb: 'Claude 雲端功能無法使用',
+    cloudWhyTimeout: '連線逾時',
+    cloudWhyNoRuntime: '不在 Claude 裡開啟',
+    cloudWhyOther: '錯誤代碼 {code}',
+    claudeTier: '{tier}（指定的模型暫時無法使用）',
+    claudeTier_default: 'Claude 預設等級',
+    claudeTier_complex: 'Claude 進階等級',
+    claudeTier_quick: 'Claude 快速等級',
+    claudeBusy: 'Claude 暫時忙碌或連線中斷，請稍後按「重試」。',
+    claudeOther: 'Claude 這次沒有完成分析，請稍後按「重試」（代碼：{code}）。',
     claudeUnavailable: '這個頁面要在 Claude 裡開啟才能分析（找不到 Claude 的 AI 功能）。',
-    claudeNotGranted: '尚未允許這個頁面使用 Claude。重新整理後，在詢問時選「允許」。',
+    claudeNotGranted: '尚未允許這個頁面使用 Claude。請關閉這個頁面再重新開啟，Claude 詢問時選「允許」。',
     claudeRateLimited: 'Claude 使用量已達上限或請求太頻繁，請稍後再按「重試」。',
     claudeDisabled: '這個帳號目前無法在頁面中使用 Claude。',
     claudeSignIn: '請重新登入 Claude 後再試。',
@@ -2372,7 +2395,14 @@ const I18N_CLAUDE = {
     claudeKeySub: '這個版本用你自己的 Claude 帳號分析，不需要金鑰。第一次分析時，Claude 會詢問是否允許這個頁面使用，選「允許」即可。',
     downloadFail: '無法下載檔案。',
     cloudFail: '雲端同步失敗，紀錄暫時只存在這台裝置；之後會自動再試。',
-    cloudOffline: '無法連上雲端紀錄，這次的變更只會存在這台裝置；下次開啟時會再同步。',
+    cloudLoading: '正在讀取你的雲端紀錄…',
+    cloudDownTitle: '暫時讀不到你的雲端紀錄',
+    cloudDownBody: '紀錄還在你的 Claude 帳號裡，只是現在連不上。',
+    cloudDownLocal: '選「先離線使用」：這次記的內容會先存在這台裝置，連上後自動合併（每 30 秒會再試一次）。',
+    cloudDownMemory: '選「先離線使用」：這個環境不能在裝置上存資料，連上之前關掉頁面，這次記的內容會遺失。每 30 秒會再試一次連線。',
+    cloudRetry: '重試',
+    cloudGoOffline: '先離線使用',
+    cloudBack: '已連上雲端，紀錄已同步。',
     cloudOn: '雲端同步：已連線，紀錄會存在你的 Claude 帳號。',
     cloudOff: '雲端同步：未連線（{why}），紀錄只存在這台裝置。',
     cloudFull: '雲端空間已滿，新的紀錄暫時只存在這台裝置。',
@@ -2380,8 +2410,28 @@ const I18N_CLAUDE = {
   },
   en: {
     claudeModelDefault: 'Claude default (recommended)',
+    claudeModelDefaultShort: 'Claude default',
+    claudeStage1: 'Identifying the food (1/2)',
+    claudeStage2: 'Checking the portions (2/2)',
+    claudeKeepOpen: 'Stay on this screen: going back to the chat or leaving Claude stops it. Usually takes {range}.',
+    claudeTimeDefault: '20–60 s',
+    claudeTimeOpus: '1–2 min',
+    claudeSlow: 'Taking longer than usual. You can wait, or cancel and retry.',
+    claudeUnsaved: 'Not logged yet: press Review / edit, then save',
+    claudeValCost: 'This uses about {n} Claude analyses from your Claude usage.',
+    photoCloudCount: 'Top-view photos of {n} meals are kept in the cloud.',
+    cloudWhyNoDb: 'Claude cloud storage is not available',
+    cloudWhyTimeout: 'timed out',
+    cloudWhyNoRuntime: 'not opened inside Claude',
+    cloudWhyOther: 'error code {code}',
+    claudeTier: '{tier} (the chosen model was unavailable)',
+    claudeTier_default: 'Claude default tier',
+    claudeTier_complex: 'Claude advanced tier',
+    claudeTier_quick: 'Claude quick tier',
+    claudeBusy: 'Claude is busy or the connection dropped. Press Retry in a moment.',
+    claudeOther: 'Claude did not finish this analysis. Press Retry in a moment (code: {code}).',
     claudeUnavailable: 'Open this page inside Claude to analyze meals (Claude is not available here).',
-    claudeNotGranted: 'This page is not allowed to use Claude yet. Reload and choose Allow when asked.',
+    claudeNotGranted: 'This page is not allowed to use Claude yet. Close and reopen it, and choose Allow when Claude asks.',
     claudeRateLimited: 'Claude usage limit reached or too many requests. Press Retry later.',
     claudeDisabled: 'Claude cannot be used from pages on this account.',
     claudeSignIn: 'Please sign in to Claude again and retry.',
@@ -2391,7 +2441,14 @@ const I18N_CLAUDE = {
     claudeKeySub: 'This version analyzes with your own Claude account; no key is needed. On the first analysis Claude asks whether this page may use it: choose Allow.',
     downloadFail: 'The file could not be downloaded.',
     cloudFail: 'Cloud sync failed; records are on this device only for now. It will retry.',
-    cloudOffline: 'Cloud records cannot be reached; changes this time stay on this device and sync next time.',
+    cloudLoading: 'Loading your cloud records…',
+    cloudDownTitle: 'Your cloud records cannot be reached right now',
+    cloudDownBody: 'They are still in your Claude account; the connection failed.',
+    cloudDownLocal: 'Use offline: what you log now is kept on this device and merged when connected (retried every 30 s).',
+    cloudDownMemory: 'Use offline: this environment cannot store data on the device, so what you log is lost if you close the page before it connects. Retried every 30 s.',
+    cloudRetry: 'Retry',
+    cloudGoOffline: 'Use offline',
+    cloudBack: 'Connected to the cloud; records are in sync.',
     cloudOn: 'Cloud sync: connected; records are kept in your Claude account.',
     cloudOff: 'Cloud sync: not connected ({why}); records are on this device only.',
     cloudFull: 'Cloud storage is full; new records are on this device only for now.',
@@ -2400,6 +2457,13 @@ const I18N_CLAUDE = {
 };
 const I18N_CLAUDE_REPLACE = {
   zh: {
+    bannerNotSetup: '尚未設定每日目標',
+    logCopied: '已複製 {n} 筆診斷紀錄（不含照片）',
+    diagDesc: 'AI 分析的診斷紀錄（不含照片），回報問題時使用。',
+    photoForeverWarn: '照片會持續累積，雲端空間（約 100 MB）滿了以後新照片就存不進去。',
+    photoGone: '這餐的照片已不在（可能已超過保存期限）',
+    modeStandard: '標準（1 次分析，約 10–40 秒）',
+    modePrecise: '精準（建議：主分析＋2 次份量重估，約 20–90 秒）',
     apiModalTitle: 'AI 模型', menuApiKey: 'AI 模型', apiModalDesc: '用你自己的 Claude 帳號分析，不需要金鑰。',
     suggestNoKey: '這個頁面要在 Claude 裡開啟才能產生建議。', keySet: 'Claude', bannerNoKey: '',
     obPrivacy: '紀錄和每餐的俯視照存在你的 Claude 帳號的私人空間（只有你看得到）；分析時照片會送給 Claude。',
@@ -2407,6 +2471,13 @@ const I18N_CLAUDE_REPLACE = {
     quotaExceeded: 'Claude 使用量已達上限或請求太頻繁，請稍後再按「重試」。', overloaded: 'Claude 暫時忙碌，請稍後再按「重試」。'
   },
   en: {
+    bannerNotSetup: 'Daily goals not set yet',
+    logCopied: 'Copied {n} diagnostic records (no photos)',
+    diagDesc: 'AI analysis diagnostics (no photos), for reporting problems.',
+    photoForeverWarn: 'Photos keep accumulating; once the cloud space (about 100 MB) is full, new photos cannot be kept.',
+    photoGone: 'The photo of this meal is gone (it may be past the keep period)',
+    modeStandard: 'Standard (1 analysis, about 10–40 s)',
+    modePrecise: 'Precise (recommended: main analysis + 2 portion checks, about 20–90 s)',
     apiModalTitle: 'AI model', menuApiKey: 'AI model', apiModalDesc: 'Analysis uses your own Claude account; no key is needed.',
     suggestNoKey: 'Open this page inside Claude to get suggestions.', keySet: 'Claude', bannerNoKey: '',
     obPrivacy: 'Records and each meal\'s top-view photo are kept in a private space of your Claude account (only you can see them); photos are sent to Claude for analysis.',
@@ -3226,7 +3297,9 @@ const CONFIG = {
     defaultModel: 'tier:default',
     modelOptions: [['tier:default', 'claudeModelDefault'], ['claude-opus-5-5', 'Claude Opus 5.5'], ['claude-sonnet-5-5', 'Claude Sonnet 5.5']],
     /** The two re-estimates stay on the default tier whichever model the main analysis uses (the owner wants accuracy). */
-    weightModels: ['tier:default', 'tier:default']
+    weightModels: ['tier:default', 'tier:default'],
+    /** A running analysis past this many seconds gets a note that it is taking longer than usual. */
+    slowSeconds: 90
   },
   /** Precise mode: main analysis, then the weights re-estimated by two light models. */
   precise: {
@@ -3418,17 +3491,19 @@ const todayStr = () => fmtDate(new Date());
 const nowTime = () => { const d = new Date(); return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
 const icon = (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+/** Offers a file to the viewer. Resolves true when it was handed over (always on the plain site), false otherwise. */
 function download(blob, filename) {
   if (IS_CLAUDE) {                 // the artifact frame refuses downloads: the runtime's `downloads` asks the viewer to save
-    Promise.resolve(globalThis.claude?.use?.('downloads')).then(d => {
+    return Promise.resolve(globalThis.claude?.use?.('downloads')).then(d => {
       if (!d) throw { code: 'unavailable' };
       return d.save({ filename, data: blob });
-    }).catch(e => { if (e?.code !== 'declined') toast(t('downloadFail'), 'error'); });
-    return;
+    }).then(r => r?.status === 'saved' || r?.status === 'delivered')
+      .catch(e => { if (e?.code !== 'declined') toast(t('downloadFail'), 'error'); return false; });
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = filename; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return Promise.resolve(true);
 }
 
 /* ── 3. Persistence & migrations ────────────────────────────────────── */
@@ -3450,8 +3525,11 @@ const kv = (() => {
   });
   return {
     get: k => (mem.has(k) ? mem.get(k) : null),
-    set(k, v) { v = String(v); if (mem.get(k) === v) return; mem.set(k, v); mirror(() => localStorage.setItem(k, v)); cloud.touch(k); },
-    del(k) { if (!mem.has(k)) return; mem.delete(k); mirror(() => localStorage.removeItem(k)); cloud.touch(k); },
+    set(k, v) {
+      v = String(v); const before = mem.has(k) ? mem.get(k) : null; if (before === v) return;
+      mem.set(k, v); mirror(() => localStorage.setItem(k, v)); cloud.touch(k, before, v);
+    },
+    del(k) { if (!mem.has(k)) return; const before = mem.get(k); mem.delete(k); mirror(() => localStorage.removeItem(k)); cloud.touch(k, before, null); },
     load(k, v) {
       if (v === null) { mem.delete(k); mirror(() => localStorage.removeItem(k)); } else { mem.set(k, v); mirror(() => localStorage.setItem(k, v)); }
     }
@@ -3468,128 +3546,326 @@ const store = {
 };
 
 /**
- * Claude build only: the records kept in the viewer's private subtree of the artifact's database
- * (data/users/<id>/<doc>, readable by nobody else, the owner included), so they survive a cleared browser and
- * reach the viewer's other devices. One document per key, { key, v: the stored string (null = deleted), ts };
- * meals are split by month (<key>@YYYY-MM) to stay far below the 256 KiB document limit. Last change wins per key:
- * on load a key whose cloud copy is newer than this browser's replaces it, and newer local keys are sent.
+ * Claude build only: the records kept in the viewer's private collection data/users/<id> of the artifact's database
+ * (readable by nobody else, the owner included), so they survive a cleared browser and reach the viewer's other
+ * devices. Two devices may be open at once and either may have been offline, so nothing is ever replaced wholesale:
+ *  - meals: eight documents per month (<key>@YYYY-MM.0 … .7 by meal id, far below the 256 KiB limit) holding
+ *    { items: {id: meal}, mt: {id: changed}, del: {id: deleted} }. Each meal keeps its own change time and a deletion
+ *    leaves a tombstone, so merging any two copies keeps every meal's latest state and no deleted meal comes back;
+ *  - other keys: one document { key, v, ts }; the later change wins. The list of cloud photo ids is merged as a set.
+ * Every write reads the document first and merges (two open devices do not erase each other); a device that comes
+ * back to the foreground reads the cloud again. Change times never go below one already seen in the cloud, so a
+ * device whose clock is behind does not lose. Local changes not yet written are remembered (in this browser when it
+ * can store, in memory otherwise) and sent when the cloud is reached, retried every 30 s while it is not.
  * Not kept in the cloud: the job queue (holds photos), diagnostics, suggestion cache and Gemini-only settings.
- * Photos stay in this browser's IndexedDB.
  */
+const CLOUD_MEALS_FMT = 2;
+/**
+ * A set kept as { id: change time }, negative for a removed id, so a removal is not undone by a copy that still has
+ * the id. Merges two stored strings (old form: an array of ids) id by id, the later change winning; drops removals
+ * older than CLOUD_TOMBSTONE_DAYS. Returns the merged string.
+ */
+function mergeStampMap(a, b) {
+  const read = raw => {
+    let v; try { v = JSON.parse(raw || '{}'); } catch { v = {}; }
+    if (Array.isArray(v)) return Object.fromEntries(v.filter(x => typeof x === 'string').map(id => [id, 1]));
+    return v && typeof v === 'object' ? v : {};
+  };
+  const out = { ...read(a) }, cutoff = Date.now() - CLOUD_TOMBSTONE_DAYS * 864e5;
+  for (const [id, ts] of Object.entries(read(b))) if (Math.abs(Number(ts)) > Math.abs(Number(out[id]) || 0)) out[id] = Number(ts);
+  for (const [id, ts] of Object.entries(out)) if (!(Math.abs(ts) > 0) || (ts < 0 && -ts < cutoff)) delete out[id];
+  return JSON.stringify(Object.fromEntries(Object.entries(out).sort(([x], [y]) => x.localeCompare(y))));
+}
+const CLOUD_TOMBSTONE_DAYS = 400;
+const CLOUD_MEAL_BUCKETS = 8;
 const cloud = {
-  col: null, photoCol: null, dirty: new Set(), timer: null, writing: false, sent: new Map(), failed: false, why: '', lastOk: 0,
+  db: null, col: null, photoCol: null, timer: null, retryTimer: null, writing: false, failed: false, why: '', lastOk: 0,
+  quiet: false,                  // set while the app seeds its start-up defaults without knowing the cloud: not changes
+  where: new Map(),              // meal id → id of the cloud document that holds it (or its tombstone)
+  meta: null,
   skip: () => new Set([STORAGE_KEYS.jobs, STORAGE_KEYS.perfLog, STORAGE_KEYS.apiKey, STORAGE_KEYS.model,
     STORAGE_KEYS.suggestCache, STORAGE_KEYS.searchOff]),
-  syncs(key) { return key.startsWith('nutrilens_') && !this.skip().has(key); },
-  stamps() { try { return JSON.parse(localStorage.getItem('nutrilens_cloud_ts') || '{}') || {}; } catch { return {}; } },
-  stamp(key, ts) { try { localStorage.setItem('nutrilens_cloud_ts', JSON.stringify({ ...this.stamps(), [key]: ts })); } catch { /* none */ } },
-  /** The documents for one key's current value. */
-  docsFor(key) {
-    const raw = kv.get(key), ts = this.stamps()[key] || Date.now();
-    if (key !== STORAGE_KEYS.meals || raw === null) return [{ id: key, body: { key, v: raw, ts } }];
-    let meals; try { meals = JSON.parse(raw); } catch { meals = []; }
-    const months = new Map();
-    for (const m of Array.isArray(meals) ? meals : []) {
-      const ym = String(m?.date || '').slice(0, 7) || 'none';
-      if (!months.has(ym)) months.set(ym, []);
-      months.get(ym).push(m);
+  syncs(key) { return key.startsWith('nutrilens_') && !key.startsWith('nutrilens_cloud') && !this.skip().has(key); },
+
+  /** { keys: {key: ts}, meals: {id: ts}, dels: {id: ts}, pend: [key], pendMeals: [id], seen } */
+  m() {
+    if (!this.meta) {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem('nutrilens_cloud_meta_v2') || 'null'); } catch { /* not stored */ }
+      this.meta = { keys: {}, meals: {}, dels: {}, pend: [], pendMeals: [], seen: 0, ...(saved && typeof saved === 'object' ? saved : {}) };
     }
-    const docs = [...months].map(([ym, list]) => ({ id: `${key}@${ym}`, body: { key, v: JSON.stringify(list), ts } }));
-    for (const id of this.sent.keys()) {                         // a month that became empty is written empty
-      if (id.startsWith(key + '@') && !months.has(id.slice(key.length + 1))) docs.push({ id, body: { key, v: '[]', ts } });
-    }
-    return docs;
+    return this.meta;
   },
-  touch(key) {
-    if (!this.syncs(key)) return;
-    // Before the cloud copy has been read (or when it could not be), a change must not look newer than it: the demo
-    // records a fresh browser seeds would otherwise replace the real ones. Meals made meanwhile are merged on the next load.
-    if (!this.col) return;
-    this.stamp(key, Date.now()); this.dirty.add(key);
+  saveMeta() { try { localStorage.setItem('nutrilens_cloud_meta_v2', JSON.stringify(this.meta)); } catch { /* memory only */ } },
+  /** A change time: now, but never at or below a time already seen in the cloud. */
+  clock() { const m = this.m(), ts = Math.max(Date.now(), (m.seen || 0) + 1); m.seen = ts; return ts; },
+  see(ts) { const m = this.m(); if (Number(ts) > (m.seen || 0)) m.seen = Number(ts); },
+
+  /** kv calls this on every change. Meals are compared meal by meal; anything else is one change of the key. */
+  touch(key, before, after) {
+    if (!this.syncs(key) || this.quiet) return;
+    const m = this.m(), ts = this.clock();
+    if (key === STORAGE_KEYS.meals) {
+      const parse = raw => { try { const l = JSON.parse(raw || '[]'); return Array.isArray(l) ? l : []; } catch { return []; } };
+      const old = new Map(parse(before).filter(x => x?.id).map(x => [x.id, JSON.stringify(x)]));
+      const now = new Map(parse(after).filter(x => x?.id).map(x => [x.id, JSON.stringify(x)]));
+      for (const [id, s] of now) if (old.get(id) !== s) { m.meals[id] = ts; delete m.dels[id]; m.pendMeals.push(id); }
+      for (const id of old.keys()) if (!now.has(id)) { m.dels[id] = ts; delete m.meals[id]; m.pendMeals.push(id); }
+      m.pendMeals = [...new Set(m.pendMeals)];
+    } else {
+      m.keys[key] = ts; if (!m.pend.includes(key)) m.pend.push(key);
+    }
+    this.saveMeta();
     clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 300);   // short: the viewer may close the app right after
   },
-  /** Sends the changed documents one at a time (one write per document in flight). */
+
+  /** The meal document of a meal: its month, split into CLOUD_MEAL_BUCKETS by id (a heavy month of 6 meals a day with
+   *  long notes stays near 80 KB per document, far below the 256 KiB limit; about 100 documents a year). */
+  mealDoc(date, id) {
+    let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return `${STORAGE_KEYS.meals}@${String(date || '').slice(0, 7) || 'none'}.${h % CLOUD_MEAL_BUCKETS}`;
+  },
+  /** A meal document in the current shape (old shape: { v: list, ts }). */
+  readMealDoc(b) {
+    if (b?.fmt === CLOUD_MEALS_FMT) return { items: { ...(b.items || {}) }, mt: { ...(b.mt || {}) }, del: { ...(b.del || {}) } };
+    let list = []; try { list = JSON.parse(b?.v || '[]') || []; } catch { /* empty */ }
+    const ts = Number(b?.ts) || 0, items = {}, mt = {};
+    for (const x of Array.isArray(list) ? list : []) if (x?.id) { items[x.id] = x; mt[x.id] = ts; }
+    return { items, mt, del: {} };
+  },
+
+  /** Merges what the cloud documents hold into this browser. Returns whether anything shown changed. */
+  applyCloud(docs) {
+    const m = this.m(), byKey = new Map(), best = new Map();
+    for (const d of docs) {
+      const b = d.data(); if (!b || typeof b.key !== 'string' || !this.syncs(b.key)) continue;
+      this.see(b.ts);
+      if (b.key === STORAGE_KEYS.meals) {
+        const doc = this.readMealDoc(b);
+        const offer = (id, ts, meal) => {
+          this.see(ts); const cur = best.get(id);
+          if (!cur || ts > cur.ts || (ts === cur.ts && !meal)) best.set(id, { ts, meal, doc: d.id });
+          if (!this.where.has(id) || meal) this.where.set(id, d.id);
+        };
+        for (const [id, meal] of Object.entries(doc.items)) offer(id, Number(doc.mt[id]) || 0, meal);
+        for (const [id, ts] of Object.entries(doc.del)) offer(id, Number(ts) || 0, null);
+      } else byKey.set(b.key, b);
+    }
+    let changed = false;
+    // Meals: the newer of this browser's change and the cloud's, meal by meal.
+    const local = (() => { try { return JSON.parse(kv.get(STORAGE_KEYS.meals) || '[]') || []; } catch { return []; } })();
+    const result = new Map(), pend = new Set(m.pendMeals);
+    for (const x of local) if (x?.id) result.set(x.id, x);
+    for (const [id, c] of best) {
+      const mine = m.dels[id] ? { ts: m.dels[id], meal: null } : m.meals[id] ? { ts: m.meals[id], meal: result.get(id) } : null;
+      if (mine && mine.ts > c.ts) { pend.add(id); continue; }          // ours is newer: keep it and send it
+      if (mine && mine.ts === c.ts) continue;
+      if (c.meal) result.set(id, c.meal); else result.delete(id);
+      delete m.meals[id]; delete m.dels[id]; pend.delete(id);
+    }
+    for (const x of local) {                                         // here but never in the cloud: send it
+      if (x?.id && !best.has(x.id) && !x.demo) { if (!m.meals[x.id]) m.meals[x.id] = this.clock(); pend.add(x.id); }
+    }
+    m.pendMeals = [...pend];
+    const meals = [...result.values()].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+    const raw = JSON.stringify(meals);
+    if (raw !== (kv.get(STORAGE_KEYS.meals) || '[]') && (best.size || meals.length)) { kv.load(STORAGE_KEYS.meals, raw); changed = true; }
+    // Other keys: the later change wins; the photo list is merged id by id.
+    for (const [key, b] of byKey) {
+      const ts = Number(b.ts) || 0, mine = m.keys[key] || 0;
+      if (key === STORAGE_KEYS.photoCloud) {          // a map of photo id → change time (negative: removed), merged id by id
+        const merged = mergeStampMap(kv.get(key), b.v);
+        if (merged !== kv.get(key)) kv.load(key, merged);
+        if (merged !== mergeStampMap(b.v, null) && !m.pend.includes(key)) m.pend.push(key);
+        continue;
+      }
+      if (mine > ts) { if (!m.pend.includes(key)) m.pend.push(key); continue; }
+      if (mine === ts) continue;
+      const v = typeof b.v === 'string' ? b.v : null;
+      if (v !== kv.get(key)) { kv.load(key, v); changed = true; }
+      delete m.keys[key]; m.pend = m.pend.filter(k => k !== key);
+    }
+    for (const key of Object.values(STORAGE_KEYS)) {                 // here but never in the cloud: send it
+      if (this.syncs(key) && key !== STORAGE_KEYS.meals && !byKey.has(key) && kv.get(key) !== null && !m.pend.includes(key)) {
+        if (!m.keys[key]) m.keys[key] = this.clock();
+        m.pend.push(key);
+      }
+    }
+    this.saveMeta();
+    return changed;
+  },
+
+  /** Sends what changed here, one document at a time, each merged with the cloud's current copy. */
   async flush() {
-    if (!this.col || this.writing || !this.dirty.size) return;
+    const m = this.m();
+    if (!this.col || this.writing || (!m.pend.length && !m.pendMeals.length)) return;
     this.writing = true;
-    const keys = [...this.dirty]; this.dirty.clear();
+    let error = null;
     try {
-      for (const key of keys) {
-        for (const { id, body } of this.docsFor(key)) {
-          if (this.sent.get(id) === body.v) continue;
-          await this.col.doc(id).set(body);
-          this.sent.set(id, body.v);
-        }
+      // Meals, grouped by document: where each meal lives now, plus where the cloud last had it.
+      let local; try { local = JSON.parse(kv.get(STORAGE_KEYS.meals) || '[]') || []; } catch { local = []; }
+      const byId = new Map(local.filter(x => x?.id).map(x => [x.id, x]));
+      const groups = new Map();
+      const add = (doc, id) => { if (!groups.has(doc)) groups.set(doc, new Set()); groups.get(doc).add(id); };
+      for (const id of m.pendMeals) {
+        const meal = byId.get(id);
+        if (meal?.demo) continue;
+        if (meal) add(this.mealDoc(meal.date, id), id);
+        const was = this.where.get(id);
+        if (was && (!meal || was !== this.mealDoc(meal.date, id))) add(was, id);
+        if (!meal && !was) add(this.mealDoc(todayStr(), id), id);    // a tombstone needs a home
       }
-      this.failed = false; this.lastOk = Date.now(); this.why = '';
-    } catch (e) {
-      this.why = String(e?.code || e?.message || e).slice(0, 60);
-      keys.forEach(k => this.dirty.add(k));
-      if (!this.failed) { this.failed = true; toast(t(e?.code === 'quota_exceeded' ? 'cloudFull' : 'cloudFail'), 'error'); }
-      clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 30_000);
+      const done = new Set();
+      for (const [docId, ids] of groups) {
+        try {
+          const ref = this.col.doc(docId), snap = await ref.get();
+          const cur = snap.exists ? this.readMealDoc(snap.data()) : { items: {}, mt: {}, del: {} };
+          for (const id of ids) {
+            const meal = byId.get(id), ts = meal ? m.meals[id] || this.clock() : m.dels[id] || this.clock();
+            const theirs = Math.max(Number(cur.mt[id]) || 0, Number(cur.del[id]) || 0);
+            if (theirs > ts) continue;                               // the cloud has a newer change: the next read brings it
+            if (meal && this.mealDoc(meal.date, id) === docId) { cur.items[id] = meal; cur.mt[id] = ts; delete cur.del[id]; this.where.set(id, docId); }
+            else if (meal) { delete cur.items[id]; delete cur.mt[id]; }   // moved to another month
+            else { delete cur.items[id]; delete cur.mt[id]; cur.del[id] = ts; this.where.set(id, docId); }
+          }
+          const cutoff = Date.now() - CLOUD_TOMBSTONE_DAYS * 864e5;
+          for (const [id, ts] of Object.entries(cur.del)) if (ts < cutoff) delete cur.del[id];
+          await ref.set({ key: STORAGE_KEYS.meals, fmt: CLOUD_MEALS_FMT, items: cur.items, mt: cur.mt, del: cur.del, ts: this.clock() });
+          ids.forEach(id => done.add(id));
+        } catch (e) { error ||= e; console.warn('[NutriLens] cloud meals', docId, e); }   // other documents still go
+      }
+      m.pendMeals = m.pendMeals.filter(id => !done.has(id) && !byId.get(id)?.demo);   // demo meals never go to the cloud
+      done.forEach(id => { delete m.meals[id]; delete m.dels[id]; });             // the cloud now holds this change
+      this.saveMeta();
+      // Other keys.
+      for (const key of [...m.pend]) {
+        try {
+          const ref = this.col.doc(key), snap = await ref.get(), cloudB = snap.exists ? snap.data() : null;
+          let v = kv.get(key), ts = m.keys[key] || this.clock();
+          if (key === STORAGE_KEYS.photoCloud) v = mergeStampMap(v, cloudB?.v);
+          else if (cloudB && Number(cloudB.ts) > ts) { m.pend = m.pend.filter(k => k !== key); continue; }   // newer there
+          ts = Math.max(ts, (Number(cloudB?.ts) || 0) + (key === STORAGE_KEYS.photoCloud ? 1 : 0));
+          await ref.set({ key, v, ts });
+          if (key === STORAGE_KEYS.photoCloud && v !== kv.get(key)) kv.load(key, v);
+          m.pend = m.pend.filter(k => k !== key); delete m.keys[key];
+        } catch (e) { error ||= e; console.warn('[NutriLens] cloud key', key, e); }
+        this.saveMeta();
+      }
     } finally { this.writing = false; }
-    if (this.dirty.size && !this.failed) this.flush();
+    if (error) {
+      this.why = String(error?.code || error?.message || error).slice(0, 60);
+      if (!this.failed) { this.failed = true; toast(t(error?.code === 'quota_exceeded' ? 'cloudFull' : 'cloudFail'), 'error'); }
+      clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 30_000);
+    } else {
+      this.failed = false; this.lastOk = Date.now(); this.why = '';
+      if (m.pend.length || m.pendMeals.length) { clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 300); }
+    }
   },
-  /** Meals: the cloud's list plus this browser's own (not demo) meals it does not have, so none made offline are lost. */
-  mergeMeals(cloudRaw) {
-    let cloudList, localList;
-    try { cloudList = JSON.parse(cloudRaw) || []; } catch { cloudList = []; }
-    try { localList = JSON.parse(kv.get(STORAGE_KEYS.meals) || '[]') || []; } catch { localList = []; }
-    const ids = new Set(cloudList.map(m => m?.id));
-    const extra = localList.filter(m => m && !m.demo && !ids.has(m.id));
-    return { v: JSON.stringify([...cloudList, ...extra]), extra: extra.length };
+
+  /** Reaches the viewer's cloud collection and merges it in. Resolves true when connected. */
+  async connect() {
+    if (!globalThis.claude?.use) { this.why = 'no-runtime'; return false; }
+    // Called on window.claude itself: use() is a method of the runtime and fails when detached from it.
+    const [db, user] = await Promise.all([globalThis.claude.use('db'), globalThis.claude.use('user')]);
+    if (!db || !user) { this.why = !db ? 'no-db' : 'no-user'; return false; }
+    const id = await user.id();
+    if (!id) { this.why = 'no-id'; return false; }
+    const col = db.collection(`data/users/${id}`);              // the viewer's own collection (3 segments: a collection path)
+    const snap = await col.get();
+    const changed = this.applyCloud(snap.docs);
+    // Documents of the first cloud version (one per month): their meals are now in the new documents once sent.
+    const old = snap.docs.filter(d => /@\d{4}-\d{2}$|@none$/.test(d.id) && d.data()?.key === STORAGE_KEYS.meals);
+    Object.assign(this, { db, col, photoCol: db.doc(`data/users/${id}/photos`).collection('items'), why: '' });
+    if (old.length) {
+      const m = this.m();
+      for (const d of old) for (const mid of Object.keys(this.readMealDoc(d.data()).items)) { m.pendMeals.push(mid); this.where.delete(mid); }
+      m.pendMeals = [...new Set(m.pendMeals)];
+      await this.flush();
+      if (!this.failed) for (const d of old) await col.doc(d.id).delete().catch(() => {});
+    } else this.flush();
+    return changed;
   },
-  /** Before the app starts: connect, take newer cloud keys, then send newer local ones. Gives up after 12 s: the
-   *  session then stays on this device only (a late answer is ignored), and the next load reads the cloud again. */
+
+  /** Before the app starts. Resolves 'ok', or 'offline' once the viewer chose to go on without the cloud. */
   async start() {
-    let late = false;
-    const work = (async () => {
-      if (!globalThis.claude?.use) { this.why = 'no-runtime'; return; }
-      // Called on window.claude itself: use() is a method of the runtime and fails when detached from it.
-      const [db, user] = await Promise.all([globalThis.claude.use('db'), globalThis.claude.use('user')]);
-      if (!db || !user) { this.why = !db ? 'no-db' : 'no-user'; return; }
-      const id = await user.id();
-      if (!id) { this.why = 'no-id'; return; }
-      const col = db.collection(`data/users/${id}`);          // the viewer's own collection (3 segments: a collection path)
-      const snap = await col.get();
-      if (late) return;
-      const byKey = new Map();
-      for (const d of snap.docs) {
-        const b = d.data(); if (!b || typeof b.key !== 'string' || !this.syncs(b.key)) continue;
-        if (!byKey.has(b.key)) byKey.set(b.key, []);
-        byKey.get(b.key).push({ id: d.id, ...b });
-      }
-      const local = this.stamps(), mergedKeys = [];
-      for (const [key, docs] of byKey) {
-        const ts = Math.max(...docs.map(d => Number(d.ts) || 0));
-        docs.forEach(d => this.sent.set(d.id, d.v));
-        if (ts <= (local[key] || 0)) continue;
-        let v = docs[0].v;
-        let keepLocal = false;
-        if (key === STORAGE_KEYS.meals) {
-          const all = docs.flatMap(d => { try { return JSON.parse(d.v) || []; } catch { return []; } });
-          const merged = this.mergeMeals(JSON.stringify(all));
-          v = merged.v; keepLocal = merged.extra > 0;
+    const loading = setTimeout(() => cloudOverlay.show('loading'), 400);
+    let ok = false;
+    try {
+      ok = await Promise.race([this.connect().then(() => true), new Promise(r => setTimeout(() => r(false), 12_000))]);
+      if (!ok && !this.why) this.why = 'timeout';
+    } catch (e) { this.why = String(e?.code || e?.message || e).slice(0, 60); console.warn('[NutriLens] cloud', e); }
+    clearTimeout(loading);
+    if (ok && this.col) { cloudOverlay.hide(); return 'ok'; }
+    this.col = null;                                            // a late answer must not count as connected
+    const choice = await cloudOverlay.ask();
+    if (choice === 'retry') return this.start();
+    this.retryLater();
+    return 'offline';
+  },
+  /** While offline: try again every 30 s; once connected, merge and redraw. */
+  retryLater() {
+    clearTimeout(this.retryTimer);
+    this.retryTimer = setTimeout(async () => {
+      try {
+        if (await Promise.race([this.connect().then(() => true), new Promise(r => setTimeout(() => r(false), 12_000))]) && this.col) {
+          renderAll(); toast(t('cloudBack')); return;
         }
-        kv.load(key, typeof v === 'string' ? v : null); this.stamp(key, ts);
-        if (keepLocal) mergedKeys.push(key);
-      }
-      this.col = col;
-      this.photoCol = db.doc(`data/users/${id}/photos`).collection('items');   // apart from the records: not read at start
-      for (const key of Object.values(STORAGE_KEYS)) {
-        if (!this.syncs(key) || kv.get(key) === null && !byKey.has(key)) continue;
-        const cloudTs = Math.max(0, ...(byKey.get(key) || []).map(d => Number(d.ts) || 0));
-        if (!byKey.has(key) || (local[key] || 0) > cloudTs) { this.stamp(key, Math.max(local[key] || 0, Date.now())); this.dirty.add(key); }
-      }
-      mergedKeys.forEach(k => { this.stamp(k, Date.now()); this.dirty.add(k); });
+      } catch (e) { this.why = String(e?.code || e?.message || e).slice(0, 60); }
+      this.col = null; this.retryLater();
+    }, 30_000);
+  },
+  /** Back in the foreground: another device may have changed something meanwhile. */
+  async refresh() {
+    if (!this.col || this.writing) return;
+    try {
+      const snap = await this.col.get();
+      if (this.applyCloud(snap.docs)) { renderAll(); if (typeof photos !== 'undefined') photos.scheduleCloudSync(); }
       this.flush();
-    })().catch(e => { this.why = String(e?.code || e?.message || e).slice(0, 60); console.warn('[NutriLens] cloud', e); });
-    await Promise.race([work, new Promise(r => setTimeout(r, 12_000))]);
-    if (!this.col) { late = true; this.why ||= 'timeout'; toast(t('cloudOffline'), 'error'); }
+    } catch (e) { console.warn('[NutriLens] cloud refresh', e); }
+  }
+};
+
+/** The full-screen notice while the cloud records load, and the choice when they cannot be reached. */
+const cloudOverlay = {
+  el: null,
+  ensure() {
+    if (this.el) return this.el;
+    this.el = document.createElement('div');
+    this.el.className = 'fixed inset-0 z-[80] bg-white dark:bg-[#121214] flex items-center justify-center p-6 text-center';
+    document.body.append(this.el);
+    return this.el;
+  },
+  show(kind) {
+    this.ensure().innerHTML = kind === 'loading'
+      ? `<div class="space-y-3 text-slate-600 dark:text-slate-300">${icon('loader', 'animate-spin text-2xl text-emerald-600')}
+          <p class="text-sm">${t('cloudLoading')}</p></div>` : '';
+  },
+  hide() { this.el?.remove(); this.el = null; },
+  ask() {
+    let persistent = false;
+    try { localStorage.setItem('nutrilens_probe', '1'); localStorage.removeItem('nutrilens_probe'); persistent = true; } catch { /* memory only */ }
+    this.ensure().innerHTML = `<div class="max-w-sm space-y-4">
+      ${icon('circle-alert', 'text-3xl text-amber-500')}
+      <h2 class="text-lg font-bold">${t('cloudDownTitle')}</h2>
+      <p class="text-sm text-slate-600 dark:text-slate-300">${t('cloudDownBody')}</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400">${t(persistent ? 'cloudDownLocal' : 'cloudDownMemory')}</p>
+      <div class="space-y-2">
+        <button type="button" data-cloud="retry" class="btn btn-primary w-full py-3">${t('cloudRetry')}</button>
+        <button type="button" data-cloud="offline" class="btn btn-outline w-full py-3">${t('cloudGoOffline')}</button>
+      </div></div>`;
+    return new Promise(resolve => {
+      this.el.addEventListener('click', e => {
+        const b = e.target.closest('[data-cloud]'); if (!b) return;
+        if (b.dataset.cloud === 'retry') this.show('loading'); else this.hide();
+        resolve(b.dataset.cloud);
+      }, { once: false });
+    });
   }
 };
 if (IS_CLAUDE) {
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') cloud.flush(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') cloud.flush(); else cloud.refresh();
+  });
   window.addEventListener('pagehide', () => cloud.flush());
 }
 
@@ -3875,7 +4151,7 @@ function per100gToAbsolute(apiItem) {
 /** Builds the Meal to store from the analysis being edited (portion already applied). */
 function mealFromAnalysis(analysis, { portion, name, date, time, reasoning }) {
   const items = analysis.items.map(it => roundItem({ name: it.name, weight: Math.round(effectiveWeight(it, portion)), ...itemNutrients(it, portion) }));
-  return { id: uid(), date, time, name, angleCount: analysis.angleCount, reasoning, ...roundedTotals(items), items,
+  return { id: uid(), date, time, name, angleCount: analysis.angleCount, reasoning: String(reasoning || '').slice(0, 1000), ...roundedTotals(items), items,
     ...(analysis.photoId ? { photoId: analysis.photoId } : {}), ...(analysis.source ? { source: analysis.source } : {}) };
 }
 
@@ -4229,8 +4505,9 @@ const dataPartToBlob = ({ mime_type: type, data }) => {
  */
 const claudeAI = {
   sampleP: null,
-  sample() {
-    this.sampleP ??= globalThis.claude?.use ? Promise.resolve(globalThis.claude.use('sample')).catch(() => null) : Promise.resolve(null);
+  sample() {                       // a null answer is not kept: the runtime may only have been slow to start
+    this.sampleP ??= (globalThis.claude?.use ? Promise.resolve(globalThis.claude.use('sample')).catch(() => null) : Promise.resolve(null))
+      .then(f => { if (!f) this.sampleP = null; return f; });
     return this.sampleP;
   },
   validModel: id => (CONFIG.claude.modelOptions.some(([v]) => v === id) ? id : CONFIG.claude.defaultModel),
@@ -4239,17 +4516,19 @@ const claudeAI = {
     if (id.startsWith('tier:')) return { modelTier: id.slice(5) };
     return { model: id, modelTier: /opus/.test(id) ? 'complex' : 'default' };
   },
-  label(id) {
+  /** The name shown in the model list (`short`: without "(recommended)", for result notes). */
+  label(id, short = false) {
     const opt = CONFIG.claude.modelOptions.find(([v]) => v === id);
-    if (opt) return opt[1].startsWith('Claude') ? opt[1] : t(opt[1]);
-    return id.startsWith('tier:') ? `Claude (${id.slice(5)})` : id;
+    if (opt) return opt[1].startsWith('Claude') ? opt[1] : t(short ? 'claudeModelDefaultShort' : opt[1]);
+    return id.startsWith('tier:') ? t('claudeTier', { tier: t(`claudeTier_${id.slice(5)}`) }) : id;
   },
   /** One rejected `sample` call as an Error the app can show; a cancel becomes an AbortError like fetch's. */
   error(e) {
     if (e?.code === 'cancelled') return new DOMException('Aborted', 'AbortError');
     const key = { rate_limited: 'claudeRateLimited', not_granted: 'claudeNotGranted', sampling_disabled: 'claudeDisabled',
-      session_expired: 'claudeSignIn', image_rejected: 'claudeImage', images_unavailable: 'claudeImage', refused: 'claudeRefused' }[e?.code];
-    return Object.assign(new Error(key ? t(key) : String(e?.message || e || t('emptyResult'))), { status: 'claude', code: e?.code });
+      session_expired: 'claudeSignIn', image_rejected: 'claudeImage', images_unavailable: 'claudeImage', refused: 'claudeRefused',
+      invalid_json: 'emptyResult', empty_completion: 'emptyResult', upstream_error: 'claudeBusy' }[e?.code];
+    return Object.assign(new Error(key ? t(key) : t('claudeOther', { code: String(e?.code || 'error') })), { status: 'claude', code: e?.code });
   },
   async generate({ model, parts, system, signal, run, task = NUTRITION_TASK }) {
     const startedAt = Date.now();
@@ -4267,13 +4546,14 @@ const claudeAI = {
       run?.attempts.push({ error: `${e?.code || 'error'}: ${String(e?.message || '').slice(0, 80)}`, ms: Date.now() - startedAt });
       throw err;
     }
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');   // cancelled while the answer was on its way
     const used = res.modelApplied || `tier:${res.modelTierApplied}`;
     run?.attempts.push({ status: 'ok', ms: Date.now() - startedAt, used, truncated: res.truncated });
     if (res.truncated) throw Object.assign(new Error(t('emptyResult')), { status: 'claude' });
     const result = task.parse({ candidates: [{ content: { parts: [{ text: extractJsonText(res.text) }] } }] });
     if (run) Object.assign(run, { used, chars: res.text.length }, task.summarize(result));
-    result.meta = { ms: Date.now() - startedAt, attempts: 1, model: used };
-    result.modelUsed = this.label(used);
+    result.meta = { ms: Date.now() - startedAt, attempts: 1, model: used, claude: true };
+    result.modelUsed = this.label(used, true);
     console.info('[NutriLens] Claude', used, result.meta);
     return result;
   }
@@ -4926,13 +5206,14 @@ function scaleToPackage(items, packageKcal) {
 }
 
 /** Precise pipeline: main analysis (with fallback), then two light weight re-estimates in parallel. */
-async function analyzePrecise({ key, model, job, signal, rec, backups }) {
+async function analyzePrecise({ key, model, job, signal, rec, backups, onStage }) {
   const prompt = buildPrecisePrompt({ lang: job.lang, imageCount: job.images.length, note: job.note, refs: job.refs || [] });
   const images = job.images.map(dataUrlToPart);
   const main = await gemini.generateWithFallback({
     key, model, parts: [{ text: prompt.user }, ...images], system: prompt.system, signal, rec, task: PRECISE_TASK, backups
   });
 
+  onStage?.(2);                                     // the portions are checked next
   const wp = buildWeightPrompt(main.rawItems, job.note, job.refs || []);
   const started = Date.now();
   // The re-estimates look at the photos; a description alone has nothing more for them to measure.
@@ -5805,7 +6086,8 @@ const analysisBadgeText = a => (a.isDemo ? t('badgeDemo') : t('badgeAi'));
 function analysisMetaText(a) {
   if (a.isDemo || !a.meta) return '';
   const parts = [a.angleCount ? t('badge', { n: a.angleCount }) : t('badgeText'), a.refCount ? t('badgeRefs', { n: a.refCount }) : '', a.modelUsed,
-    t('badgeMeta', { s: (a.meta.ms / 1000).toFixed(1), th: a.meta.thoughts, in: a.meta.prompt })];
+    a.meta.claude ? t('badgeSeconds', { s: Math.round((a.totalMs || a.meta.ms) / 1000) })   // Claude reports no token counts
+      : t('badgeMeta', { s: (a.meta.ms / 1000).toFixed(1), th: a.meta.thoughts, in: a.meta.prompt })];
   if (a.meta.attempts > 1) parts.push(t('badgeRetries', { n: a.meta.attempts - 1 }));
   return parts.filter(Boolean).join(' · ');
 }
@@ -5899,15 +6181,20 @@ const jobFailedView = j => ({
     <div class="text-xs text-slate-500 mono">${esc(j.date)} ${esc(j.time)}</div>`,
   actions: jobButton('job-retry', j.id, 'jobRetry', 'btn-primary') + jobButton('job-dismiss', j.id, 'jobDismiss')
 });
+/** Claude build, precise mode: which of the two steps is running. */
+const jobStageKey = j => (IS_CLAUDE && j.mode === 'precise' ? (j.stage === 2 ? 'claudeStage2' : 'claudeStage1') : 'jobRunning');
 const JOB_VIEWS = {
   running: j => ({
     body: `
       <div class="flex items-center gap-1.5 text-sm font-medium">
         ${icon('loader', 'animate-spin text-emerald-600')}
-        <span>${t('jobRunning')}</span>
+        <span>${t(jobStageKey(j))}</span>
         <span class="mono text-slate-500" data-elapsed="${esc(j.id)}">${elapsedSeconds(j)}s</span>
       </div>
-      <div class="text-xs text-slate-500 mt-0.5">${t('jobKeepOpen')}</div>`,
+      <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${IS_CLAUDE
+        ? t('claudeKeepOpen', { range: t(/opus/.test(j.model || '') ? 'claudeTimeOpus' : 'claudeTimeDefault') }) : t('jobKeepOpen')}</div>
+      <div class="${elapsedSeconds(j) > CONFIG.claude.slowSeconds && IS_CLAUDE ? '' : 'hidden'} text-xs text-amber-600 dark:text-amber-400 mt-0.5"
+        data-slow="${esc(j.id)}">${t('claudeSlow')}</div>`,
     actions: jobButton('job-cancel', j.id, 'jobCancel')
   }),
   done: j => ({
@@ -5915,7 +6202,7 @@ const JOB_VIEWS = {
       <div class="text-sm font-semibold">✓ ${esc(j.result.name)}</div>
       <div class="text-xs text-slate-500">
         ${roundedTotals(j.result.items).cal} kcal · ${esc(j.time)}${j.result.isDemo ? ` · ${t('demoBadge')}` : ''}
-      </div>`,
+      </div>${IS_CLAUDE ? `<div class="text-xs text-amber-600 dark:text-amber-400">${t('claudeUnsaved')}</div>` : ''}`,
     actions: jobButton('job-open', j.id, 'jobOpen', 'btn-primary') + jobButton('job-dismiss', j.id, 'jobDismiss')
   }),
   error: jobFailedView,
@@ -5943,6 +6230,12 @@ function tickJobTimers() {
     const job = state.jobs.find(j => j.id === el.dataset.elapsed);
     if (job) el.textContent = elapsedSeconds(job) + 's';
   });
+  if (IS_CLAUDE) {
+    $$('[data-slow]').forEach(el => {
+      const job = state.jobs.find(j => j.id === el.dataset.slow);
+      if (job) el.classList.toggle('hidden', elapsedSeconds(job) <= CONFIG.claude.slowSeconds);
+    });
+  }
 }
 
 /** Key status: an amber dot on the ⋯ button when no key is set, plus a word in the menu. */
@@ -6087,7 +6380,7 @@ function submitAnalysis() {
   state.jobs.push(job);
   photos.saveForJob(job, state.keptImages.filter(Boolean));
   $('#mealNoteInput').value = ''; clearAllImages(); mealTime.reset();
-  persistJobs(); renderJobs(); toast(t('jobQueued'));
+  persistJobs(); renderJobs(); if (!IS_CLAUDE) toast(t('jobQueued'));   // the Claude build's card says it already
   runJob(job);
 }
 
@@ -6122,12 +6415,12 @@ const abortableDelay = (ms, signal) => new Promise((resolve, reject) => {
   signal.addEventListener('abort', () => { clearTimeout(id); reject(new DOMException('Aborted', 'AbortError')); }, { once: true });
 });
 
-async function analyzeJob(job, { apiKey, model, signal, rec, mode = 'standard', backups }) {
+async function analyzeJob(job, { apiKey, model, signal, rec, mode = 'standard', backups, onStage }) {
   if (!apiKey) {
     await abortableDelay(650, signal);
     return demoAnalysis(job.note, Math.max(1, job.images.length));
   }
-  if (mode === 'precise') return analyzePrecise({ key: apiKey, model, job, signal, rec, backups });
+  if (mode === 'precise') return analyzePrecise({ key: apiKey, model, job, signal, rec, backups, onStage });
   const prompt = buildNutritionPrompt({ lang: job.lang, imageCount: job.images.length, note: job.note, refs: job.refs || [] });
   const parts = [{ text: prompt.user }, ...job.images.map(dataUrlToPart)];
   return gemini.generateWithFallback({ key: apiKey, model, parts, system: prompt.system, signal, rec, backups });
@@ -6148,11 +6441,11 @@ async function runJob(job) {
   const timeout = armTimeout(() => ctrl.abort('TIMEOUT'), jobTimeoutMs(mode));
 
   try {
-    const result = await analyzeJob(job, { apiKey, model, signal: ctrl.signal, rec, mode });
+    const result = await analyzeJob(job, { apiKey, model, signal: ctrl.signal, rec, mode, onStage: n => { job.stage = n; renderJobs(); } });
     job.result = {
       name: String(result.name || '').slice(0, 120), reasoning: String(result.reasoning || ''), angleCount: job.images.length,
       refCount: job.refs?.length || 0,
-      modelUsed: result.modelUsed, meta: result.meta, isDemo: !!result.isDemo, precise: !!result.precise,
+      modelUsed: result.modelUsed, meta: result.meta, isDemo: !!result.isDemo, precise: !!result.precise, totalMs: Date.now() - startedAt,
       items: result.items.map(({ name, weight, cal, p, c, f, src, range }) => ({ name, weight, cal, p, c, f, ...(src ? { src, range } : {}) }))
     };
     Object.assign(job, { status: 'done', finishedAt: Date.now() });
@@ -6189,7 +6482,7 @@ function openJobResult(id, el) {
   if (current?.dirty && current.jobId !== id && el) return confirmTwice(el, 'discardEdits', () => openJobResult(id));
   const r = job.result;
   state.analysis = {
-    name: r.name, reasoning: r.reasoning, angleCount: r.angleCount, refCount: r.refCount || 0, modelUsed: r.modelUsed, meta: r.meta,
+    name: r.name, reasoning: r.reasoning, angleCount: r.angleCount, refCount: r.refCount || 0, modelUsed: r.modelUsed, meta: r.meta, totalMs: r.totalMs,
     isDemo: r.isDemo, precise: !!r.precise,
     jobId: job.id, date: job.date, time: job.time, dirty: false, items: r.items.map(toEditableItem),
     photoId: (job.imageInfo?.length || job.images.length) ? job.id : undefined,     // photos were kept under the job id
@@ -6645,13 +6938,13 @@ function seedDemo({ withProfile = false } = {}) {
   if (withProfile) { db.saveCalcProfile(DEMO_CALC); db.resetGoals(DEMO_GOALS); }
 }
 /** First visit gets demo data; later visits only backfill missing goals. */
-function initData() {
+function initData({ unknownUser = false } = {}) {
   restoreJobs();
   runMigrations().forEach(n => setTimeout(() => toast(t(n.key, n.vars)), 900));
   const firstVisit = !store.has(STORAGE_KEYS.weights) && !store.has(STORAGE_KEYS.meals);
-  const isNewUser = firstVisit && store.str(STORAGE_KEYS.cleared) !== 'true';
+  const isNewUser = firstVisit && store.str(STORAGE_KEYS.cleared) !== 'true' && !unknownUser;
   // Existing users (any stored data) never see the onboarding; new users get demo data plus the welcome screen.
-  if (!store.has(STORAGE_KEYS.onboarding)) onboarding.save({ status: isNewUser ? 'new' : 'done', step: 0 });
+  if (!store.has(STORAGE_KEYS.onboarding) && !unknownUser) onboarding.save({ status: isNewUser ? 'new' : 'done', step: 0 });
   if (isNewUser) seedDemo({ withProfile: true });
   else if (!store.has(STORAGE_KEYS.goals)) db.resetGoals(goalsFromMacros(computeMacros(db.calcProfile())), db.firstRecordedDate());
   // The current goals may have been changed by a version without goal history (e.g. the site was
@@ -6681,14 +6974,16 @@ function exportCSV() {
   const cell = v => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
   const rows = [['Date', 'Time', 'Meal', 'Angles', 'Calories(kcal)', 'Protein(g)', 'Carbs(g)', 'Fat(g)', 'Items'],
     ...db.meals().map(m => [m.date, m.time, m.name, m.angleCount, m.cal, m.p, m.c, m.f, m.items.map(i => `${i.name}(${Math.round(i.weight)}g)`).join('; ')])];
-  download(new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' }), `NutriLens_${todayStr()}.csv`);
-  toast(t('csvDone'));
+  download(new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' }), `NutriLens_${todayStr()}.csv`)
+    .then(ok => { if (ok) toast(t('csvDone')); });
 }
 /** Claude build: whether the records reach the cloud copy, with the reason when they do not. */
 function renderCloudStatus() {
   const el = $('#cloudStatus'); if (!el || !IS_CLAUDE) return;
   el.classList.remove('hidden');
-  el.textContent = cloud.col && !cloud.failed ? t('cloudOn') : t('cloudOff', { why: cloud.why || '?' });
+  const why = { 'no-db': 'cloudWhyNoDb', 'no-user': 'cloudWhyNoDb', 'no-id': 'cloudWhyNoDb', timeout: 'cloudWhyTimeout',
+    'no-runtime': 'cloudWhyNoRuntime' }[cloud.why];
+  el.textContent = cloud.col && !cloud.failed ? t('cloudOn') : t('cloudOff', { why: why ? t(why) : t('cloudWhyOther', { code: cloud.why || '?' }) });
 }
 /** "Last backup: 10/20" under the backup buttons. */
 function renderBackupStatus() {
@@ -6707,11 +7002,12 @@ async function exportJSON() {
     favorites: db.favs(), scaleRefs: db.scaleRefs(), scaleRefsOn: db.scaleRefsOn(), suggestPrefs: suggestPrefs(), exportedAt: new Date().toISOString(),
     photos: await photos.exportFor(meals.filter(m => !m.demo).map(m => m.photoId))
   };
-  const save = () => {
-    download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `NutriLens_Backup_${todayStr()}.json`);
-    store.setStr(STORAGE_KEYS.lastBackup, todayStr());
-    toast(t('backupDone')); renderBanner(); renderBackupStatus();
-  };
+  const save = () => download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `NutriLens_Backup_${todayStr()}.json`)
+    .then(ok => {                  // only a file that was really handed over counts as a backup
+      if (!ok) return;
+      store.setStr(STORAGE_KEYS.lastBackup, todayStr());
+      toast(t('backupDone')); renderBanner(); renderBackupStatus();
+    });
   // Reading many photos can outlast the tap's permission to download (iOS allows about a second): then ask for a second tap.
   if (Date.now() - started < 800) save();
   else toast(t('backupReady'), 'success', { label: t('backupSave'), run: save });
@@ -6760,7 +7056,7 @@ async function copyDiagnostics() {
   const records = perfLog.all(); if (!records.length) return toast(t('logEmpty'), 'error');
   const text = JSON.stringify([...records].reverse(), null, 2);     // newest first: survives a truncated paste
   try { await navigator.clipboard.writeText(text); toast(t('logCopied', { n: records.length })); }
-  catch { download(new Blob([text], { type: 'application/json' }), `NutriLens_diag_${todayStr()}.json`); toast(t('logDownloaded')); }
+  catch { download(new Blob([text], { type: 'application/json' }), `NutriLens_diag_${todayStr()}.json`).then(ok => ok && toast(t('logDownloaded'))); }
 }
 
 /* 10.9 API settings */
@@ -6876,7 +7172,7 @@ const BANNER_STATES = [
   // No key: analysis results are only the demo engine's.
   () => !db.apiKey() && { text: 'bannerNoKey', actions: [['open-modal', 'bannerSetKey', 'btn-primary', 'apiModal']] },
   // Real records exist but have not been backed up for a while (they live only on this device).
-  () => { const r = backupReminder(); return r && { text: r.never ? 'bannerBackupNever' : 'bannerBackup', vars: r,
+  () => { const r = !(IS_CLAUDE && cloud.col) && backupReminder(); return r && { text: r.never ? 'bannerBackupNever' : 'bannerBackup', vars: r,
     actions: [['export-json', 'bannerBackupNow', 'btn-primary'], ['snooze-backup', 'bannerLater', 'btn-soft']] }; },
   // The weight moved enough since the goals were calculated that they no longer fit.
   () => { const r = recalcReminder(); return r && { text: 'bannerRecalc', vars: r,
@@ -7323,7 +7619,7 @@ function renderValidation() {
             ${VAL_RUNS.map(n => `<option value="${n}" ${n === 3 ? 'selected' : ''}>${n}</option>`).join('')}
           </select></label>
       </div>
-      <p class="text-xs text-slate-500">${t('valModelNote', { m: db.model() })}</p>
+      <p class="text-xs text-slate-500">${t('valModelNote', { m: IS_CLAUDE ? claudeAI.label(db.model(), true) : db.model() })}</p>
       <p id="valCost" class="text-xs text-slate-500"></p>
       ${running
         ? `<div class="flex items-center gap-2 text-sm">${icon('loader', 'animate-spin text-emerald-600')}
@@ -7355,7 +7651,8 @@ function renderValidation() {
 function updateValidationCost() {
   const el = $('#valCost'); if (!el) return;
   const runs = Number($('#valRuns')?.value || 3), std = $('#valStd')?.checked, pre = $('#valPre')?.checked;
-  el.textContent = t('valCost', { main: runs * ((std ? 1 : 0) + (pre ? 1 : 0)), lite: pre ? runs * 2 : 0 });
+  el.textContent = t(IS_CLAUDE ? 'claudeValCost' : 'valCost', { main: runs * ((std ? 1 : 0) + (pre ? 1 : 0)), lite: pre ? runs * 2 : 0,
+    n: runs * ((std ? 1 : 0) + (pre ? 3 : 0)) });
 }
 function openValidation() { modal.close(); renderValidation(); modal.open('validateModal'); }
 async function onValidationPhoto(el) {
@@ -7789,9 +8086,16 @@ function bindEvents() {
 let appReady = null;
 const appBooted = new Promise(r => { appReady = r; });
 window.addEventListener('DOMContentLoaded', async () => {
-  if (IS_CLAUDE) await cloud.start();       // the records come from the viewer's cloud copy before anything renders
+  let offline = false;
+  if (IS_CLAUDE) {                          // the records come from the viewer's cloud copy before anything renders
+    offline = (await cloud.start()) === 'offline';
+    lang = store.str(STORAGE_KEYS.lang, 'zh') === 'en' ? 'en' : 'zh';   // the language may have come from the cloud
+  }
   renderStaticTemplates();
-  initData();
+  // Offline without knowing the cloud: start-up defaults are not changes, and nobody is greeted as a new user.
+  cloud.quiet = offline;
+  initData({ unknownUser: offline });
+  cloud.quiet = false;
   $('#selectedDate').value = todayStr();
   mealTime.reset();
   bindEvents();
@@ -7866,9 +8170,17 @@ const photoStore = {
  * record), so photos of deleted or expired meals are removed without reading the collection.
  */
 const cloudPhotos = {
-  timer: null, running: false, again: false, pending: new Map(),          // pending: photos from a backup file, until they are sent
+  timer: null, running: false, again: false, booted: false,
+  pending: new Map(),            // photos not (yet) in IndexedDB: from a backup file, or when this browser cannot store them
+  goneSince: new Map(),          // photo id → when its meal disappeared; deleted only after the undo time has passed
   col: () => (IS_CLAUDE ? cloud.photoCol : null),
-  ids() { const v = store.get(STORAGE_KEYS.photoCloud, []); return Array.isArray(v) ? v.filter(x => typeof x === 'string') : []; },
+  /** Ids of the photos in the cloud (STORAGE_KEYS.photoCloud is { id: change time }, negative once removed). */
+  ids() { return Object.entries(JSON.parse(mergeStampMap(store.str(STORAGE_KEYS.photoCloud), null))).filter(([, ts]) => ts > 0).map(([id]) => id); },
+  mark(id, present) {
+    const map = JSON.parse(mergeStampMap(store.str(STORAGE_KEYS.photoCloud), null)), ts = cloud.clock();
+    map[id] = present ? ts : -ts;
+    store.setStr(STORAGE_KEYS.photoCloud, JSON.stringify(map));
+  },
   /** A JPEG data URL at most `px` on its long side. */
   shrink: (src, px, quality) => new Promise((resolve, reject) => {
     const img = new Image();
@@ -7900,20 +8212,33 @@ const cloudPhotos = {
       const wanted = new Map(db.meals().filter(m => m.photoId && !m.demo && m.date >= cutoff).map(m => [m.photoId, m.date]));
       const have = new Set(this.ids());
       for (const [id, date] of wanted) {
+        this.goneSince.delete(id);
         if (have.has(id)) continue;
-        const stored = await photoStore.get(id).then(r => r?.images || []).catch(() => []);
-        const images = stored.length ? stored : cloudPhotos.pending.get(id) || [];
-        if (!images.length) continue;                                  // not on this device: another device sends it
-        let src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.7);
-        if (src.length > 200_000) src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.45);
-        await col.doc(id).set({ date, src });
-        have.add(id); store.set(STORAGE_KEYS.photoCloud, [...have]); cloudPhotos.pending.delete(id);
+        try {                                                          // one bad photo must not stop the others
+          const stored = await photoStore.get(id).then(r => r?.images || []).catch(() => []);
+          const images = stored.length ? stored : cloudPhotos.pending.get(id) || [];
+          if (!images.length) continue;                                // not on this device: another device sends it
+          let src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.7);
+          if (src.length > 200_000) src = await this.shrink(images[0], CONFIG.photos.cloudPx, 0.45);
+          await col.doc(id).set({ date, src });
+          have.add(id); this.mark(id, true);
+        } catch (err) { console.warn('[NutriLens] cloud photo skipped', id, err); }
+        cloudPhotos.pending.delete(id);
       }
+      // A meal just deleted may come back with "Undo": its photo is deleted only once the undo time is over.
+      const wait = CONFIG.ui.undoToastMs + 3000, now = Date.now();
+      let later = false;
       for (const id of [...have]) {
         if (wanted.has(id)) continue;
-        await col.doc(id).delete();
-        have.delete(id); store.set(STORAGE_KEYS.photoCloud, [...have]);
+        if (!this.goneSince.has(id)) this.goneSince.set(id, this.booted ? now : 0);
+        if (now - this.goneSince.get(id) < wait) { later = true; continue; }
+        try {
+          await col.doc(id).delete();
+          have.delete(id); this.mark(id, false); this.goneSince.delete(id);
+        } catch (err) { console.warn('[NutriLens] cloud photo not deleted', id, err); }
       }
+      this.booted = true;
+      if (later) { clearTimeout(this.timer); this.timer = setTimeout(() => this.sync(), wait); }
     } catch (err) { console.warn('[NutriLens] cloud photos', err); } finally {
       this.running = false;
       if (this.again) { this.again = false; this.sync(); }
@@ -7945,8 +8270,9 @@ const photos = {
   async saveForJob(job, images = job.images) {
     if (!images.length) return;
     try {
-      await photoStore.put({ id: job.id, date: job.date, savedAt: Date.now(), images: [...images] });
       photoCache.set(job.id, [...images]);
+      if (IS_CLAUDE) cloudPhotos.pending.set(job.id, [...images]);   // the cloud copy does not depend on IndexedDB
+      await photoStore.put({ id: job.id, date: job.date, savedAt: Date.now(), images: [...images] });
       navigator.storage?.persist?.().catch(() => {});              // ask the browser not to evict the data
     } catch (err) { console.warn('[NutriLens] photos not saved', err); }
   },
@@ -7981,7 +8307,9 @@ const photos = {
     const out = [];
     for (const id of new Set(ids.filter(Boolean))) {
       const rec = await photoStore.get(id).catch(() => null);
-      if (rec?.images?.length) out.push({ id, date: rec.date, images: rec.images });
+      if (rec?.images?.length) { out.push({ id, date: rec.date, images: rec.images }); continue; }
+      const fromCloud = IS_CLAUDE ? await cloudPhotos.fetch(id) : [];   // the Claude build: also the photos only in the cloud
+      if (fromCloud.length) out.push({ id, date: db.meals().find(m => m.photoId === id)?.date || todayStr(), images: fromCloud });
     }
     return out;
   },
@@ -8006,8 +8334,12 @@ const photos = {
     clearTimeout(cloudPhotos.timer); cloudPhotos.timer = setTimeout(() => cloudPhotos.sync(), 1000);
   },
 
-  /** "Delete all data". */
-  clear() { photoCache.clear(); return photoStore.clear().catch(() => {}); },
+  /** "Delete all data" (not undoable: the cloud photos go at once). */
+  clear() {
+    photoCache.clear();
+    if (IS_CLAUDE) { cloudPhotos.ids().forEach(id => cloudPhotos.goneSince.set(id, 0)); photos.scheduleCloudSync(); }
+    return photoStore.clear().catch(() => {});
+  },
 
   /** Photo section of the data modal: retention choice and how much is stored. */
   async renderSettings() {
@@ -8016,8 +8348,8 @@ const photos = {
     $('#photoForeverWarn').classList.toggle('hidden', select.value !== 'forever');
     try {
       const [count, estimate] = await Promise.all([photoStore.count(), navigator.storage?.estimate?.().catch(() => null)]);
-      $('#photoUsage').textContent = estimate?.usage
-        ? t('photoUsage', { n: count, mb: Math.max(0.1, estimate.usage / 1048576).toFixed(1) }) : t('photoCount', { n: count });
+      $('#photoUsage').textContent = IS_CLAUDE ? t('photoCloudCount', { n: cloudPhotos.ids().length })   // what survives is the cloud copy
+        : estimate?.usage ? t('photoUsage', { n: count, mb: Math.max(0.1, estimate.usage / 1048576).toFixed(1) }) : t('photoCount', { n: count });
     } catch { $('#photoUsage').textContent = t('photoUnavailable'); }
   },
   onRetentionChange(el) {
@@ -8268,7 +8600,8 @@ async function buildShareImage() {
     // A meal image is shown whole; a long day image fills the width and scrolls.
     preview.classList.toggle('max-h-[55vh]', share.kind === 'meal'); preview.classList.toggle('w-auto', share.kind === 'meal');
     preview.classList.toggle('mx-auto', share.kind === 'meal'); preview.classList.toggle('w-full', share.kind !== 'meal');
-    $('[data-action="share-send"]').classList.toggle('hidden', !canShareFiles(shareFile()));   // e.g. most desktop browsers
+    // Most desktop browsers cannot share files; the Claude artifact frame blocks Web Share even where the phone could.
+    $('[data-action="share-send"]').classList.toggle('hidden', IS_CLAUDE || !canShareFiles(shareFile()));
     shareButtons().forEach(b => { b.disabled = false; });
   } catch (err) {
     console.warn('[NutriLens] share image failed', err); toast(t('shareFailed'), 'error');
@@ -8286,7 +8619,7 @@ async function sendShare() {
   try { await navigator.share({ files: [shareFile()] }); }
   catch (err) { if (err.name !== 'AbortError') toast(t('shareFailed'), 'error'); }   // AbortError = the user closed the sheet
 }
-const saveShare = () => { if (share.blob) download(share.blob, shareFileName()); };
+const saveShare = () => { if (share.blob) download(share.blob, shareFileName()); };   // download tells the viewer if it fails
 
 /* ── P6. Wiring ─────────────────────────────────────────────────────── */
 Object.assign(ACTIONS, {
