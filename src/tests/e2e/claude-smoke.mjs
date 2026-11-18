@@ -39,18 +39,19 @@ function installFake(cloudDocs) {
       : 'Here it is:\n```json\n' + JSON.stringify({ reasoning: 'r', name: '雞腿', packageKcal: 0, items: [item] }) + '\n```';
     return { text, truncated: false, modelTierApplied: 'default' };
   };
-  const ref = p => ({
+  const mustBe = (p, odd) => { if (p.split('/').length % 2 !== (odd ? 1 : 0)) throw new TypeError('db: bad segment count in ' + p); };
+  const ref = p => (mustBe(p, false), {
     set: async body => { fake.writes.push(p); docs.set(p, JSON.parse(JSON.stringify(body))); },
     get: async () => ({ exists: docs.has(p), data: () => docs.get(p) })
   });
-  const db = { collection: base => ({ doc: id => ref(`${base}/${id}`),
+  const db = { collection: base => (mustBe(base, true), { doc: id => ref(`${base}/${id}`),
     get: async () => ({ docs: [...docs].filter(([p]) => p.startsWith(base + '/')).map(([p, b]) => ({ id: p.slice(base.length + 1), data: () => b })) }) }) };
   const caps = { sample, db, user: { id: async () => 'u1' }, downloads: { save: async r => { fake.saves.push(r.filename); return { status: 'saved' }; } } };
   // Like the real runtime, use() only works as a method of window.claude.
   window.claude = { use(name) { if (this !== window.claude) throw new TypeError('Illegal invocation'); return new Promise(r => setTimeout(() => r(caps[name] ?? null), 30)); } };
 }
 
-const KV = 'data/users/u1/kv';
+const KV = 'data/users/u1';
 const tests = [];
 const it = (name, fn) => tests.push({ name, fn });
 

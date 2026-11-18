@@ -341,7 +341,7 @@ const store = {
 
 /**
  * Claude build only: the records kept in the viewer's private subtree of the artifact's database
- * (data/users/<id>/kv/<doc>, readable by nobody else, the owner included), so they survive a cleared browser and
+ * (data/users/<id>/<doc>, readable by nobody else, the owner included), so they survive a cleared browser and
  * reach the viewer's other devices. One document per key, { key, v: the stored string (null = deleted), ts };
  * meals are split by month (<key>@YYYY-MM) to stay far below the 256 KiB document limit. Last change wins per key:
  * on load a key whose cloud copy is newer than this browser's replaces it, and newer local keys are sent.
@@ -422,7 +422,7 @@ const cloud = {
       if (!db || !user) { this.why = !db ? 'no-db' : 'no-user'; return; }
       const id = await user.id();
       if (!id) { this.why = 'no-id'; return; }
-      const col = db.collection(`data/users/${id}/kv`);
+      const col = db.collection(`data/users/${id}`);          // the viewer's own collection (3 segments: a collection path)
       const snap = await col.get();
       if (late) return;
       const byKey = new Map();

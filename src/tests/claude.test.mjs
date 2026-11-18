@@ -6,18 +6,21 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadApp, plain } from './load.mjs';
 
+const segs = p => p.split('/').length;
+const mustBe = (p, odd, what) => { if (segs(p) % 2 !== (odd ? 1 : 0)) throw new TypeError(`db ${what}: bad segment count in ${p}`); };
+
 const PHOTO = 'data:image/jpeg;base64,' + Buffer.from('fake-jpeg').toString('base64');
 
 /** A Claude build with a fake `sample` that answers from `reply(prompt, opts)`, and an in-memory db. */
 function claudeApp({ reply, storage = {}, cloudDocs = {} } = {}) {
   const calls = [], docs = new Map(Object.entries(cloudDocs)), writes = [];
   const sample = async (prompt, opts) => { calls.push({ prompt, opts }); return reply(prompt, opts, calls.length); };
-  const docRef = path => ({
+  const docRef = path => (mustBe(path, false, 'doc()'), {
     set: async body => { writes.push({ path, body }); docs.set(path, body); },
     get: async () => ({ exists: docs.has(path), data: () => docs.get(path) })
   });
   const db = {
-    collection: base => ({
+    collection: base => (mustBe(base, true, 'collection()'), {
       doc: id => docRef(`${base}/${id}`),
       get: async () => ({ docs: [...docs].filter(([p]) => p.startsWith(base + '/')).map(([p, b]) => ({ id: p.slice(base.length + 1), data: () => b })) })
     })
@@ -102,7 +105,7 @@ describe('Claude build: cloud records', () => {
   });
 
   test('a newer cloud copy replaces this browser, a newer local key is sent, photos and jobs are not', async () => {
-    const base = 'data/users/u1/kv';
+    const base = 'data/users/u1';
     const { app, writes } = claudeApp({
       reply: () => ({}),
       storage: { nutrilens_goals_v1: '{"cal":1800}', nutrilens_weights_v1: '[{"date":"2026-11-01","kg":70}]', nutrilens_jobs_v1: '[1]',
