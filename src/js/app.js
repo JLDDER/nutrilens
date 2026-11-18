@@ -26,6 +26,12 @@
 
 /* ── 1. Config & constants ──────────────────────────────────────────── */
 
+/** Which AI answers: 'gemini' (the GitHub Pages site, with the user's own key) or 'claude' (the Claude artifact build,
+ *  where build.mjs --claude sets window.NUTRILENS_PROVIDER before the scripts run). */
+const IS_CLAUDE = globalThis.NUTRILENS_PROVIDER === 'claude';
+/** A page-side timer for a request; none in the Claude build, whose platform ends over-long calls itself. */
+const armTimeout = (fn, ms) => (IS_CLAUDE ? null : setTimeout(fn, ms));
+
 /** localStorage keys. Changing a key requires a migration (see MIGRATIONS). */
 const STORAGE_KEYS = {
   meals: 'nutrilens_meals_v1',
@@ -38,6 +44,7 @@ const STORAGE_KEYS = {
   perfLog: 'nutrilens_perf_log_v1',
   apiKey: 'nutrilens_apikey_v1',
   model: 'nutrilens_apimodel_v1',
+  claudeModel: 'nutrilens_claude_model_v1', // Claude build: 'tier:default' or a Claude model id
   theme: 'nutrilens_theme_v1',             // also read by the inline theme script in <head>
   lang: 'nutrilens_lang_v1',
   cleared: 'nutrilens_cleared_flag_v1',    // set after "clear all" so demo data is not re-seeded
@@ -83,6 +90,15 @@ const CONFIG = {
     stallMs: 5_000,
     /** After a key could not use Google Search (free keys often cannot), it is not offered again for this long. */
     searchOffHours: 12
+  },
+  /** The Claude artifact build (build.mjs --claude): the viewer's own Claude account answers through the artifact
+   *  runtime's `sample`, so there is no key, no fallback chain and no page-side timeout (the platform ends long calls). */
+  claude: {
+    /** 'tier:<t>' asks for a model tier; anything else is a Claude API model id, which falls back to its tier. */
+    defaultModel: 'tier:default',
+    modelOptions: [['tier:default', 'claudeModelDefault'], ['claude-opus-5-5', 'Claude Opus 5.5'], ['claude-sonnet-5-5', 'Claude Sonnet 5.5']],
+    /** The two re-estimates stay on the default tier whichever model the main analysis uses (the owner wants accuracy). */
+    weightModels: ['tier:default', 'tier:default']
   },
   /** Precise mode: main analysis, then the weights re-estimated by two light models. */
   precise: {
@@ -275,6 +291,13 @@ const nowTime = () => { const d = new Date(); return `${pad2(d.getHours())}:${pa
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
 const icon = (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 function download(blob, filename) {
+  if (IS_CLAUDE) {                 // the artifact frame refuses downloads: the runtime's `downloads` asks the viewer to save
+    Promise.resolve(globalThis.claude?.use?.('downloads')).then(d => {
+      if (!d) throw { code: 'unavailable' };
+      return d.save({ filename, data: blob });
+    }).catch(e => { if (e?.code !== 'declined') toast(t('downloadFail'), 'error'); });
+    return;
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = filename; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -284,14 +307,157 @@ function download(blob, filename) {
 
 /** Thin localStorage wrapper. Every access is guarded because storage can be
  *  disabled (private mode, blocked site data) or full. */
+/**
+ * Where store keeps its strings. On GitHub Pages: localStorage. In the Claude build, localStorage may be missing or
+ * emptied, so the strings live in memory, are mirrored to localStorage when it works, and every change is sent to the
+ * viewer's private cloud store (see cloud); `load` puts a value back from the cloud without sending it again.
+ */
+const kv = (() => {
+  if (!IS_CLAUDE) {
+    return { get: k => localStorage.getItem(k), set: (k, v) => localStorage.setItem(k, v), del: k => localStorage.removeItem(k) };
+  }
+  const mem = new Map(), mirror = fn => { try { fn(); } catch { /* the cloud copy still holds it */ } };
+  mirror(() => {
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k?.startsWith('nutrilens_')) mem.set(k, localStorage.getItem(k)); }
+  });
+  return {
+    get: k => (mem.has(k) ? mem.get(k) : null),
+    set(k, v) { v = String(v); if (mem.get(k) === v) return; mem.set(k, v); mirror(() => localStorage.setItem(k, v)); cloud.touch(k); },
+    del(k) { if (!mem.has(k)) return; mem.delete(k); mirror(() => localStorage.removeItem(k)); cloud.touch(k); },
+    load(k, v) {
+      if (v === null) { mem.delete(k); mirror(() => localStorage.removeItem(k)); } else { mem.set(k, v); mirror(() => localStorage.setItem(k, v)); }
+    }
+  };
+})();
+
 const store = {
-  get(key, fallback) { try { const raw = localStorage.getItem(key); return raw === null ? fallback : JSON.parse(raw); } catch { return fallback; } },
-  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { toast(t('storageFail'), 'error'); return false; } },
-  str(key, fallback = '') { try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; } },
-  setStr(key, value) { try { localStorage.setItem(key, value); } catch { /* storage unavailable: ignore */ } },
-  has(key) { try { return localStorage.getItem(key) !== null; } catch { return false; } },
-  del(key) { try { localStorage.removeItem(key); } catch { /* storage unavailable: ignore */ } }
+  get(key, fallback) { try { const raw = kv.get(key); return raw === null ? fallback : JSON.parse(raw); } catch { return fallback; } },
+  set(key, value) { try { kv.set(key, JSON.stringify(value)); return true; } catch { toast(t('storageFail'), 'error'); return false; } },
+  str(key, fallback = '') { try { return kv.get(key) ?? fallback; } catch { return fallback; } },
+  setStr(key, value) { try { kv.set(key, value); } catch { /* storage unavailable: ignore */ } },
+  has(key) { try { return kv.get(key) !== null; } catch { return false; } },
+  del(key) { try { kv.del(key); } catch { /* storage unavailable: ignore */ } }
 };
+
+/**
+ * Claude build only: the records kept in the viewer's private subtree of the artifact's database
+ * (data/users/<id>/kv/<doc>, readable by nobody else, the owner included), so they survive a cleared browser and
+ * reach the viewer's other devices. One document per key, { key, v: the stored string (null = deleted), ts };
+ * meals are split by month (<key>@YYYY-MM) to stay far below the 256 KiB document limit. Last change wins per key:
+ * on load a key whose cloud copy is newer than this browser's replaces it, and newer local keys are sent.
+ * Not kept in the cloud: the job queue (holds photos), diagnostics, suggestion cache and Gemini-only settings.
+ * Photos stay in this browser's IndexedDB.
+ */
+const cloud = {
+  col: null, dirty: new Set(), timer: null, writing: false, sent: new Map(), failed: false,
+  skip: () => new Set([STORAGE_KEYS.jobs, STORAGE_KEYS.perfLog, STORAGE_KEYS.apiKey, STORAGE_KEYS.model,
+    STORAGE_KEYS.suggestCache, STORAGE_KEYS.searchOff]),
+  syncs(key) { return key.startsWith('nutrilens_') && !this.skip().has(key); },
+  stamps() { try { return JSON.parse(localStorage.getItem('nutrilens_cloud_ts') || '{}') || {}; } catch { return {}; } },
+  stamp(key, ts) { try { localStorage.setItem('nutrilens_cloud_ts', JSON.stringify({ ...this.stamps(), [key]: ts })); } catch { /* none */ } },
+  /** The documents for one key's current value. */
+  docsFor(key) {
+    const raw = kv.get(key), ts = this.stamps()[key] || Date.now();
+    if (key !== STORAGE_KEYS.meals || raw === null) return [{ id: key, body: { key, v: raw, ts } }];
+    let meals; try { meals = JSON.parse(raw); } catch { meals = []; }
+    const months = new Map();
+    for (const m of Array.isArray(meals) ? meals : []) {
+      const ym = String(m?.date || '').slice(0, 7) || 'none';
+      if (!months.has(ym)) months.set(ym, []);
+      months.get(ym).push(m);
+    }
+    const docs = [...months].map(([ym, list]) => ({ id: `${key}@${ym}`, body: { key, v: JSON.stringify(list), ts } }));
+    for (const id of this.sent.keys()) {                         // a month that became empty is written empty
+      if (id.startsWith(key + '@') && !months.has(id.slice(key.length + 1))) docs.push({ id, body: { key, v: '[]', ts } });
+    }
+    return docs;
+  },
+  touch(key) {
+    if (!this.syncs(key)) return;
+    // Before the cloud copy has been read (or when it could not be), a change must not look newer than it: the demo
+    // records a fresh browser seeds would otherwise replace the real ones. Meals made meanwhile are merged on the next load.
+    if (!this.col) return;
+    this.stamp(key, Date.now()); this.dirty.add(key);
+    clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 1500);
+  },
+  /** Sends the changed documents one at a time (one write per document in flight). */
+  async flush() {
+    if (!this.col || this.writing || !this.dirty.size) return;
+    this.writing = true;
+    const keys = [...this.dirty]; this.dirty.clear();
+    try {
+      for (const key of keys) {
+        for (const { id, body } of this.docsFor(key)) {
+          if (this.sent.get(id) === body.v) continue;
+          await this.col.doc(id).set(body);
+          this.sent.set(id, body.v);
+        }
+      }
+      this.failed = false;
+    } catch (e) {
+      keys.forEach(k => this.dirty.add(k));
+      if (!this.failed) { this.failed = true; toast(t(e?.code === 'quota_exceeded' ? 'cloudFull' : 'cloudFail'), 'error'); }
+      clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 30_000);
+    } finally { this.writing = false; }
+    if (this.dirty.size && !this.failed) this.flush();
+  },
+  /** Meals: the cloud's list plus this browser's own (not demo) meals it does not have, so none made offline are lost. */
+  mergeMeals(cloudRaw) {
+    let cloudList, localList;
+    try { cloudList = JSON.parse(cloudRaw) || []; } catch { cloudList = []; }
+    try { localList = JSON.parse(kv.get(STORAGE_KEYS.meals) || '[]') || []; } catch { localList = []; }
+    const ids = new Set(cloudList.map(m => m?.id));
+    const extra = localList.filter(m => m && !m.demo && !ids.has(m.id));
+    return { v: JSON.stringify([...cloudList, ...extra]), extra: extra.length };
+  },
+  /** Before the app starts: connect, take newer cloud keys, then send newer local ones. Gives up after 12 s: the
+   *  session then stays on this device only (a late answer is ignored), and the next load reads the cloud again. */
+  async start() {
+    let late = false;
+    const work = (async () => {
+      const use = globalThis.claude?.use;
+      if (!use) return;
+      const [db, user] = await Promise.all([use('db'), use('user')]);
+      const id = db && user ? await user.id() : null;
+      if (!id) return;
+      const col = db.collection(`data/users/${id}/kv`);
+      const snap = await col.get();
+      if (late) return;
+      const byKey = new Map();
+      for (const d of snap.docs) {
+        const b = d.data(); if (!b || typeof b.key !== 'string' || !this.syncs(b.key)) continue;
+        if (!byKey.has(b.key)) byKey.set(b.key, []);
+        byKey.get(b.key).push({ id: d.id, ...b });
+      }
+      const local = this.stamps(), mergedKeys = [];
+      for (const [key, docs] of byKey) {
+        const ts = Math.max(...docs.map(d => Number(d.ts) || 0));
+        docs.forEach(d => this.sent.set(d.id, d.v));
+        if (ts <= (local[key] || 0)) continue;
+        let v = docs[0].v;
+        let keepLocal = false;
+        if (key === STORAGE_KEYS.meals) {
+          const all = docs.flatMap(d => { try { return JSON.parse(d.v) || []; } catch { return []; } });
+          const merged = this.mergeMeals(JSON.stringify(all));
+          v = merged.v; keepLocal = merged.extra > 0;
+        }
+        kv.load(key, typeof v === 'string' ? v : null); this.stamp(key, ts);
+        if (keepLocal) mergedKeys.push(key);
+      }
+      this.col = col;
+      for (const key of Object.values(STORAGE_KEYS)) {
+        if (!this.syncs(key) || kv.get(key) === null && !byKey.has(key)) continue;
+        const cloudTs = Math.max(0, ...(byKey.get(key) || []).map(d => Number(d.ts) || 0));
+        if (!byKey.has(key) || (local[key] || 0) > cloudTs) { this.stamp(key, Math.max(local[key] || 0, Date.now())); this.dirty.add(key); }
+      }
+      mergedKeys.forEach(k => { this.stamp(k, Date.now()); this.dirty.add(k); });
+      this.flush();
+    })().catch(() => {});
+    await Promise.race([work, new Promise(r => setTimeout(r, 12_000))]);
+    if (!this.col) { late = true; toast(t('cloudOffline'), 'error'); }
+  }
+};
+if (IS_CLAUDE) document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') cloud.flush(); });
 
 /* Sanitizers: everything read from storage or an imported file passes through these. */
 const sanitizeItem = it => ({
@@ -378,8 +544,10 @@ const db = {
   jobs: () => { const v = store.get(STORAGE_KEYS.jobs, []); return Array.isArray(v) ? v : []; },
   saveJobs: list => store.set(STORAGE_KEYS.jobs, list),
 
-  apiKey: () => store.str(STORAGE_KEYS.apiKey).trim(),
-  model: () => normalizeModel(store.str(STORAGE_KEYS.model, CONFIG.gemini.defaultModel)),
+  /** The Claude build needs no key: a fixed stand-in keeps every "is a key set?" check true. */
+  apiKey: () => (IS_CLAUDE ? 'claude' : store.str(STORAGE_KEYS.apiKey).trim()),
+  model: () => (IS_CLAUDE ? claudeAI.validModel(store.str(STORAGE_KEYS.claudeModel))
+    : normalizeModel(store.str(STORAGE_KEYS.model, CONFIG.gemini.defaultModel))),
   /** Precise is the default (validation: ~89% vs ~77% kcal accuracy); only an explicit choice selects standard. */
   analysisMode: () => (store.str(STORAGE_KEYS.analysisMode) === 'standard' ? 'standard' : 'precise')
 };
@@ -881,6 +1049,98 @@ const webSearch = {
   turnOff: () => store.setStr(STORAGE_KEYS.searchOff, String(Date.now() + CONFIG.gemini.searchOffHours * 3600_000))
 };
 
+/** A Gemini responseSchema as standard JSON Schema text, fields in their propertyOrdering (reasoning first). */
+function schemaToJson(s) {
+  if (!s || typeof s !== 'object') return s;
+  const out = {};
+  for (const [k, v] of Object.entries(s)) {
+    if (k === 'propertyOrdering') continue;
+    if (k === 'type') out.type = String(v).toLowerCase();
+    else if (k === 'items') out.items = schemaToJson(v);
+    else if (k === 'properties') {
+      const order = s.propertyOrdering || Object.keys(v);
+      out.properties = Object.fromEntries([...order, ...Object.keys(v).filter(n => !order.includes(n))]
+        .filter(n => v[n]).map(n => [n, schemaToJson(v[n])]));
+    } else out[k] = v;
+  }
+  return out;
+}
+
+/** The JSON value in a reply: the whole reply, else one Markdown fence, else from the first { to the last }. */
+function extractJsonText(text) {
+  const s = String(text || '').trim();
+  const ok = x => { try { JSON.parse(x); return true; } catch { return false; } };
+  if (ok(s)) return s;
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fence && ok(fence[1].trim())) return fence[1].trim();
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  return a >= 0 && b > a ? s.slice(a, b + 1) : s;
+}
+
+const dataPartToBlob = ({ mime_type: type, data }) => {
+  const bin = atob(data), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type });
+};
+
+/**
+ * The Claude build's AI (IS_CLAUDE): the same prompts, tasks and parsing as Gemini, sent through the artifact runtime's
+ * `sample` on the viewer's own Claude account. `sample` has no system prompt or response schema, so the rules, the
+ * per-request text and the JSON Schema go in one prompt, with the photos attached. Answers are never replayed from
+ * the runtime's cache: the two weight re-estimates send the same input and must stay independent.
+ */
+const claudeAI = {
+  sampleP: null,
+  sample() {
+    this.sampleP ??= globalThis.claude?.use ? Promise.resolve(globalThis.claude.use('sample')).catch(() => null) : Promise.resolve(null);
+    return this.sampleP;
+  },
+  validModel: id => (CONFIG.claude.modelOptions.some(([v]) => v === id) ? id : CONFIG.claude.defaultModel),
+  /** sample options for a stored choice: a tier, or a named model that falls back to the tier it belongs to. */
+  modelOptions(id) {
+    if (id.startsWith('tier:')) return { modelTier: id.slice(5) };
+    return { model: id, modelTier: /opus/.test(id) ? 'complex' : 'default' };
+  },
+  label(id) {
+    const opt = CONFIG.claude.modelOptions.find(([v]) => v === id);
+    if (opt) return opt[1].startsWith('Claude') ? opt[1] : t(opt[1]);
+    return id.startsWith('tier:') ? `Claude (${id.slice(5)})` : id;
+  },
+  /** One rejected `sample` call as an Error the app can show; a cancel becomes an AbortError like fetch's. */
+  error(e) {
+    if (e?.code === 'cancelled') return new DOMException('Aborted', 'AbortError');
+    const key = { rate_limited: 'claudeRateLimited', not_granted: 'claudeNotGranted', sampling_disabled: 'claudeDisabled',
+      session_expired: 'claudeSignIn', image_rejected: 'claudeImage', images_unavailable: 'claudeImage', refused: 'claudeRefused' }[e?.code];
+    return Object.assign(new Error(key ? t(key) : String(e?.message || e || t('emptyResult'))), { status: 'claude', code: e?.code });
+  },
+  async generate({ model, parts, system, signal, run, task = NUTRITION_TASK }) {
+    const startedAt = Date.now();
+    const sample = await this.sample();
+    if (!sample) throw Object.assign(new Error(t('claudeUnavailable')), { status: 'claude' });
+    const text = parts.filter(p => p.text).map(p => p.text).join('\n');
+    const images = parts.filter(p => p.inline_data).map(p => dataPartToBlob(p.inline_data));
+    const prompt = `${system}\n\n${text}\n\nReply with only one JSON object (no Markdown, no other text) that follows this JSON Schema, `
+      + `writing its fields in the order listed:\n${JSON.stringify(schemaToJson(task.schema))}`;
+    const opts = { signal, cache: false, ...this.modelOptions(model), ...(images.length ? { images } : {}) };
+    let res;
+    try { res = await sample(prompt, opts); }
+    catch (e) {
+      const err = this.error(e);
+      run?.attempts.push({ error: `${e?.code || 'error'}: ${String(e?.message || '').slice(0, 80)}`, ms: Date.now() - startedAt });
+      throw err;
+    }
+    const used = res.modelApplied || `tier:${res.modelTierApplied}`;
+    run?.attempts.push({ status: 'ok', ms: Date.now() - startedAt, used, truncated: res.truncated });
+    if (res.truncated) throw Object.assign(new Error(t('emptyResult')), { status: 'claude' });
+    const result = task.parse({ candidates: [{ content: { parts: [{ text: extractJsonText(res.text) }] } }] });
+    if (run) Object.assign(run, { used, chars: res.text.length }, task.summarize(result));
+    result.meta = { ms: Date.now() - startedAt, attempts: 1, model: used };
+    result.modelUsed = this.label(used);
+    console.info('[NutriLens] Claude', used, result.meta);
+    return result;
+  }
+};
+
 const gemini = {
   /**
    * Sends the key in the x-goog-api-key header so it stays out of URLs. If the
@@ -917,6 +1177,7 @@ const gemini = {
 
   /** One model, one logical request. Only a 400 that names the thinking setting triggers a re-send. */
   async generate({ key, model, parts, system, signal, run, task = NUTRITION_TASK }) {
+    if (IS_CLAUDE) return claudeAI.generate({ model, parts, system, signal, run, task });
     const startedAt = Date.now();
     const generationConfig = { responseMimeType: 'application/json', temperature: CONFIG.gemini.temperature, responseSchema: task.schema };
     const url = `${CONFIG.gemini.apiBase}/models/${encodeURIComponent(model)}:generateContent`;
@@ -979,6 +1240,18 @@ const gemini = {
    * Rejects with the first error if every model fails.
    */
   async generateWithFallback({ key, model, parts, system, signal, rec, task, backups = CONFIG.gemini.backupModels }) {
+    if (IS_CLAUDE) {                       // one call: a named model already falls back to its tier inside the platform
+      const run = { model, startMs: 0, attempts: [] };
+      rec?.runs.push(run);
+      try {
+        const result = await claudeAI.generate({ model, parts, system, signal, run, task });
+        Object.assign(run, { result: 'ok', endMs: result.meta.ms }); if (rec) rec.winner = result.meta.model;
+        return result;
+      } catch (err) {
+        Object.assign(run, { result: signal.aborted ? 'aborted' : 'error', error: String(err.message || err).slice(0, 400) });
+        throw err;
+      }
+    }
     const chain = [model, ...backups.filter(m => m !== model)];
     const startedAt = Date.now();
     const errors = [];
@@ -1525,11 +1798,11 @@ async function analyzePrecise({ key, model, job, signal, rec, backups }) {
   const wp = buildWeightPrompt(main.rawItems, job.note, job.refs || []);
   const started = Date.now();
   // The re-estimates look at the photos; a description alone has nothing more for them to measure.
-  const weightModels = images.length ? CONFIG.precise.weightModels : [];
+  const weightModels = images.length ? (IS_CLAUDE ? CONFIG.claude.weightModels : CONFIG.precise.weightModels) : [];
   const settled = await Promise.allSettled(weightModels.map(async m => {
     const ctrl = new AbortController(), forward = () => ctrl.abort(signal.reason);
     signal.addEventListener('abort', forward, { once: true });
-    const timer = setTimeout(() => ctrl.abort('MODEL_TIMEOUT'), CONFIG.precise.weightTimeoutMs);
+    const timer = armTimeout(() => ctrl.abort('MODEL_TIMEOUT'), CONFIG.precise.weightTimeoutMs);
     const run = { model: m, purpose: 'weights', startMs: Date.now() - started, attempts: [] };
     rec?.runs.push(run);
     try {
@@ -2734,7 +3007,7 @@ async function runJob(job) {
   const onVisibility = () => rec.visibility.push({ atMs: Date.now() - startedAt, state: document.visibilityState });
   document.addEventListener('visibilitychange', onVisibility);
   const ctrl = new AbortController(); liveJobs.set(job.id, ctrl);
-  const timeout = setTimeout(() => ctrl.abort('TIMEOUT'), jobTimeoutMs(mode));
+  const timeout = armTimeout(() => ctrl.abort('TIMEOUT'), jobTimeoutMs(mode));
 
   try {
     const result = await analyzeJob(job, { apiKey, model, signal: ctrl.signal, rec, mode });
@@ -3340,10 +3613,17 @@ async function copyDiagnostics() {
 const CUSTOM_MODEL = '__custom__';
 function modalModel() {
   const sel = $('#apiModelSelect');
+  if (IS_CLAUDE) return claudeAI.validModel(sel.value);
   return normalizeModel(sel.value === CUSTOM_MODEL ? $('#customModelInput').value : sel.value);
 }
 function fillModelSelect(models, current) {
   const sel = $('#apiModelSelect');
+  if (IS_CLAUDE) {
+    sel.innerHTML = CONFIG.claude.modelOptions.map(([id]) => `<option value="${esc(id)}">${esc(claudeAI.label(id))}</option>`).join('');
+    sel.value = claudeAI.validModel(current);
+    $('#currentModelTag').textContent = claudeAI.label(sel.value);
+    return;
+  }
   const options = new Map(CONFIG.gemini.modelOptions.map(id => [id, id]));
   models.forEach(m => options.set(m.id, m.displayName && m.displayName !== m.id ? `${m.id} — ${m.displayName}` : m.id));
   const star = id => (id === CONFIG.gemini.defaultModel ? ` ⭐ ${t('recommended')}` : '');
@@ -3356,6 +3636,7 @@ function fillModelSelect(models, current) {
   $('#currentModelTag').textContent = modalModel();
 }
 function onModelSelectInput(el) {
+  if (IS_CLAUDE) { $('#currentModelTag').textContent = claudeAI.label(el.value); return; }
   const custom = el.value === CUSTOM_MODEL;
   $('#customModelWrap').classList.toggle('hidden', !custom);
   if (custom && !$('#customModelInput').value) $('#customModelInput').value = CONFIG.gemini.defaultModel;
@@ -3366,8 +3647,12 @@ function openApiModal() {
   $('#apiKeyInput').value = key; $('#apiVerifyStatus').classList.add('hidden');
   fillModelSelect([], db.model());
   $('#analysisModeSelect').value = db.analysisMode();
+  if (IS_CLAUDE) {                                   // no key: the model choice is the whole dialog
+    $('#apiKeySection').classList.add('hidden'); $('#claudeModelHint').classList.remove('hidden');
+    $('#apiAdvanced').open = true; $('#customModelWrap').classList.add('hidden');
+  }
   modal.open('apiModal');
-  if (key.trim().length > 10) verifyKey(true);
+  if (!IS_CLAUDE && key.trim().length > 10) verifyKey(true);
 }
 async function verifyKey(silent = false) {
   const key = $('#apiKeyInput').value.trim(), status = $('#apiVerifyStatus'), spinner = $('#verifyIcon');
@@ -3386,6 +3671,11 @@ async function verifyKey(silent = false) {
 }
 function saveApiSettings() {
   const model = modalModel();
+  if (IS_CLAUDE) {
+    store.setStr(STORAGE_KEYS.claudeModel, model);
+    store.setStr(STORAGE_KEYS.analysisMode, $('#analysisModeSelect').value === 'precise' ? 'precise' : 'standard');
+    modal.close(); toast(t('keySaved', { m: claudeAI.label(model) })); return;
+  }
   store.setStr(STORAGE_KEYS.apiKey, $('#apiKeyInput').value.trim()); store.setStr(STORAGE_KEYS.model, model);
   store.setStr(STORAGE_KEYS.analysisMode, $('#analysisModeSelect').value === 'precise' ? 'precise' : 'standard');
   updateApiDot(); modal.close(); renderBanner(); toast(t('keySaved', { m: model }));
@@ -3575,6 +3865,12 @@ const OB_STEP_VIEWS = {
     </div>`,
 
   1: () => {
+    if (IS_CLAUDE) {
+      return `${obHeading('claudeKeyTitle', 'claudeKeySub')}
+    <div class="space-y-2 pt-1">
+      <button type="button" data-action="ob-next" data-next="2" class="btn btn-primary w-full py-2.5">${t('obNext')}</button>
+    </div>`;
+    }
     const saved = db.apiKey(), st = onboarding.form.keyStatus;
     return `${obHeading('obKeyTitle', 'obKeySub')}
     <div class="space-y-2">
@@ -3940,7 +4236,7 @@ async function runValidation() {
         const rec = createDiagnosticRecord(job, model, 'api', mode);
         const ctrl = new AbortController(), forward = () => ctrl.abort('USER');
         validation.ctrl.signal.addEventListener('abort', forward, { once: true });
-        const timer = setTimeout(() => ctrl.abort('TIMEOUT'), jobTimeoutMs(mode)), t0 = Date.now();
+        const timer = armTimeout(() => ctrl.abort('TIMEOUT'), jobTimeoutMs(mode)), t0 = Date.now();
         try {
           const res = await analyzeJob(job, { apiKey, model, signal: ctrl.signal, rec, mode, backups: [] });   // model fixed
           const tot = roundedTotals(res.items);
@@ -4104,7 +4400,7 @@ async function runSuggest({ more = false } = {}) {
   const prompt = buildSuggestPrompt({ lang, now: nowTime(), left, plan, note, avoid, diet: prefs.diet,
     places: prefs.places.map(id => SUGGEST_PLACES[id]), eaten: [...new Set(todayMeals().map(m => m.name))].slice(0, 12),
     favorites: db.favs().slice(0, CONFIG.suggest.maxFavorites) });
-  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort('TIMEOUT'), CONFIG.gemini.timeoutMs);
+  const ctrl = new AbortController(), timer = armTimeout(() => ctrl.abort('TIMEOUT'), CONFIG.gemini.timeoutMs);
   Object.assign(s, { busy: true, correcting: false, error: '', ctrl }); renderSuggest();
   // Diagnostics like an analysis (no note or restriction text): which models answered, searches, errors.
   const rec = { id: uid().slice(0, 8), at: new Date().toISOString(), mode: 'api', analysisMode: 'suggest', model: db.model(), lang,
@@ -4335,7 +4631,8 @@ function bindEvents() {
 }
 
 /* ── 12. Boot ───────────────────────────────────────────────────────── */
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+  if (IS_CLAUDE) await cloud.start();       // the records come from the viewer's cloud copy before anything renders
   renderStaticTemplates();
   initData();
   $('#selectedDate').value = todayStr();

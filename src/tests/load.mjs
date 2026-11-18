@@ -30,7 +30,7 @@ function memoryStorage(initial = {}) {
 
 const inert = () => new Proxy(function () {}, { get: (_, k) => (k === Symbol.toPrimitive ? () => '' : inert()), apply: () => inert() });
 
-export function loadApp({ storage = {}, fetch, jsDir = JS_DIR } = {}) {
+export function loadApp({ storage = {}, fetch, jsDir = JS_DIR, globals = {} } = {}) {
   const localStorage = memoryStorage(storage);
   const listeners = () => ({ addEventListener() {}, removeEventListener() {} });
   const document = {
@@ -44,7 +44,8 @@ export function loadApp({ storage = {}, fetch, jsDir = JS_DIR } = {}) {
     setTimeout, clearTimeout, setInterval: () => 0, clearInterval() {},
     AbortController, DOMException, URL, Blob, TextEncoder, TextDecoder, structuredClone, crypto: globalThis.crypto,
     fetch: (...args) => (sandbox.fetchImpl || fetch || globalThis.fetch)(...args),
-    fetchImpl: null
+    fetchImpl: null, atob, btoa,
+    ...globals          // e.g. the Claude build: { NUTRILENS_PROVIDER: 'claude', claude: { use } }
   };
   const ctx = vm.createContext(sandbox);
   const source = FILES.map(f => readFileSync(path.join(jsDir, f), 'utf8')).join('\n;\n');

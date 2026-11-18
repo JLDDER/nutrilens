@@ -26,7 +26,10 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const OUT_DIR = 'dist';
+/** `node build.mjs --claude` builds the Claude artifact version into dist-claude/: Claude answers through the artifact
+ *  runtime on the viewer's own account (window.NUTRILENS_PROVIDER = 'claude'); no key, no home-screen manifest. */
+const CLAUDE = process.argv.includes('--claude');
+const OUT_DIR = CLAUDE ? 'dist-claude' : 'dist';
 const TMP_IN = 'tailwind.in.css';
 const TMP_OUT = 'tailwind.out.css';
 const COPY_DIRS = ['images', 'icons'];
@@ -75,11 +78,16 @@ html = html.replace(/<script src="(js\/[^"]+)"><\/script>/g, (_, file) => {
   return `<script>\n${code}</script>`;
 });
 
+if (CLAUDE) {
+  html = html.replace(/[ \t]*<link rel="manifest"[^>]*>\r?\n?/, '');
+  html = html.replace('<script>', "<script>window.NUTRILENS_PROVIDER = 'claude';</script>\n  <script>");
+}
+
 fs.rmSync(OUT_DIR, { recursive: true, force: true });
 fs.mkdirSync(OUT_DIR);
 fs.writeFileSync(path.join(OUT_DIR, 'index.html'), html);
 for (const dir of COPY_DIRS) if (fs.existsSync(dir)) fs.cpSync(dir, path.join(OUT_DIR, dir), { recursive: true });
-for (const file of COPY_FILES) if (fs.existsSync(file)) fs.copyFileSync(file, path.join(OUT_DIR, file));
+for (const file of CLAUDE ? [] : COPY_FILES) if (fs.existsSync(file)) fs.copyFileSync(file, path.join(OUT_DIR, file));
 
 const kb = f => Math.round(fs.statSync(f).size / 1024);
 console.log(`✔ Done -> ${OUT_DIR}/index.html (${kb(path.join(OUT_DIR, 'index.html'))} KB) + ${COPY_DIRS.join('/, ')}/, ${COPY_FILES.join(', ')}`);

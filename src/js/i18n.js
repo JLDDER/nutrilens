@@ -1075,3 +1075,60 @@ const I18N = {
   }
 };
 
+
+/* Claude artifact build (build.mjs --claude): Claude answers on the viewer's own Claude account, so there is no key.
+ * These strings are added for that build and replace the Gemini wording where it would be wrong. */
+const I18N_CLAUDE = {
+  zh: {
+    claudeModelDefault: 'Claude 預設（建議）',
+    claudeUnavailable: '這個頁面要在 Claude 裡開啟才能分析（找不到 Claude 的 AI 功能）。',
+    claudeNotGranted: '尚未允許這個頁面使用 Claude。重新整理後，在詢問時選「允許」。',
+    claudeRateLimited: 'Claude 使用量已達上限或請求太頻繁，請稍後再按「重試」。',
+    claudeDisabled: '這個帳號目前無法在頁面中使用 Claude。',
+    claudeSignIn: '請重新登入 Claude 後再試。',
+    claudeImage: '照片無法送出（格式或大小不符），請換一張照片。',
+    claudeRefused: 'Claude 無法處理這次的內容，請換張照片或修改備註。',
+    claudeKeyTitle: 'AI 分析已就緒',
+    claudeKeySub: '這個版本用你自己的 Claude 帳號分析，不需要金鑰。第一次分析時，Claude 會詢問是否允許這個頁面使用，選「允許」即可。',
+    downloadFail: '無法下載檔案。',
+    cloudFail: '雲端同步失敗，紀錄暫時只存在這台裝置；之後會自動再試。',
+    cloudOffline: '無法連上雲端紀錄，這次的變更只會存在這台裝置；下次開啟時會再同步。',
+    cloudFull: '雲端空間已滿，新的紀錄暫時只存在這台裝置。',
+    claudeModelHint: '主分析用這個模型；兩次份量重估固定用 Claude 預設。Opus 較準但較慢、用量較多；選的模型無法使用時會自動改用同級模型。'
+  },
+  en: {
+    claudeModelDefault: 'Claude default (recommended)',
+    claudeUnavailable: 'Open this page inside Claude to analyze meals (Claude is not available here).',
+    claudeNotGranted: 'This page is not allowed to use Claude yet. Reload and choose Allow when asked.',
+    claudeRateLimited: 'Claude usage limit reached or too many requests. Press Retry later.',
+    claudeDisabled: 'Claude cannot be used from pages on this account.',
+    claudeSignIn: 'Please sign in to Claude again and retry.',
+    claudeImage: 'The photo could not be sent (type or size). Try another photo.',
+    claudeRefused: 'Claude could not handle this request. Try another photo or change the note.',
+    claudeKeyTitle: 'AI analysis is ready',
+    claudeKeySub: 'This version analyzes with your own Claude account; no key is needed. On the first analysis Claude asks whether this page may use it: choose Allow.',
+    downloadFail: 'The file could not be downloaded.',
+    cloudFail: 'Cloud sync failed; records are on this device only for now. It will retry.',
+    cloudOffline: 'Cloud records cannot be reached; changes this time stay on this device and sync next time.',
+    cloudFull: 'Cloud storage is full; new records are on this device only for now.',
+    claudeModelHint: 'The main analysis uses this model; the two portion re-estimates always use Claude default. Opus is more accurate but slower and uses more of your limit; an unavailable model falls back to its tier.'
+  }
+};
+const I18N_CLAUDE_REPLACE = {
+  zh: {
+    apiModalTitle: 'AI 模型', menuApiKey: 'AI 模型', apiModalDesc: '用你自己的 Claude 帳號分析，不需要金鑰。',
+    suggestNoKey: '這個頁面要在 Claude 裡開啟才能產生建議。', keySet: 'Claude', bannerNoKey: '',
+    obPrivacy: '紀錄存在你的 Claude 帳號的私人空間（只有你看得到），照片只存在這台裝置，分析時送給 Claude。',
+    quotaExceeded: 'Claude 使用量已達上限或請求太頻繁，請稍後再按「重試」。', overloaded: 'Claude 暫時忙碌，請稍後再按「重試」。'
+  },
+  en: {
+    apiModalTitle: 'AI model', menuApiKey: 'AI model', apiModalDesc: 'Analysis uses your own Claude account; no key is needed.',
+    suggestNoKey: 'Open this page inside Claude to get suggestions.', keySet: 'Claude', bannerNoKey: '',
+    obPrivacy: 'Records are kept in a private space of your Claude account (only you can see them); photos stay on this device and are sent to Claude for analysis.',
+    quotaExceeded: 'Claude usage limit reached or too many requests. Press Retry later.', overloaded: 'Claude is busy. Press Retry in a moment.'
+  }
+};
+for (const l of ['zh', 'en']) {
+  Object.assign(I18N[l], I18N_CLAUDE[l]);
+  if (globalThis.NUTRILENS_PROVIDER === 'claude') Object.assign(I18N[l], I18N_CLAUDE_REPLACE[l]);
+}
