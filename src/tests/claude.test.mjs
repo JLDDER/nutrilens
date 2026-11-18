@@ -128,4 +128,16 @@ describe('Claude build: cloud records', () => {
     await cloud.flush.call(Object.assign(cloud, { timer: null }));
     assert.deepEqual(writes.map(w => w.path).slice(1), [`${base}/nutrilens_favorites_v1`]);
   });
+
+  test('a setting such as the model is written within a moment and read back by a fresh browser', async () => {
+    const { app, docs } = claudeApp({ reply: () => ({}) });
+    await app.get('cloud').start();
+    app.get('store').setStr('nutrilens_claude_model_v1', 'claude-opus-5-5');
+    await new Promise(r => setTimeout(r, 450));
+    const saved = docs.get('data/users/u1/nutrilens_claude_model_v1');
+    assert.equal(saved?.v, 'claude-opus-5-5');
+    const fresh = claudeApp({ reply: () => ({}), cloudDocs: { 'data/users/u1/nutrilens_claude_model_v1': saved } });
+    await fresh.app.get('cloud').start();
+    assert.equal(fresh.app.get('db').model(), 'claude-opus-5-5');
+  });
 });

@@ -378,7 +378,7 @@ const cloud = {
     // records a fresh browser seeds would otherwise replace the real ones. Meals made meanwhile are merged on the next load.
     if (!this.col) return;
     this.stamp(key, Date.now()); this.dirty.add(key);
-    clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 1500);
+    clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 300);   // short: the viewer may close the app right after
   },
   /** Sends the changed documents one at a time (one write per document in flight). */
   async flush() {
@@ -459,7 +459,10 @@ const cloud = {
     if (!this.col) { late = true; this.why ||= 'timeout'; toast(t('cloudOffline'), 'error'); }
   }
 };
-if (IS_CLAUDE) document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') cloud.flush(); });
+if (IS_CLAUDE) {
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') cloud.flush(); });
+  window.addEventListener('pagehide', () => cloud.flush());
+}
 
 /* Sanitizers: everything read from storage or an imported file passes through these. */
 const sanitizeItem = it => ({
