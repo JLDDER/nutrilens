@@ -223,4 +223,16 @@ describe('Claude build: cloud records', () => {
     const fresh = device(env); await fresh.get('cloud').connect();
     assert.equal(fresh.get('db').model(), 'claude-opus-5-5');
   });
+
+  test('a meal read back from the cloud with its fields in another order is not a change', async () => {
+    const env = sharedCloud(), a = device(env);
+    await a.get('cloud').connect();
+    a.get('db').saveMeals([plain(a.get('sanitizeMeal')(meal('m1', '2026-11-03')))]); await sync(a);
+    // The real cloud hands objects back with their keys sorted.
+    for (const [k, d] of env.docs) if (d.items) for (const id of Object.keys(d.items)) d.items[id] = JSON.parse(a.get('canonicalJson')(d.items[id]));
+    const b = device(env); await b.get('cloud').connect(); await settle();
+    const m = b.get('cloud').m();
+    b.get('db').addMeal(meal('m2', '2026-11-04'));              // the app writes every meal back in its own field order
+    assert.deepEqual(plain(m.pendMeals), ['m2']);
+  });
 });

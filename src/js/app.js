@@ -362,6 +362,9 @@ const store = {
  * Not kept in the cloud: the job queue (holds photos), diagnostics, suggestion cache and Gemini-only settings.
  */
 const CLOUD_MEALS_FMT = 2;
+/** JSON with object keys sorted at every level, so the same content always gives the same text. */
+const canonicalJson = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)
+  ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x));
 /**
  * A set kept as { id: change time }, negative for a removed id, so a removal is not undone by a copy that still has
  * the id. Merges two stored strings (old form: an array of ids) id by id, the later change winning; drops removals
@@ -409,8 +412,9 @@ const cloud = {
     const m = this.m(), ts = this.clock();
     if (key === STORAGE_KEYS.meals) {
       const parse = raw => { try { const l = JSON.parse(raw || '[]'); return Array.isArray(l) ? l : []; } catch { return []; } };
-      const old = new Map(parse(before).filter(x => x?.id).map(x => [x.id, JSON.stringify(x)]));
-      const now = new Map(parse(after).filter(x => x?.id).map(x => [x.id, JSON.stringify(x)]));
+      // Compared by content: the cloud hands meals back with their fields in another order, which is not a change.
+      const old = new Map(parse(before).filter(x => x?.id).map(x => [x.id, canonicalJson(x)]));
+      const now = new Map(parse(after).filter(x => x?.id).map(x => [x.id, canonicalJson(x)]));
       for (const [id, s] of now) if (old.get(id) !== s) { m.meals[id] = ts; delete m.dels[id]; m.pendMeals.push(id); }
       for (const id of old.keys()) if (!now.has(id)) { m.dels[id] = ts; delete m.meals[id]; m.pendMeals.push(id); }
       m.pendMeals = [...new Set(m.pendMeals)];
