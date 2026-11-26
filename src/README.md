@@ -17,6 +17,7 @@ Each user brings their own Gemini API key (stored only in their browser).
 | `images/` | Key-guide screenshots |
 | `icons/` | Favicon and home-screen icon |
 | `build.mjs`, `tailwind.config.js` | Production build |
+| `theme.js` | The look: palette (`slate` = green-grey ink, `emerald` = celadon accent, toned `rose`/`amber`/`sky` for P/C/F) and the handwritten font LXGW WenKai TC. Used by the build and the development page |
 | `tools/` | `gen_foods.py` builds `js/foods.js` from `tools/foodref/foodref.json` |
 
 ## Develop

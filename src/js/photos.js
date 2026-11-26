@@ -280,12 +280,12 @@ function stepPhoto(delta) {
 }
 
 /* ── P4. Share images ───────────────────────────────────────────────── */
-/** Canvas style: 1080 px wide (sharp on phones, fits LINE / IG); colors match the app's Tailwind palette. */
+/** Canvas style: 1080 px wide (sharp on phones, fits LINE / IG); colors and the handwritten face match theme.js. */
 const SHARE = {
   w: 1080, pad: 64,
-  font: '-apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Segoe UI", sans-serif',
-  ink: '#0f172a', muted: '#64748b', faint: '#94a3b8', line: '#e2e8f0', bg: '#f8fafc', card: '#ffffff', mint: '#ecfdf5',
-  green: '#059669', amber: '#d97706', macro: { p: '#e11d48', c: '#d97706', f: '#0284c7' },
+  font: '"LXGW WenKai TC", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif',
+  ink: '#1E2B27', muted: '#5B6C65', faint: '#87978F', line: '#D0DAD4', bg: '#EDF1EE', card: '#ffffff', mint: '#EEF5F2',
+  green: '#3F6E5E', amber: '#A06F20', macro: { p: '#B5523B', c: '#C08A2B', f: '#3E7CA6' },
   mealPhotoH: 760, bannerH: 220, thumb: 188
 };
 const loadImage = src => new Promise((resolve, reject) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = reject; i.src = src; });
@@ -334,6 +334,8 @@ const periodText = time => { const p = mealPeriod(time); return `${p.icon} ${t(p
  * Very long images are scaled down to stay under mobile canvas size limits.
  */
 async function paintCanvas(paint) {
+  // Canvas text does not wait for web fonts: load the handwritten face first (falls back if it cannot load).
+  try { await Promise.all([400, 700].map(w => document.fonts?.load(`${w} 40px "LXGW WenKai TC"`, '今日 0123'))); } catch { /* fallback face */ }
   const height = Math.ceil(await paint(document.createElement('canvas').getContext('2d')));
   const scale = Math.min(1, CONFIG.share.maxPixels / (SHARE.w * height));
   const canvas = document.createElement('canvas');
@@ -449,7 +451,7 @@ async function renderDayShare(date, showGoals) {
   const { w, pad } = SHARE;
   return paintCanvas(ctx => {
     ctx.fillStyle = SHARE.green; ctx.fillRect(0, 0, w, SHARE.bannerH);
-    drawRun(ctx, pad, 78, [['NutriLens AI', 32, 700, '#d1fae5']]);
+    drawRun(ctx, pad, 78, [['NutriLens AI', 32, 700, '#D7E8E0']]);
     drawRun(ctx, pad, 160, [[t('shareDayTitle', { d: shareDateLabel(date) }), 60, 800, '#fff']]);
     let y = SHARE.bannerH + 40;
     y += drawDaySummary(ctx, y, meals, total, goals, showGoals) + 32;

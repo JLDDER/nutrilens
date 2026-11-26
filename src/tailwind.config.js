@@ -3,6 +3,6 @@
 module.exports = {
   darkMode: 'class',   // dark mode is toggled by the "dark" class on <html>
   content: ['./index.html', './js/**/*.js'],
-  theme: { extend: {} },
+  theme: { extend: require('./theme.js') },   // palette and type: see theme.js
   plugins: []
 };

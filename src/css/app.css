@@ -2,19 +2,20 @@
    build.mjs inlines this file into dist/index.html. */
 
 :root {
-  --slider-active: #0f172a;
-  --slider-track: #cbd5e1;
+  --slider-active: #1E2B27;
+  --slider-track: #B3C2BA;
 }
 html.dark {
-  --slider-active: #f1f5f9;
-  --slider-track: #2d2f38;
+  --slider-active: #E1E8E3;
+  --slider-track: #2E3C36;
 }
 
 body {
-  font-family: 'Noto Sans TC', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: 'LXGW WenKai TC', 'PingFang TC', 'Noto Sans TC', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
   transition: background-color .25s, color .25s;
 }
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.mono { font-family: inherit; font-variant-numeric: tabular-nums; }   /* one handwritten family everywhere (theme.js) */
 .ring {
   transition: stroke-dashoffset .6s cubic-bezier(.4, 0, .2, 1);
   transform: rotate(-90deg);
@@ -34,7 +35,7 @@ body {
   cursor: pointer;
   touch-action: pan-y;
 }
-.slider:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; border-radius: 6px; }
+.slider:focus-visible { outline: 2px solid #3F6E5E; outline-offset: 2px; border-radius: 6px; }
 .slider::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 999px;
@@ -104,3 +105,7 @@ details[open] .chev { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Dark theme: small grey text drawn with the light theme's greys (no dark: variant in the markup) is lifted to
+   a readable grey on the dark plates (≥ 4.5:1 on #212D28). */
+html.dark .text-slate-400, html.dark .text-slate-500, html.dark .dark\:text-slate-400 { color: #9AABA3; }

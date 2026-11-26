@@ -144,12 +144,15 @@ it('label slot: sent at 1280 px, kept on the device at 1024 px; other slots 1024
   return page;
 });
 
-it('saving the analysis adds a meal to today', async browser => {
+it('saving the analysis adds a meal to today, shown as a plate with its photo; the empty plate opens the picker', async browser => {
   const page = await freshPage(browser);
   await analyse(page, body => (body.generationConfig.responseSchema.properties.items
     ? { reasoning: 'r', name: '雞胸', packageKcal: 0, items: [item({ name: '雞胸' })] } : { estimates: [{ index: 1, geo: '', weight: 100, method: 'plain' }] }));
   await page.click('[data-action="save-meal"]');
   await page.waitForFunction(() => JSON.parse(localStorage.getItem('nutrilens_meals_v1') || '[]').some(m => m.name === '雞胸'));
+  await page.waitForSelector('#plateStrip [data-photo-thumb]:not(.hidden) img[src^="data:image/"]');
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser', { timeout: 3000 }), page.click('#plateStrip [data-action="shoot-meal"]')]);
+  if (!chooser) throw new Error('the empty plate did not open the photo picker');
   return page;
 });
 
@@ -208,6 +211,16 @@ it('meal suggestions: an option far off target is sent back once, with the app\'
   if (calls.length !== 2) throw new Error(`expected 2 requests (answer + one correction), got ${calls.length}`);
   const fix = calls[1].body.contents[0].parts[0].text;
   if (!/Foods: 茶葉蛋 55 g → \d+ kcal/.test(fix)) throw new Error('correction request lacks the food-by-food numbers');
+  return page;
+});
+
+it('logging a weight 3 kg away from the one the goals used brings up the recalculate reminder', async browser => {
+  const page = await freshPage(browser, { nutrilens_cleared_flag_v1: 'true' });
+  await page.goto(BASE);
+  await page.evaluate(() => { db.saveCalcProfile({ ...db.calcProfile(), weight: 89.5 }); renderAll(); });
+  await page.fill('#dailyWeightInput', '86.5'); await page.evaluate(() => logWeightFromForm());
+  if (await page.evaluate(() => db.calcProfile().weight) !== 89.5) throw new Error('logging a weight changed the goal profile');
+  if (!(await page.textContent('#appBanner')).includes('86.5')) throw new Error('no recalculate reminder');
   return page;
 });
 

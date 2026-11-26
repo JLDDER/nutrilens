@@ -138,7 +138,6 @@ const CONFIG = {
     toastMs: 2600,
     undoToastMs: 7000,
     confirmWindowMs: 4000,
-    ringCircumference: 2 * Math.PI * 52     // must match r="52" of #calRing
   }
 };
 
@@ -247,7 +246,7 @@ const PERIOD_CLASSES = {
  *  Colors: emerald = fine, amber = over the calorie target, sky = under, slate = neutral.
  *  Red is reserved for errors and destructive actions (and protein's own color). */
 const DAY_STATUS_CLASSES = {
-  weightOnly: 'bg-slate-100 dark:bg-[#26272e] text-slate-500 px-2 py-0.5 rounded text-xs',
+  weightOnly: 'bg-slate-100 dark:bg-[#26332D] text-slate-500 px-2 py-0.5 rounded text-xs',
   onTarget: 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded text-xs font-semibold',
   over: 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded text-xs font-semibold',
   under: 'bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 px-2 py-0.5 rounded text-xs font-semibold'
@@ -637,7 +636,7 @@ const cloudOverlay = {
   ensure() {
     if (this.el) return this.el;
     this.el = document.createElement('div');
-    this.el.className = 'fixed inset-0 z-[80] bg-white dark:bg-[#121214] flex items-center justify-center p-6 text-center';
+    this.el.className = 'fixed inset-0 z-[80] bg-white dark:bg-[#121A17] flex items-center justify-center p-6 text-center';
     document.body.append(this.el);
     return this.el;
   },
@@ -2501,7 +2500,7 @@ const macroBarTemplate = m => `
         class="hidden ml-1.5 text-xs font-semibold px-1.5 py-0.5 rounded-full
                bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300"></span></span>
     </div>
-    <div class="w-full bg-slate-100 dark:bg-[#26272e] h-2.5 rounded-full overflow-hidden" role="progressbar" aria-valuemin="0" id="prog${m.id}">
+    <div class="w-full bg-slate-100 dark:bg-[#26332D] h-2.5 rounded-full overflow-hidden" role="progressbar" aria-valuemin="0" id="prog${m.id}">
       <div id="bar${m.id}" class="${m.bar} h-full rounded-full transition-all duration-500" style="width:0%"></div>
     </div>
   </div>`;
@@ -2510,10 +2509,10 @@ const uploadSlotTemplate = (s, i) => `
   <div class="relative ${s.main ? 'col-span-2' : 'hidden'}" data-slot="${i}">
     <label
       class="border-2 border-dashed
-             ${s.main ? 'border-emerald-400 dark:border-emerald-700 h-36 sm:h-40' : 'border-slate-300 dark:border-[#2d2f38] h-24'}
+             ${s.main ? 'border-emerald-400 dark:border-emerald-700 h-36 sm:h-40' : 'border-slate-300 dark:border-[#2E3C36] h-24'}
              hover:border-emerald-500 rounded-xl p-3 flex flex-col items-center
              justify-center cursor-pointer transition bg-slate-50/60
-             dark:bg-[#1e1e22]/50 overflow-hidden relative
+             dark:bg-[#212D28]/50 overflow-hidden relative
              focus-within:border-emerald-500">
       <input type="file" accept="image/*" class="sr-only" data-upload="${i}" />
       <img id="preview${i}" class="absolute inset-0 w-full h-full object-cover hidden" alt="" />
@@ -2538,8 +2537,8 @@ function renderUploadSlots() {
 
 /** Slider + typed value + −/+ steppers (fine adjustment without dragging; also how phones enter negatives). */
 const stepButton = (s, dir) => `<button type="button" data-action="calc-step" data-key="${s.key}" data-dir="${dir}"
-  class="w-10 h-10 rounded-lg border border-slate-200 dark:border-[#2d2f38]
-         bg-white dark:bg-[#1e1e22] hover:bg-slate-100 dark:hover:bg-[#2d2f38]
+  class="w-10 h-10 rounded-lg border border-slate-200 dark:border-[#2E3C36]
+         bg-white dark:bg-[#212D28] hover:bg-slate-100 dark:hover:bg-[#2E3C36]
          text-base font-bold leading-none" aria-label="${dir > 0 ? '+' : '−'} ${s.key}">${dir > 0 ? '+' : '−'}</button>`;
 const calcSliderTemplate = s => `
   <div class="flex flex-col gap-1 ${s.wide ? 'sm:col-span-2' : ''}">
@@ -2568,7 +2567,7 @@ const calcSliderTemplate = s => `
 const activitySelectTemplate = () => `
   <div class="flex flex-col gap-1.5 justify-center">
     <label for="calc-activity" class="text-xs font-medium" data-i18n="calcActivity"></label>
-    <select id="calc-activity" data-calc="activity" class="select-themed bg-white dark:bg-[#1e1e22] border border-slate-300 dark:border-[#2d2f38]">
+    <select id="calc-activity" data-calc="activity" class="select-themed bg-white dark:bg-[#212D28] border border-slate-300 dark:border-[#2E3C36]">
       ${ACTIVITY_LEVELS.map(a => `<option value="${a.factor}" data-i18n="${a.label}"></option>`).join('')}
     </select>
   </div>`;
@@ -2604,19 +2603,20 @@ function renderDashboard(dayMeals, goals, date) {
   const status = dayStatus(total.cal, goals.cal, dayMeals.length);
   const isOver = status === 'over';
   const remainEl = $('#remainCalDisplay'), badge = $('#calorieStatusBadge');
-  remainEl.textContent = remain >= 0 ? `${remain} kcal` : t(status === 'onTarget' ? 'slightlyOver' : 'overText', { n: -remain });
+  remainEl.innerHTML = `${Math.abs(remain)}<span class="text-xl ml-1.5">kcal</span>`;   // the label above says remaining or over
   const label = $('#remainCalLabel');                          // "remaining" vs "over target"
   label.dataset.i18n = remain >= 0 ? 'remainCalLabel' : 'overCalLabel'; label.textContent = t(label.dataset.i18n);
-  remainEl.className = `text-2xl font-extrabold tracking-tight ${isOver ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`;
+  remainEl.className = `text-5xl sm:text-6xl font-bold leading-none mt-1 mono ${isOver ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`;
   badge.textContent = status === 'onTarget' ? t('nearBadge') : isOver ? t('overBadge', { n: -remain }) : t('remainBadge', { n: remain });
   badge.className = `text-xs font-semibold px-2.5 py-1 rounded-full border ${isOver
     ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200/60 dark:border-amber-800/50'
     : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/50'}`;
 
   const ratio = goals.cal > 0 ? Math.min(1, total.cal / goals.cal) : 0;
-  const ring = $('#calRing');
-  ring.style.strokeDashoffset = CONFIG.ui.ringCircumference * (1 - ratio);
-  ring.setAttribute('class', `ring ${isOver ? 'text-amber-500' : 'text-emerald-500'}`);
+  const bar = $('#calBar');
+  bar.style.width = `${Math.round(ratio * 100)}%`;
+  bar.className = `h-full rounded-full transition-all duration-500 ${isOver ? 'bg-amber-500' : 'bg-slate-900 dark:bg-slate-100'}`;
+  renderPlates(dayMeals, date);
 
   // Percentages are not capped (e.g. 132%). Going over a macro is marked with an amber pill and
   // outline (warning, not error): each bar keeps its own color, and extra protein is often intended.
@@ -2634,6 +2634,41 @@ function renderDashboard(dayMeals, goals, date) {
   });
 }
 
+/** One plate in the day strip: the meal's photo on a round plate, its time and kcal. Tapping a photo opens it. */
+const plateTemplate = m => {
+  const kcal = Math.round(num(m.cal)), label = `${m.time} ${m.name} ${kcal} kcal`;
+  const face = m.photoId
+    ? `<button type="button" data-action="view-photos" data-id="${esc(m.id)}" data-plate-photo aria-label="${esc(label)}"
+         class="relative w-[84px] h-[84px] rounded-full border-[5px] border-white dark:border-[#2E3C36] overflow-hidden
+                bg-slate-200 dark:bg-[#212D28] flex items-center justify-center text-2xl text-slate-500">
+         <span aria-hidden="true">${esc([...m.name][0] || '')}</span>
+         <span data-photo-thumb="${esc(m.photoId)}" class="hidden absolute inset-0"><img class="w-full h-full object-cover" alt="" /></span>
+       </button>`
+    : `<div class="w-[84px] h-[84px] rounded-full border-[5px] border-white dark:border-[#2E3C36] bg-slate-200 dark:bg-[#212D28]
+         flex items-center justify-center text-2xl text-slate-500" role="img" aria-label="${esc(label)}">${esc([...m.name][0] || '')}</div>`;
+  return `<div class="shrink-0 w-[88px] flex flex-col items-center gap-0.5 snap-start">${face}
+    <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">${esc(m.time)}</div>
+    <div class="text-lg font-bold leading-tight">${kcal}</div></div>`;
+};
+const nextPlateTemplate = () => `
+  <button type="button" data-action="shoot-meal" class="shrink-0 w-[88px] flex flex-col items-center gap-0.5 snap-start">
+    <span class="w-[84px] h-[84px] rounded-full border-2 border-dashed border-emerald-600 dark:border-emerald-400 text-emerald-600
+                 dark:text-emerald-400 flex flex-col items-center justify-center gap-0.5">${icon('camera')}
+      <span class="text-sm font-bold">${t('plateNext')}</span></span>
+  </button>`;
+/** The day strip above the totals: meals in time order, plus an empty plate for the next one (today only). */
+function renderPlates(dayMeals, date) {
+  const el = $('#plateStrip');
+  const plates = [...dayMeals].sort((a, b) => String(a.time).localeCompare(String(b.time))).map(plateTemplate).join('');
+  el.innerHTML = plates + (date === todayStr() ? nextPlateTemplate() : '');
+  el.classList.toggle('hidden', !el.innerHTML.trim());
+  // A plate whose photo is gone (expired, or not in the backup) looks and acts like a plate without one.
+  photos.decorate(el).then(() => $$('[data-plate-photo]', el).forEach(b => {
+    if (!$('[data-photo-thumb]', b).classList.contains('hidden')) return;
+    b.removeAttribute('data-action'); b.disabled = true; b.classList.add('cursor-default');
+  }));
+}
+
 const periodBadge = time => {
   const p = mealPeriod(time);
   return `<span class="${PERIOD_CLASSES[p.tone]} px-2 py-0.5 rounded text-xs font-semibold">${p.icon} ${t(p.label)}</span>`;
@@ -2642,22 +2677,22 @@ const periodBadge = time => {
 const fmtMacro = v => round1(num(v));
 /** One food item inside an expanded meal card: name, weight, kcal and P / C / F. */
 const mealItemTemplate = it => `
-  <div class="bg-white dark:bg-[#161618] px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-[#2d2f38]">
+  <div class="bg-white dark:bg-[#1A2420] px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-[#2E3C36]">
     <div class="flex items-center justify-between gap-2">
       <span class="font-medium">${esc(it.name)} <span class="text-slate-400 mono">(${Math.round(it.weight)}g)</span></span>
       <span class="mono text-emerald-600 dark:text-emerald-400 font-semibold shrink-0">${Math.round(it.cal)} kcal</span>
     </div>
     <div class="mono text-xs mt-0.5 flex gap-2.5">
-      <span class="text-rose-500">P ${fmtMacro(it.p)}g</span><span
-        class="text-amber-500">C ${fmtMacro(it.c)}g</span><span class="text-sky-500">F ${fmtMacro(it.f)}g</span>
+      <span class="text-rose-600 dark:text-rose-400">P ${fmtMacro(it.p)}g</span><span
+        class="text-amber-700 dark:text-amber-400">C ${fmtMacro(it.c)}g</span><span class="text-sky-600 dark:text-sky-400">F ${fmtMacro(it.f)}g</span>
     </div>
   </div>`;
 
 /** Thumbnail of a meal's first photo; rendered hidden and shown by photos.decorate() once loaded. */
 const mealThumbTemplate = m => !m.photoId ? '' : `
   <button type="button" data-action="view-photos" data-id="${esc(m.id)}" data-photo-thumb="${esc(m.photoId)}"
-    class="hidden w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-slate-100 dark:bg-[#1e1e22]
-           border border-slate-200 dark:border-[#2d2f38]"
+    class="hidden w-14 h-14 shrink-0 rounded-xl overflow-hidden bg-slate-100 dark:bg-[#212D28]
+           border border-slate-200 dark:border-[#2E3C36]"
     aria-label="${t('photoView')}"><img alt="" class="w-full h-full object-cover" /></button>`;
 
 const CHIP_CLASSES = {
@@ -2694,30 +2729,30 @@ function mealCardTemplate(m, isFavorite) {
         <span class="mono font-bold text-emerald-600 dark:text-emerald-400 text-base mr-1 whitespace-nowrap">${m.cal} <span class="text-xs">kcal</span></span>
         <button type="button" data-action="fav-meal" data-id="${esc(m.id)}"
           class="w-10 h-10 inline-flex items-center justify-center rounded-lg
-                 hover:bg-slate-100 dark:hover:bg-[#2d2f38]
+                 hover:bg-slate-100 dark:hover:bg-[#2E3C36]
                  ${isFavorite ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}"
           aria-pressed="${isFavorite}" title="${t('favToggle')}" aria-label="${t('favToggle')}">
           <svg class="icon text-lg" ${isFavorite ? 'style="fill:currentColor"' : ''} aria-hidden="true"><use href="#i-star"/></svg>
         </button>
         <button type="button" data-action="share-meal" data-id="${esc(m.id)}"
           class="w-10 h-10 inline-flex items-center justify-center rounded-lg
-                 hover:bg-slate-100 dark:hover:bg-[#2d2f38] text-slate-400
+                 hover:bg-slate-100 dark:hover:bg-[#2E3C36] text-slate-400
                  hover:text-emerald-600"
           title="${t('shareMeal')}" aria-label="${t('shareMeal')}">${icon('share', 'text-lg')}</button>
         <button type="button" data-action="edit-meal" data-id="${esc(m.id)}"
           class="w-10 h-10 inline-flex items-center justify-center rounded-lg
-                 hover:bg-slate-100 dark:hover:bg-[#2d2f38] text-slate-400
+                 hover:bg-slate-100 dark:hover:bg-[#2E3C36] text-slate-400
                  hover:text-emerald-600"
           title="${t('mealEdit')}" aria-label="${t('mealEdit')}">${icon('pencil', 'text-lg')}</button>
         <button type="button" data-action="delete-meal" data-id="${esc(m.id)}"
           class="w-10 h-10 inline-flex items-center justify-center rounded-lg
-                 hover:bg-slate-100 dark:hover:bg-[#2d2f38] text-slate-400
+                 hover:bg-slate-100 dark:hover:bg-[#2E3C36] text-slate-400
                  hover:text-rose-500"
           title="${t('delete')}" aria-label="${t('delete')}">${icon('trash', 'text-lg')}</button>
       </div>
     </div>
     ${m.reasoning ? `<p class="text-xs text-slate-500 dark:text-slate-400 mb-2 leading-relaxed">${esc(m.reasoning)}</p>` : ''}
-    <details class="pt-1 border-t border-slate-100 dark:border-[#2d2f38]">
+    <details class="pt-1 border-t border-slate-100 dark:border-[#2E3C36]">
       <summary class="flex flex-wrap items-center justify-between gap-2">
         <span class="flex gap-2 text-xs mono">
           <span class="bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded font-semibold">P: ${m.p}g</span>
@@ -2729,7 +2764,7 @@ function mealCardTemplate(m, isFavorite) {
           ${icon('chevron-down', 'text-xs chev transition')}
         </span>` : ''}
       </summary>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mt-3 pt-2 border-t border-dashed border-slate-200 dark:border-[#2d2f38]">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mt-3 pt-2 border-t border-dashed border-slate-200 dark:border-[#2E3C36]">
         ${m.items.map(mealItemTemplate).join('')}
       </div>
       <div class="flex justify-end gap-2 mt-2">
@@ -2782,7 +2817,8 @@ function renderHistory(meals) {
         <div class="mono font-semibold whitespace-nowrap">
           ${d.n ? `${d.cal} <span class="text-xs text-slate-500 font-normal">/ ${goals.cal} kcal</span>` : '--'}
         </div>
-        <div class="text-xs text-slate-500 mono">${d.n ? `P ${d.p} · C ${d.c} · F ${d.f}` : ''}${w ? `${d.n ? ' · ' : ''}${w.toFixed(1)} kg` : ''}</div>
+        <div class="text-xs text-slate-500 mono">${[...(d.n ? [`P ${d.p}`, `C ${d.c}`, `F ${d.f}`] : []), ...(w ? [`${w.toFixed(1)} kg`] : [])]
+          .map(x => `<span class="whitespace-nowrap">${x}</span>`).join(' · ')}</div>
       </div>
       <span class="${DAY_STATUS_CLASSES[status]} shrink-0">${label}</span>
       ${icon('chevron-right', 'text-slate-400')}
@@ -2800,7 +2836,7 @@ function renderFavorites() {
 function renderFavManage() {
   const favs = db.favs();
   $('#favManageList').innerHTML = favs.length ? favs.map((f, i) => `
-    <div class="flex items-center justify-between bg-white dark:bg-[#161618] px-3 py-2 rounded-lg border border-slate-200 dark:border-[#2d2f38] text-xs">
+    <div class="flex items-center justify-between bg-white dark:bg-[#1A2420] px-3 py-2 rounded-lg border border-slate-200 dark:border-[#2E3C36] text-xs">
       <div><div class="font-bold">${esc(f.name)}</div><div
         class="text-xs text-slate-400 mono">${Math.round(f.cal)} kcal (P:${f.p}g / C:${f.c}g / F:${f.f}g)</div></div>
       <span class="flex shrink-0">
@@ -2849,8 +2885,8 @@ function renderWeight() {
 }
 
 const chartColors = () => state.theme === 'dark'
-  ? { grid: '#26272e', tick: '#94a3b8', point: '#0f0f0f' }
-  : { grid: '#e2e8f0', tick: '#64748b', point: '#ffffff' };
+  ? { grid: '#26332D', tick: '#87978F', point: '#1A2420', line: '#76AE98', avg: '#E1E8E3' }
+  : { grid: '#D0DAD4', tick: '#5B6C65', point: '#ffffff', line: '#3F6E5E', avg: '#1E2B27' };
 const chartsAvailable = () => typeof Chart !== 'undefined';  // Chart.js comes from a CDN and may fail to load
 
 /** Axis ticks and tooltips: one decimal (Chart.js steps such as 0.4 produce 90.80000000000003). */
@@ -2868,20 +2904,19 @@ function renderWeightChart(list) {
     return;
   }
   const c = chartColors(), ctx = canvas.getContext('2d');
-  const gradient = ctx.createLinearGradient(0, 0, 0, 180);
-  gradient.addColorStop(0, 'rgba(16,185,129,.28)'); gradient.addColorStop(1, 'rgba(16,185,129,0)');
+  if (Chart.defaults?.font) Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;   // the handwritten face
   state.charts.weight = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets: [
       {
-        label: t('chartDaily'), data: raw, borderColor: '#10b981', backgroundColor: gradient, borderWidth: 2,
-        pointBackgroundColor: c.point, pointBorderColor: '#10b981', pointBorderWidth: 2, pointRadius: 4,
-        fill: true, tension: .25,
+        label: t('chartDaily'), data: raw, borderColor: c.line, borderWidth: 2,
+        pointBackgroundColor: c.point, pointBorderColor: c.line, pointBorderWidth: 2, pointRadius: 4,
+        fill: false, tension: .25,
         // monotone: the curve never dips or rises between two points (equal days stay flat)
         cubicInterpolationMode: 'monotone'
       },
       {
-        label: t('chartMA'), data: maView, borderColor: '#3b82f6', borderWidth: 2.5, borderDash: [4, 4], pointRadius: 0,
+        label: t('chartMA'), data: maView, borderColor: c.avg, borderWidth: 2, borderDash: [4, 4], pointRadius: 0,
         fill: false, tension: .35, cubicInterpolationMode: 'monotone'
       }
     ] },
@@ -2907,7 +2942,7 @@ function renderCalcExplain(cs, r) {
   const line = (cls, key) => `<div class="flex gap-1.5"><span class="${cls} font-bold shrink-0">●</span><span class="mono">${esc(t(key, v))}</span></div>`;
   $('#calcExplain').innerHTML = `<div class="font-semibold">${esc(t('calcExplainHead'))}</div>`
     + line('text-rose-500', 'calcExplainP') + line('text-sky-500', 'calcExplainF')
-    + line('text-amber-500', macrosExceedTarget(cs) ? 'calcExplainCZero' : 'calcExplainC');
+    + line('text-amber-600', macrosExceedTarget(cs) ? 'calcExplainCZero' : 'calcExplainC');
 }
 
 /** Colors and labels are fixed at construction, so theme/language changes rebuild the chart. */
@@ -2929,14 +2964,14 @@ const itemNum = (field, value, labelKey) => `<label class="${numSpan(field)} fle
            dark:text-slate-100 w-full" /></label>`;
 function analysisItemTemplate(it, i) {
   const n = itemNutrients(it, state.portion);
-  return `<div data-idx="${i}" class="bg-white dark:bg-[#1e1e22] rounded-xl border border-slate-200 dark:border-[#2d2f38] p-3 space-y-2">
+  return `<div data-idx="${i}" class="bg-white dark:bg-[#212D28] rounded-xl border border-slate-200 dark:border-[#2E3C36] p-3 space-y-2">
     <div class="flex items-center gap-2">
       <input type="text" data-item="name" maxlength="80" aria-label="name" value="${esc(it.name)}"
         class="field flex-1 min-w-0 py-1.5 font-medium text-base sm:text-sm" />
       <button type="button" data-action="remove-item" data-idx="${i}"
         class="w-10 h-10 shrink-0 inline-flex items-center justify-center rounded-lg
                text-slate-400 hover:text-rose-500 hover:bg-slate-100
-               dark:hover:bg-[#2d2f38]" aria-label="${t('delete')}">${icon('trash')}</button>
+               dark:hover:bg-[#2E3C36]" aria-label="${t('delete')}">${icon('trash')}</button>
     </div>
     ${it.src ? `<p class="text-xs text-slate-500 dark:text-slate-400">${esc(itemSourceText(it.src))}</p>` : ''}
     <div class="${NUM_GRID}">
@@ -3104,7 +3139,7 @@ function renderJobs() {
     const { body, actions } = (JOB_VIEWS[j.status] || jobFailedView)(j);
     const thumb = j.images?.[0]
       ? `<img src="${esc(j.images[0])}" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0" />`
-      : '<div class="w-12 h-12 rounded-lg bg-slate-200 dark:bg-[#26272e] shrink-0"></div>';
+      : '<div class="w-12 h-12 rounded-lg bg-slate-200 dark:bg-[#26332D] shrink-0"></div>';
     return `
       <div class="panel p-3 flex flex-wrap items-center gap-3">
         ${thumb}
@@ -3506,7 +3541,7 @@ const SCALE_REF_PRESETS = [{ name: 'refPresetCoin', size: 'refPresetCoinSize' },
 
 const REF_CHIP_CLASS = {
   on: 'bg-emerald-600 border-emerald-600 text-white',
-  off: 'bg-white dark:bg-[#1e1e22] border-slate-200 dark:border-[#2d2f38] text-slate-700 dark:text-slate-200'
+  off: 'bg-white dark:bg-[#212D28] border-slate-200 dark:border-[#2E3C36] text-slate-700 dark:text-slate-200'
 };
 const REF_LINK_CLASS = 'text-xs font-semibold text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1 py-2';
 const refChipTemplate = (r, on) => `
@@ -3516,8 +3551,8 @@ const refChipTemplate = (r, on) => `
     <span class="${on ? 'text-emerald-100' : 'text-slate-500 dark:text-slate-400'}">${esc(r.size)}</span>
   </button>`;
 const refManageRowTemplate = r => `
-  <div class="flex items-center justify-between gap-2 bg-white dark:bg-[#161618] pl-3 pr-1 rounded-lg
-              border border-slate-200 dark:border-[#2d2f38] text-sm">
+  <div class="flex items-center justify-between gap-2 bg-white dark:bg-[#1A2420] pl-3 pr-1 rounded-lg
+              border border-slate-200 dark:border-[#2E3C36] text-sm">
     <span class="min-w-0 py-2 break-words">
       <span class="font-semibold">${esc(r.name)}</span> <span class="text-slate-500 dark:text-slate-400">${esc(r.size)}</span>
     </span>
@@ -3634,14 +3669,14 @@ const editNum = (field, value, labelKey) => `<label class="${numSpan(field)} fle
     class="field py-1.5 px-2 mono text-base sm:text-sm text-slate-900
            dark:text-slate-100 w-full" /></label>`;
 function editRowTemplate(it, i) {
-  return `<div data-idx="${i}" class="bg-white dark:bg-[#1e1e22] rounded-xl border border-slate-200 dark:border-[#2d2f38] p-3 space-y-2">
+  return `<div data-idx="${i}" class="bg-white dark:bg-[#212D28] rounded-xl border border-slate-200 dark:border-[#2E3C36] p-3 space-y-2">
     <div class="flex items-center gap-2">
       <input type="text" data-edit="name" maxlength="80" value="${esc(it.name)}" aria-label="name"
         class="field flex-1 min-w-0 py-1.5 font-medium text-base sm:text-sm" />
       <button type="button" data-action="edit-remove-item" data-idx="${i}"
         class="w-10 h-10 shrink-0 inline-flex items-center justify-center rounded-lg
                text-slate-400 hover:text-rose-500 hover:bg-slate-100
-               dark:hover:bg-[#2d2f38]" aria-label="${t('delete')}">${icon('trash')}</button>
+               dark:hover:bg-[#2E3C36]" aria-label="${t('delete')}">${icon('trash')}</button>
     </div>
     <div class="${NUM_GRID}">
       ${editNum('weight', Math.round(it.weight), 'unitGram')}
@@ -3733,7 +3768,8 @@ function saveWeight(rawValue, date = selectedDate()) {
 function logWeightFromForm() {
   const input = $('#dailyWeightInput');
   const kg = saveWeight(input.value || input.placeholder); if (!kg) return;
-  db.saveCalcProfile({ ...db.calcProfile(), weight: kg });
+  // The calculator profile keeps the weight the goals were computed from (recalcReminder compares with it);
+  // the goal modal pre-fills the latest logged weight instead.
   toast(t('weightLogged', { d: selectedDate() === todayStr() ? t('today') : selectedDate().slice(5).replace('-', '/'), w: kg })); renderAll();
 }
 /** Removes the weight recorded on the selected date, with Undo. */
@@ -4394,7 +4430,7 @@ function openKeyGuide() {
         ${s.link ? `<a href="${AI_STUDIO_KEY_URL}" target="_blank" rel="noopener noreferrer"
           class="btn btn-primary w-full py-2.5"><span>${t('guideOpen')}</span>${icon('chevron-right')}</a>` : ''}
         ${(s.images || []).filter(([id]) => shots[id]).map(([id, alt]) => `<img src="${shots[id]}" alt="${esc(t(alt))}" loading="lazy"
-          class="w-full rounded-xl border border-slate-200 dark:border-[#2d2f38]" />`).join('')}
+          class="w-full rounded-xl border border-slate-200 dark:border-[#2E3C36]" />`).join('')}
       </div></li>`).join('');
   if (!keyGuideOpen()) scrollLock.lock();
   $('#keyGuide').classList.remove('hidden');
@@ -4457,7 +4493,7 @@ function renderValidation() {
   const running = !!validation.ctrl, cases = validation.cases(), sum = validationSummary(cases);
   const modeName = m => t(m === 'precise' ? 'valModePrecise' : 'valModeStandard');
   const photoSlot = i => `
-    <label class="relative h-20 rounded-xl border-2 border-dashed border-slate-300 dark:border-[#2d2f38] flex items-center justify-center
+    <label class="relative h-20 rounded-xl border-2 border-dashed border-slate-300 dark:border-[#2E3C36] flex items-center justify-center
                   text-xs text-slate-500 cursor-pointer overflow-hidden">
       <input type="file" accept="image/*" class="sr-only" data-val-photo="${i}" />
       ${validation.images[i]
@@ -4468,7 +4504,7 @@ function renderValidation() {
     <label class="flex flex-col gap-0.5 text-xs text-slate-500"><span>${t(labelKey)}${required ? ' *' : ''}</span>
       <input type="text" inputmode="decimal" data-numeric id="${id}" class="field py-1.5 px-2 mono text-base sm:text-sm w-full" /></label>`;
   const summaryRow = m => sum[m] ? `
-    <tr class="border-t border-slate-100 dark:border-[#2d2f38]">
+    <tr class="border-t border-slate-100 dark:border-[#2E3C36]">
       <td class="py-1.5 pr-2 font-semibold">${modeName(m)}</td>
       <td class="py-1.5 px-1 mono text-center font-bold">${accuracy(sum[m].cal)}</td>
       <td class="py-1.5 px-1 mono text-center">${pct(sum[m].cal?.bias)}</td>
@@ -4646,7 +4682,7 @@ function openSuggest() {
 
 const SUGGEST_CHIP_CLASS = {
   on: 'bg-emerald-600 border-emerald-600 text-white',
-  off: 'bg-white dark:bg-[#1e1e22] border-slate-200 dark:border-[#2d2f38] text-slate-700 dark:text-slate-200'
+  off: 'bg-white dark:bg-[#212D28] border-slate-200 dark:border-[#2E3C36] text-slate-700 dark:text-slate-200'
 };
 const suggestChip = (action, id, label, on, sub = '') => `
   <button type="button" data-action="${action}" data-id="${id}" aria-pressed="${on}"
@@ -4714,7 +4750,7 @@ function suggestMealHtml(meal, target) {
 const SUGGEST_SOURCE_LABEL = { table: 'suggestMeasured', published: 'suggestPublished' };
 const suggestFoodLine = x => `<li>${esc(x.name)} ${esc(x.portion)}<span class="text-slate-500 dark:text-slate-400">${t('suggestGrams', { g: x.grams })}</span>${
   SUGGEST_SOURCE_LABEL[x.source] ? `<span class="ml-1 text-xs text-emerald-700 dark:text-emerald-400">${t(SUGGEST_SOURCE_LABEL[x.source])}</span>` : ''}</li>`;
-const PLACE_TAG_CLASS = 'shrink-0 text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#2d2f38] text-slate-600 dark:text-slate-300';
+const PLACE_TAG_CLASS = 'shrink-0 text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#2E3C36] text-slate-600 dark:text-slate-300';
 /** One option: foods with portions, its macros and how far it is from the meal's target. */
 function suggestOptionHtml(o, target) {
   const diff = target ? o.cal - target.cal : 0, near = !target || Math.abs(diff) <= target.cal * CONFIG.suggest.nearWithin;
@@ -4821,6 +4857,10 @@ const ACTIONS = {
   'weight-range': el => { state.weightRange = Number(el.dataset.range); renderWeight(); },
   'open-modal': el => (MODAL_OPENERS[el.dataset.modal] || modal.open)(el.dataset.modal),
   'open-suggest': () => openSuggest(),
+  'shoot-meal': () => {                                    // the empty plate in the day strip
+    $('#uploadSlots').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('[data-upload="0"]').click();
+  },
   'suggest-slot': el => toggleSuggestSlot(el.dataset.id),
   'suggest-place': el => toggleSuggestPlace(el.dataset.id),
   'suggest-run': () => runSuggest(),
