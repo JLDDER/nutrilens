@@ -105,7 +105,7 @@ it('package total: only the package\'s items are scaled, the drink beside it is 
   await analyse(page, body => (body.generationConfig.responseSchema.properties.items
     ? { reasoning: 'r', name: '飯糰＋豆漿', packageKcal: 209, items: [
       item({ name: '飯糰', inPackage: true, proteinPer100g: 5, carbsPer100g: 35, fatPer100g: 2.2222 }),        // 180 kcal → 209
-      item({ name: '無糖豆漿', inPackage: false, proteinPer100g: 10, carbsPer100g: 10, fatPer100g: 6.6667 })] } // 140 kcal, unchanged
+      item({ name: '店家特製飲料', inPackage: false, proteinPer100g: 10, carbsPer100g: 10, fatPer100g: 6.6667 })] } // 140 kcal, unchanged
     : { estimates: [{ index: 1, geo: '', weight: 100, method: 'plain' }, { index: 2, geo: '', weight: 100, method: 'plain' }] }));
   const [cal] = await totals(page);
   if (Math.abs(cal - 349) > 2) throw new Error(`total ${cal} kcal, expected 349 (209 + 140)`);
@@ -114,7 +114,7 @@ it('package total: only the package\'s items are scaled, the drink beside it is 
   return page;
 });
 
-it('label slot: sent at 1280 px, kept on the device at 768 px; other slots 768 px', async browser => {
+it('label slot: sent at 1280 px, kept on the device at 1024 px; other slots 1024 px', async browser => {
   const page = await freshPage(browser);
   const calls = await fakeGemini(page, body => (body.generationConfig.responseSchema.properties.items
     ? { reasoning: 'r', name: 'x', packageKcal: 0, items: [item()] } : { estimates: [{ index: 1, geo: '', weight: 100, method: 'plain' }] }));
@@ -134,13 +134,13 @@ it('label slot: sent at 1280 px, kept on the device at 768 px; other slots 768 p
   const dims = await page.evaluate(async list => Promise.all(list.map(d => new Promise(res => {
     const img = new Image(); img.onload = () => res(Math.max(img.width, img.height)); img.src = 'data:image/jpeg;base64,' + d;
   }))), sent);
-  if (dims.join() !== '768,1280') throw new Error(`sent sizes ${dims}, expected 768,1280`);
+  if (dims.join() !== '1024,1280') throw new Error(`sent sizes ${dims}, expected 1024,1280`);
   const kept = await page.evaluate(async () => {
     const job = JSON.parse(localStorage.getItem('nutrilens_jobs_v1'))[0];
     const rec = await photoStore.get(job.id);
     return Promise.all(rec.images.map(src => new Promise(res => { const img = new Image(); img.onload = () => res(Math.max(img.width, img.height)); img.src = src; })));
   });
-  if (kept.join() !== '768,768') throw new Error(`kept sizes ${kept}, expected 768,768`);
+  if (kept.join() !== '1024,1024') throw new Error(`kept sizes ${kept}, expected 1024,1024`);
   return page;
 });
 

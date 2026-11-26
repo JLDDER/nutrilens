@@ -88,6 +88,9 @@ const OIL_STATS = (() => {
 /** Upper bound beyond the 5 %-oil experiment: Pu et al. 2019 median oil used in meat dishes, 12.8 g / 100 g raw, at a
  *  70 % cooked yield: 12.8 ÷ (70 + 12.8) × 100 ≈ 15.5 g / 100 g served, assuming all of it is eaten (#15). */
 const OIL_UPPER_MEAT = 15.5;
+/** Coating carbohydrate per 100 g served when a plain base FOOD_TABLE row (c < 5) is coated and deep-fried
+ *  (derived from MEXT 八訂 表 13 fried vs plain meat/fish/veg differences: light starch ~6.5 g, breaded ~12 g, batter ~15 g). */
+const COATING_CARBS = { deepfry_light: 6.5, deepfry_breaded: 12.0, deepfry_batter: 15.0 };
 
 /** Individual measured rows that replace a method's median (spec 3.3.1 個別列). Matched on the item name. */
 const OIL_INDIVIDUAL = [

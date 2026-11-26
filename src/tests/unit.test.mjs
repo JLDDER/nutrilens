@@ -344,7 +344,7 @@ describe('prompts', () => {
     assert.equal(fn('CONFIG').precise.promptVersion >= 11, true);
     assert.equal(fn('CONFIG').gemini.promptVersion >= 6, true);
     assert.equal(fn('CONFIG').suggest.promptVersion, 5);
-    assert.equal(fn('CONFIG').precise.promptVersion, 13);
+    assert.equal(fn('CONFIG').precise.promptVersion, 14);
   });
   test('the package rule asks for inPackage, and the schema has it', () => {
     assert.match(fn('buildPrecisePrompt')({ lang: 'zh', imageCount: 1, note: '' }).system, /inPackage = true only on the items inside that package/);
