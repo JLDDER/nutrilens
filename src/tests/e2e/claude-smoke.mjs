@@ -43,11 +43,12 @@ function installFake(cloudDocs) {
   const ref = p => (mustBe(p, false), {
     set: async body => { fake.writes.push(p); docs.set(p, JSON.parse(JSON.stringify(body))); },
     delete: async () => { fake.writes.push('-' + p); docs.delete(p); },
-    get: async () => ({ exists: docs.has(p), data: () => docs.get(p) })
+    get: async () => { if (p.includes('/photos/')) await new Promise(r => setTimeout(r, 150)); return { exists: docs.has(p), data: () => docs.get(p) }; }
   });
   const db = { doc: p => ({ ...ref(p), collection: sub => db.collection(`${p}/${sub}`) }), collection: base => (mustBe(base, true), { doc: id => ref(`${base}/${id}`),
     get: async () => ({ docs: [...docs].filter(([p]) => p.startsWith(base + '/')).map(([p, b]) => ({ id: p.slice(base.length + 1), data: () => b })) }) }) };
-  const caps = { sample, db, user: { id: async () => 'u1' }, downloads: { save: async r => { fake.saves.push(r.filename); return { status: 'saved' }; } } };
+  const caps = { sample, db, user: { id: async () => 'u1' }, downloads: { save: async r => {
+    fake.saves.push(r.filename); fake.saved = JSON.parse(await r.data.text()); return { status: 'saved' }; } } };
   // Like the real runtime, use() only works as a method of window.claude.
   window.claude = { use(name) { if (this !== window.claude) throw new TypeError('Illegal invocation'); return new Promise(r => setTimeout(() => r(caps[name] ?? null), 30)); } };
 }
@@ -123,6 +124,31 @@ it('a backup with photos is imported: the records and each meal\'s top view reac
   await page.setInputFiles('#importFile', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) });
   await page.waitForFunction(() => String(window.__fake.docs.get('data/users/u1/photos/items/old1')?.src || '').startsWith('data:image/jpeg'), null, { timeout: 10000 });
   await page.waitForFunction(() => document.querySelector('[data-photo-thumb="old1"] img')?.src.startsWith('data:image'), null, { timeout: 10000 });
+  return page;
+});
+
+it('backup button with photos only in the cloud: feedback at once, saved without a second tap, photos included', async browser => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, locale: 'zh-TW' });
+  page.on('pageerror', e => { page.errors = [...(page.errors || []), String(e)]; });
+  const src = 'data:image/jpeg;base64,' + PHOTO.toString('base64'), docs = {}, meals = [], list = {};
+  for (let i = 0; i < 30; i++) {
+    const id = `p${i}`, date = `2026-11-${String(1 + (i % 25)).padStart(2, '0')}`;
+    meals.push({ id: `m${i}`, date, time: '08:00', name: `餐${i}`, angleCount: 1, cal: 300, p: 20, c: 30, f: 10, items: [], photoId: id });
+    docs[`data/users/u1/photos/items/${id}`] = { date, src }; list[id] = Date.now();
+  }
+  await page.addInitScript(installFake, { ...docs,
+    [`${KV}/nutrilens_onboarding_v1`]: { key: 'nutrilens_onboarding_v1', v: '{"status":"done"}', ts: 1 },
+    [`${KV}/nutrilens_photo_cloud_v1`]: { key: 'nutrilens_photo_cloud_v1', v: JSON.stringify(list), ts: 1 },
+    [`${KV}/nutrilens_meals_v1@2026-11`]: { key: 'nutrilens_meals_v1', v: JSON.stringify(meals), ts: 1 } });
+  await page.goto(BASE);
+  await page.waitForFunction(() => document.querySelector('#selectedDate')?.value, null, { timeout: 15000 });
+  await page.waitForTimeout(500);
+  await page.evaluate(() => MODAL_OPENERS.dataModal('dataModal'));
+  await page.click('[data-action="export-json"]');
+  await page.waitForFunction(() => /正在準備備份/.test(document.querySelector('#toastContainer')?.textContent || ''), null, { timeout: 1000 });
+  await page.waitForFunction(() => window.__fake.saves.length === 1, null, { timeout: 15000 });
+  const n = await page.evaluate(() => window.__fake.saved.photos.length);
+  if (n !== 30) throw new Error(`backup has ${n} photos, expected 30`);
   return page;
 });
 

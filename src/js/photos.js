@@ -190,14 +190,20 @@ const photos = {
   },
 
   /** For the backup file: the stored photos of these ids (missing ones are skipped). */
-  async exportFor(ids) {
-    const out = [];
-    for (const id of new Set(ids.filter(Boolean))) {
+  async exportFor(ids, onProgress) {
+    const list = [...new Set(ids.filter(Boolean))], out = [];
+    let done = 0;
+    // A few at a time: the Claude build reads the photos only kept in the cloud one by one over the network.
+    const one = async id => {
       const rec = await photoStore.get(id).catch(() => null);
-      if (rec?.images?.length) { out.push({ id, date: rec.date, images: rec.images }); continue; }
-      const fromCloud = IS_CLAUDE ? await cloudPhotos.fetch(id) : [];   // the Claude build: also the photos only in the cloud
-      if (fromCloud.length) out.push({ id, date: db.meals().find(m => m.photoId === id)?.date || todayStr(), images: fromCloud });
-    }
+      if (rec?.images?.length) out.push({ id, date: rec.date, images: rec.images });
+      else {
+        const fromCloud = IS_CLAUDE ? await cloudPhotos.fetch(id) : [];   // the Claude build: also the photos only in the cloud
+        if (fromCloud.length) out.push({ id, date: db.meals().find(m => m.photoId === id)?.date || todayStr(), images: fromCloud });
+      }
+      if (++done % 5 === 0 || done === list.length) onProgress?.(done, list.length);
+    };
+    for (let i = 0; i < list.length; i += 6) await Promise.all(list.slice(i, i + 6).map(one));
     return out;
   },
 

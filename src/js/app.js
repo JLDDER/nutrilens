@@ -2273,7 +2273,7 @@ function toast(message, type = 'success', action = null) {
     el.append(btn);
   }
   box.replaceChildren(el);                                      // a new message replaces the previous one
-  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, action ? CONFIG.ui.undoToastMs : CONFIG.ui.toastMs);
+  if (!action?.sticky) setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, action ? CONFIG.ui.undoToastMs : CONFIG.ui.toastMs);
 }
 
 /**
@@ -3802,21 +3802,28 @@ function renderBackupStatus() {
 }
 /** The backup file: every record, plus the photos of logged meals still on this device ({ id, date, images }). */
 async function exportJSON() {
-  const started = Date.now(), meals = db.meals();
-  const data = {
-    goals: db.goals(), goalHistory: db.goalHistory(), calcProfile: db.calcProfile(), weights: db.weights(), meals,
-    favorites: db.favs(), scaleRefs: db.scaleRefs(), scaleRefsOn: db.scaleRefsOn(), suggestPrefs: suggestPrefs(), exportedAt: new Date().toISOString(),
-    photos: await photos.exportFor(meals.filter(m => !m.demo).map(m => m.photoId))
-  };
-  const save = () => download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `NutriLens_Backup_${todayStr()}.json`)
-    .then(ok => {                  // only a file that was really handed over counts as a backup
-      if (!ok) return;
-      store.setStr(STORAGE_KEYS.lastBackup, todayStr());
-      toast(t('backupDone')); renderBanner(); renderBackupStatus();
-    });
-  // Reading many photos can outlast the tap's permission to download (iOS allows about a second): then ask for a second tap.
-  if (Date.now() - started < 800) save();
-  else toast(t('backupReady'), 'success', { label: t('backupSave'), run: save });
+  if (exportJSON.busy) return toast(t('backupPreparing', { i: 0, n: 0 }));
+  exportJSON.busy = true;
+  try {
+    const started = Date.now(), meals = db.meals();
+    const ids = meals.filter(m => !m.demo).map(m => m.photoId);
+    toast(t('backupPreparing', { i: 0, n: new Set(ids.filter(Boolean)).size }));    // answer the tap at once
+    const data = {
+      goals: db.goals(), goalHistory: db.goalHistory(), calcProfile: db.calcProfile(), weights: db.weights(), meals,
+      favorites: db.favs(), scaleRefs: db.scaleRefs(), scaleRefsOn: db.scaleRefsOn(), suggestPrefs: suggestPrefs(), exportedAt: new Date().toISOString(),
+      photos: await photos.exportFor(ids, (i, n) => toast(t('backupPreparing', { i, n })))
+    };
+    const save = () => download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `NutriLens_Backup_${todayStr()}.json`)
+      .then(ok => {                // only a file that was really handed over counts as a backup
+        if (!ok) return;
+        store.setStr(STORAGE_KEYS.lastBackup, todayStr());
+        toast(t('backupDone')); renderBanner(); renderBackupStatus();
+      });
+    // The Claude build's save asks the viewer itself. On the plain site, reading many photos can outlast the tap's
+    // permission to download (iOS allows about a second): then a second tap, on a notice that stays until it is used.
+    if (IS_CLAUDE || Date.now() - started < 800) await save();
+    else toast(t('backupReady'), 'success', { label: t('backupSave'), run: save, sticky: true });
+  } finally { exportJSON.busy = false; }
 }
 /** Restores a backup made by exportJSON. Each section is optional and sanitized. */
 function importJSON(file, onDone = null) {
