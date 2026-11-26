@@ -2,10 +2,12 @@
    build.mjs inlines this file into dist/index.html. */
 
 :root {
+  color-scheme: only light;     /* "only": browsers must not auto-darken it; the saved theme decides, not the browser (see the color-scheme meta in index.html) */
   --slider-active: #1E2B27;
   --slider-track: #B3C2BA;
 }
 html.dark {
+  color-scheme: dark;
   --slider-active: #E1E8E3;
   --slider-track: #2E3C36;
 }
